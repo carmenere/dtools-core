@@ -6,9 +6,29 @@ function service() {
   fi
 }
 
-function service_stop() { }
-function service_start() { }
-function service_restart() { service_stop && service_start }
+function service_stop() {
+  (
+    local mode=$1
+    dt_exec_or_echo "${SERVICE_STOP}" $mode
+  )
+}
+
+function service_start() {
+  (
+    local mode=$1
+    dt_exec_or_echo "${SERVICE_START}" $mode
+  )
+}
+
+function service_restart() {
+  service_stop && service_start
+}
+
+service_methods=()
+
+service_methods+=(service_start)
+service_methods+=(service_stop)
+service_methods+=(service_restart)
 
 function console_log_file() {
   if [ -z "${LOG_FILE}" ] && [ -n "${DT_LOGS}" ] && [ -n "${APP}" ]; then
@@ -23,6 +43,8 @@ function console_start() {
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   console_log_file
   if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
+  echo "_inline_envs=${_inline_envs}"
+  echo "TTX_PGPORT=${TTX_PGPORT}"
   cmd=("$(dt_inline_envs)")
   cmd+=("${BINARY} ${OPTS} 2>&1")
   if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
@@ -38,6 +60,16 @@ function console_stop() {
   dt_exec_or_echo "${cmd}" ${mode}
   dt_info "${BOLD}done${RESET}"
 }
+
+function console_restart() {
+  console_stop && console_start
+}
+
+console_methods=()
+
+console_methods+=(console_stop)
+console_methods+=(console_start)
+console_methods+=(console_restart)
 
 # MacOS
 function brew_list_services() { brew services list }

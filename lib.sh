@@ -36,6 +36,7 @@ function dt_err_if_empty() {
   val="$(eval echo "\$$2")"
   if [ -n "${val}" ]; then return 0; fi
   dt_error $1 "Parameter ${BOLD}$2${RESET} is empty"
+  return 77
 }
 
 function dt_exec() {
@@ -132,17 +133,41 @@ function dt_run_targets() {
   done
 }
 
+function is_function() {
+  type "$1" | sed "s/$1//" | grep -qwi function
+}
+
 # Consider function docker_build()
-# dt_impl ctx_conn_docker_pg_admin pg docker_methods
+# dt_register ctx_conn_docker_pg_admin pg docker_methods
 # will generate function docker_build_pg() {( ctx_conn_docker_pg_admin && docker_build_pg )}
-function dt_impl() {
+function dt_register() {
   local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
   local suffix=$2; dt_err_if_empty $0 "suffix"; exit_on_err $0 $? || return $?
   shift; shift
   local methods=("$@"); dt_err_if_empty $0 "methods"; exit_on_err $0 $? || return $?
   for method in $methods; do
-    eval "function ${method}_${suffix}() {( mode=\$1; $ctx && ${method} \${mode} )}"
+    local func=${method}_${suffix}
+    if declare -f hooks_pre_${func} 1>/dev/null 2>&1; then
+      local pre_hook="&& hooks_pre_${func}"
+    else
+      local pre_hook=
+    fi
+    eval "function ${func}() {( mode=\$1; ${ctx} ${pre_hook} && ${method} \${mode} )}"
   done
+}
+
+# Consider example: dt_register_stand stand_host
+# It will generate all necessary functions of stand_host.
+# For example, for 'install_services' it generates
+# function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
+function dt_register_stand() {
+  local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
+  stand_${stand}
+  for step in ${steps}; do
+    eval "function stand_${stand}_${step}() {( stand_${stand} && dt_run_targets "\${${step}\[\@\]}" )}"
+  done
+  function stand_start_${stand}() {( dt_deploy_stand stand_${stand} )}
+  function stand_stop_${stand}() {( echo "the stand_stop_xxx command must be implemented explicitly for concrete stand." )}
 }
 
 function dt_sleep_5() {

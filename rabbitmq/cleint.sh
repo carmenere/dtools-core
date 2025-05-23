@@ -98,7 +98,7 @@ function rabbitmq_clean() {
 }
 
 function rabbitmq_init_docker() {
-  docker_check_rabbitmq
+  docker_service_check_rabbitmq
   exec=$(docker_exec_rabbitmq echo)
   local create_user="$(ctx_conn_docker_rabbitmq_app && rabbitmqctl_create_user echo)"
   dt_exec_or_echo "$exec sh -c '$create_user'"
@@ -106,4 +106,8 @@ function rabbitmq_init_docker() {
   dt_exec_or_echo "$exec sh -c '$set_user_tags'"
   local set_permissions=$(dt_escape_single_quotes "$(ctx_conn_docker_rabbitmq_app && rabbitmqctl_set_permissions echo)")
   dt_exec_or_echo "$exec sh -c $'$set_permissions'"
+}
+
+function rabbitmq_clean_docker() {
+  echo "Use docker_rm_rabbitmq instead."
 }

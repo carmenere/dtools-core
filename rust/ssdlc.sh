@@ -13,9 +13,3 @@ cargo_ssdlc_methods+=(cargo_deny)
 cargo_ssdlc_methods+=(cargo_sonar)
 cargo_ssdlc_methods+=(cargo_cyclonedx)
 cargo_ssdlc_methods+=(cargo_clippy)
-
-function impl_cargo_ssdlc() {
-  local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
-  local suffix=$2; dt_err_if_empty $0 "suffix"; exit_on_err $0 $? || return $?
-  dt_impl "${ctx}" "${suffix}" "${cargo_ssdlc_methods[@]}"; exit_on_err $0 $? || return $?
-}

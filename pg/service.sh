@@ -87,17 +87,27 @@ function pg_add_path() {
 # 1) Consider example sed -n -e '1i Header' -e '$a Trailer' <FILE>
 #   '1i Header'  : here pattern "1" matches 1st line and command "i" inserts 'Header' before it
 #   '$a Trailor' : here pattern "$" matches last line and command "a" appends 'Trailor' after it
-# 2) The "t" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
+# 2) The "t;" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
 function pg_hba_conf_add_policy() {
-  dt_exec_or_echo "if grep -qE '^\s*host\s+all\s+all\s+0.0.0.0/0\s+md5\s*$' \"${PG_HBA_CONF}\"; then return 0; fi"
-  dt_exec_or_echo "sed -i -E -e 's/^\s*#\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
+  dt_exec_or_echo "sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
 }
 
 function pg_conf_set_port() {
-  dt_exec_or_echo "sed -i -E -e \"s/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/\" \"${PG_CONF}\""
+  dt_exec_or_echo "sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${PG_CONF}"
 }
 
-function ctx_pg_paths() {
+function pg_prepare() {
+  pg_hba_hash=$(sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
+  pg_conf_hash=$(sha256sum "${PG_CONF}" | cut -d' ' -f 1)
+  pg_hba_conf_add_policy
+  pg_conf_set_port
+  pg_hba_hash_new=$(sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
+  pg_conf_hash_new=$(sha256sum "${PG_CONF}" | cut -d' ' -f 1)
+  if [ "${pg_hba_hash}" = "${pg_hba_hash_new}" ] && [ "${pg_conf_hash}" = "${pg_conf_hash_new}" ]; then; return 0; fi
+  service_restart
+}
+
+function ctx_pg_vars() {
   PG_DIR=$(pg_dir); exit_on_err $0 $? || return $?
   PG_HBA_CONF=$(pg_hba_conf); exit_on_err $0 $? || return $?
   PG_CONF=$(pg_conf); exit_on_err $0 $? || return $?
@@ -106,6 +116,8 @@ function ctx_pg_paths() {
   PG_CONFIG_LIBDIR="$("${PG_CONFIG}" --pkglibdir | tr ' ' '\n')"; exit_on_err $0 $? || return $?
   PG_CONFIG_SHAREDIR="$("${PG_CONFIG}" --sharedir)"; exit_on_err $0 $? || return $?
   PG_BINDIR="$("${PG_CONFIG}" --bindir)"
+  SERVICE_STOP="$(service) stop '$(pg_service)'"
+  SERVICE_START="$(service) start '$(pg_service)'"
 }
 
 function ctx_service_pg() {
@@ -113,25 +125,7 @@ function ctx_service_pg() {
   MINOR=5
   PGHOST="localhost"
   PGPORT=5432
-  ctx_pg_paths
-}
-
-function service_stop_pg() {
-  (
-    local mode=$1
-    ctx_service_pg && dt_exec_or_echo "$(service) stop '$(pg_service)'" $mode
-  )
-}
-
-function service_start_pg() {
-  (
-    local mode=$1
-    ctx_service_pg && dt_exec_or_echo "$(service) start '$(pg_service)'" $mode
-  )
-}
-
-function service_restart_pg() {
-  service_stop_pg && service_start_pg
+  ctx_pg_vars
 }
 
 function lsof_pg() {
@@ -141,3 +135,5 @@ function lsof_pg() {
     lsof_tcp
   )
 }
+
+dt_register "ctx_service_pg" "pg" "${service_methods[@]}"

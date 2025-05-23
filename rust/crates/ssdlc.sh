@@ -1,5 +1,14 @@
-function ctx_crate_cargo_audit() {
+function ctx_crate_defaults(){
   ctx_rustup
+  FORCE=
+  FROZEN=
+  IGNORE_RUST_VERSION=
+  LOCKED="y"
+  OFFLINE=
+}
+
+function ctx_crate_cargo_audit() {
+  ctx_crate_defaults
   CRATE_NAME="cargo-audit"
   CRATE_VERSION="0.21.2"
   FORCE=
@@ -8,32 +17,28 @@ function ctx_crate_cargo_audit() {
   LOCKED="y"
   OFFLINE=
 }
-function cargo_install_cargo_audit() { cargo_install ctx_crate_cargo_audit }
-function cargo_uninstall_cargo_audit() { cargo_uninstall ctx_crate_cargo_audit }
+dt_register "ctx_crate_cargo_audit" "cargo_audit" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_deny() {
-  ctx_crate_cargo_audit
+  ctx_crate_defaults
   CRATE_NAME="cargo-deny"
   CRATE_VERSION="0.18.2"
 }
-function cargo_install_cargo_deny() { cargo_install ctx_crate_cargo_deny }
-function cargo_uninstall_cargo_deny() { cargo_uninstall ctx_crate_cargo_deny }
+dt_register "ctx_crate_cargo_deny" "cargo_deny" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_sonar() {
-  ctx_crate_cargo_audit
+  ctx_crate_defaults
   CRATE_NAME="cargo-sonar"
   CRATE_VERSION="1.3.0"
 }
-function cargo_install_cargo_sonar() { cargo_install ctx_crate_cargo_sonar }
-function cargo_uninstall_cargo_sonar() { cargo_uninstall ctx_crate_cargo_sonar }
+dt_register "ctx_crate_cargo_sonar" "cargo_sonar" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_cyclonedx() {
-  ctx_crate_cargo_audit
+  ctx_crate_defaults
   CRATE_NAME="cargo-cyclonedx"
   CRATE_VERSION="0.5.7"
 }
-function cargo_install_cargo_cyclonedx() { cargo_install ctx_crate_cargo_cyclonedx }
-function cargo_uninstall_cargo_cyclonedx() { cargo_uninstall ctx_crate_cargo_cyclonedx }
+dt_register "ctx_crate_cargo_cyclonedx" "cargo_cyclonedx" "${cargo_install_methods[@]}"
 
 function cargo_audit_opts() {
   cargo_shared_manifest_opts

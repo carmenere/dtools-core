@@ -70,46 +70,23 @@ function clickhouse_user_xml_dir() {
   fi
 }
 
+function ctx_clickhouse_vars() {
+  CH_USER_XML_DT="${DT_CORE}/clickhouse/admin.xml"
+  CH_USER_XML="$(clickhouse_user_xml_dir)/admin.xml"; exit_on_err $0 $? || return $?
+  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err $0 $? || return $?
+  SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
+  SERVICE_START="$(service) start '$(clickhouse_service)'"
+}
+
 function ctx_service_clickhouse() {
   CLICKHOUSE_HOST="localhost"
   # for clickhouse-client
   CLICKHOUSE_PORT=9000
   # for applications
   CLICKHOUSE_HTTP_PORT=8123
-  MAJOR=23; MINOR=5
-
-  CH_USER_XML_DT="${DT_CORE}/clickhouse/admin.xml"
-  CH_USER_XML="$(clickhouse_user_xml_dir)/admin.xml"; exit_on_err $0 $? || return $?
-  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err $0 $? || return $?
-
-  _export_envs=(
-    CLICKHOUSE_HOST
-    CLICKHOUSE_PORT
-    CLICKHOUSE_HTTP_PORT
-    CH_USER_XML
-    MAJOR
-    MINOR
-    CH_CONFIG_XML
-    CH_USER_XML_DT
-  )
-}
-
-function service_stop_clickhouse() {
-  (
-    local mode=$1
-    ctx_service_clickhouse && dt_exec_or_echo "$(service) stop '$(clickhouse_service)'" $mode
-  )
-}
-
-function service_start_clickhouse() {
-  (
-    local mode=$1
-    ctx_service_clickhouse && dt_exec_or_echo "$(service) start '$(clickhouse_service)'" $mode
-  )
-}
-
-function service_restart_clickhouse() {
-  service_stop_clickhouse && service_start_clickhouse
+  MAJOR=23
+  MINOR=5
+  ctx_clickhouse_vars
 }
 
 function lsof_clickhouse() {
@@ -120,3 +97,5 @@ function lsof_clickhouse() {
   PORT=${CLICKHOUSE_HTTP_PORT};
   lsof_tcp
 }
+
+dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"

@@ -131,17 +131,21 @@ function psql_conn_migrator() {( ctx_conn_pg_migrator && psql_conn )}
 function psql_conn_app() {( ctx_conn_pg_app && psql_conn )}
 
 function psql_init() {(
-  ctx_conn_pg_admin && pg_hba_conf_add_policy && pg_conf_set_port && service_restart_pg && \
+  ctx_conn_pg_admin && pg_prepare && \
   _psql_init ctx_conn_pg_admin ctx_conn_pg_migrator ctx_conn_pg_app
 )}
-function psql_clean() {( _psql_clean ctx_conn_pg_admin ctx_conn_pg_migrator ctx_conn_pg_app )}
+
+function psql_clean() {(
+  ctx_conn_pg_admin && pg_prepare && \
+  _psql_clean ctx_conn_pg_admin ctx_conn_pg_migrator ctx_conn_pg_app
+)}
 
 function psql_conn_docker_admin() {( ctx_conn_docker_pg_admin && psql_conn )}
 function psql_conn_docker_migrator() {( ctx_conn_docker_pg_migrator && psql_conn )}
 function psql_conn_docker_app() {( ctx_conn_docker_pg_app && psql_conn )}
 
 function psql_init_docker() {(
-  docker_check_pg && \
+  docker_service_check_pg && \
   _psql_init ctx_conn_docker_pg_admin ctx_conn_docker_pg_migrator ctx_conn_docker_pg_app
 )}
 # it's like docker_rm_pg && docker_run_pg

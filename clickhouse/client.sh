@@ -60,21 +60,10 @@ function clickhouse_client_grant_user() {
   dt_exec_or_echo "$cmd" $mode
 }
 
-#function clickhouse_init() {
-#  ( ctx_conn_clickhouse_app && clickhouse_client_create_db )  && \
-#  ( ctx_conn_clickhouse_app && clickhouse_client_create_user ) && \
-#  ( ctx_conn_clickhouse_app && clickhouse_client_grant_user )
-#}
-#
-#function clickhouse_clean() {
-#  ( ctx_conn_clickhouse_app && clickhouse_client_drop_db ) && \
-#  ( ctx_conn_clickhouse_app && clickhouse_client_drop_user )
-#}
-
 function clickhouse_conn_admin() { ( ctx_conn_clickhouse_admin && clickhouse_conn ) }
 function clickhouse_conn_app() { ( ctx_conn_clickhouse_app && clickhouse_conn ) }
-function clickhouse_conn_docker_admin() { ( ctx_conn_clickhouse_docker_admin && clickhouse_conn ) }
-function clickhouse_conn_docker_app() { ( ctx_conn_clickhouse_docker_app && clickhouse_conn ) }
+function clickhouse_conn_docker_admin() { ( ctx_conn_docker_clickhouse_admin && clickhouse_conn ) }
+function clickhouse_conn_docker_app() { ( ctx_conn_docker_clickhouse_app && clickhouse_conn ) }
 
 function _clickhouse_client_init() {
   (
@@ -105,7 +94,7 @@ function clickhouse_client_conn_docker_admin() {( ctx_conn_docker_clickhouse_adm
 function clickhouse_client_conn_docker_app() {( ctx_conn_docker_clickhouse_app && clickhouse_client_conn )}
 
 function clickhouse_client_init_docker() {(
-  docker_check_clickhouse && \
+  docker_service_check_clickhouse && \
   _clickhouse_client_init ctx_conn_docker_clickhouse_admin ctx_conn_docker_clickhouse_app
 )}
 # it's like docker_rm_clickhouse && docker_run_clickhouse
