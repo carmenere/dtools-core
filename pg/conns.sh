@@ -65,12 +65,3 @@ function ctx_conn_docker_pg_app() {
   pg_db_example && \
   pg_user_app
 }
-
-function psql_conn_local_admin() {
-  cmd=$(
-    ctx_conn_pg_admin
-    unset PGHOST
-    sudo -u ${PGUSER} psql -d ${PGDATABASE}
-  )
-  dt_exec_or_echo "$cmd" $mode
-}

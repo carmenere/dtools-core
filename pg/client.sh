@@ -126,6 +126,15 @@ function _psql_clean() {
   )
 }
 
+function psql_conn_local_admin() {
+  cmd=$(
+    ctx_conn_pg_admin
+    unset PGHOST
+    sudo -u ${PGUSER} psql -d ${PGDATABASE}
+  )
+  dt_exec_or_echo "$cmd" $mode
+}
+
 function psql_conn_admin() {( ctx_conn_pg_admin && psql_conn )}
 function psql_conn_migrator() {( ctx_conn_pg_migrator && psql_conn )}
 function psql_conn_app() {( ctx_conn_pg_app && psql_conn )}
