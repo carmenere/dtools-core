@@ -28,15 +28,6 @@ function tmux_close() {
   tmux has-session -t ${TMX_SESSION} && tmux kill-session -t ${TMX_SESSION} || echo "Session ${TMX_SESSION} was not opened."
 }
 
-function tmux_start_sync() {
-  tmux_new; exit_on_err $0 $? || return $?
-  dt_err_if_empty $0 "TMX_WINDOW_NAME"; exit_on_err $0 $? || return $?
-  dt_err_if_empty $0 "TMX_START_CMD"; exit_on_err $0 $? || return $?
-  tmux select-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME} || tmux new-window -t ${TMX_SESSION} -n ${TMX_WINDOW_NAME}
-  tmux send-keys -t ${TMX_SESSION}:${TMX_WINDOW_NAME} "${TMX_START_CMD}; tmux wait-for -S 0" ENTER
-  tmux wait-for 0
-}
-
 function tmux_select_window() {
   dt_exec_or_echo "tmux select-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}"
 }
@@ -68,8 +59,15 @@ function tmux_stop() {
 
 function tmux_connect() {
   dt_err_if_empty $0 "TMX_SESSION"; exit_on_err $0 $? || return $?
-  tmux a -t "${TMX_SESSION}"
+  dt_exec_or_echo "tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}""
 }
 
-function tmux_kill() { tmux kill-server || true }
-function tmux_sessions() { tmux ls }
+function tmux_kill() { dt_exec_or_echo "tmux kill-server || true" }
+function tmux_sessions() { dt_exec_or_echo "tmux ls" }
+
+tmux_methods=()
+
+tmux_methods+=(tmux_connect)
+tmux_methods+=(tmux_stop)
+tmux_methods+=(tmux_start)
+tmux_methods+=(tmux_restart)

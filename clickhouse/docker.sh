@@ -21,21 +21,12 @@ function ctx_docker_clickhouse() {
   CHECK_CMD="sh -c \$'clickhouse-client --query \'exit\''"
 }
 
-function _docker_run_clickhouse() {
+function hooks_pre_docker_run_clickhouse() {
   CLICKHOUSE_DB=${CLICKHOUSE_DB}
   CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
   CLICKHOUSE_USER=${CLICKHOUSE_USER}
   CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
   _run_envs=(CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT)
-  docker_run; exit_on_err $0 $? || return $?
 }
 
-function impl_docker_clickhouse() {
-  local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
-  local suffix=$2; dt_err_if_empty $0 "suffix"; exit_on_err $0 $? || return $?
-  dt_impl "${ctx}" "${suffix}" "${docker_methods[@]}"; exit_on_err $0 $? || return $?
-  eval "function docker_run_${suffix}() {( mode=\$1; $ctx && _docker_run_clickhouse \${mode} )}"
-  eval "function docker_build_${suffix}() {( mode=\$1; $ctx && docker_pull \${mode} )}"
-}
-
-impl_docker_clickhouse "ctx_conn_docker_clickhouse_admin" "clickhouse"
+dt_register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"

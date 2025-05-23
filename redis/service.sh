@@ -32,33 +32,8 @@ function ctx_service_redis() {
   PATCH=4
   REDIS_PORT=6379
   REQUIREPASS="y"
-
-  _export_envs=(
-    REDIS_HOST
-    MAJOR
-    MINOR
-    PATCH
-    REDIS_PORT
-    REQUIREPASS
-  )
-}
-
-function service_stop_redis() {
-  (
-    local mode=$1
-    ctx_service_redis && dt_exec_or_echo "$(service) stop '$(redis_service)'" $mode
-  )
-}
-
-function service_start_redis() {
-  (
-    local mode=$1
-    ctx_service_redis && dt_exec_or_echo "$(service) start '$(redis_service)'" $mode
-  )
-}
-
-function service_restart_redis() {
-  service_stop_redis && service_start_redis
+  SERVICE_STOP="$(service) stop '$(redis_service)'"
+  SERVICE_START="$(service) start '$(redis_service)'"
 }
 
 function lsof_redis() {
@@ -69,3 +44,5 @@ function lsof_redis() {
     lsof_tcp
   )
 }
+
+dt_register "ctx_service_redis" "redis" "${service_methods[@]}"

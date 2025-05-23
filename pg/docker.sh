@@ -19,7 +19,7 @@ function ctx_docker_pg() {
   BACKGROUND="y"
   CONTAINER="postgres"
   RESTART="always"
-  CHECK_CMD="sh -c 'pg_isready 1>/dev/null 2>1'"
+  CHECK_CMD="sh -c 'pg_isready 1>/dev/null 2>&1'"
 }
 
 #function _docker_build_pg() {
@@ -29,20 +29,11 @@ function ctx_docker_pg() {
 #  _build_args+=("BUILD_VERSION")
 #}
 
-function _docker_run_pg() {
-    POSTGRES_DB=${PGDATABASE}
-    POSTGRES_PASSWORD=${PGPASSWORD}
-    POSTGRES_USER=${PGUSER}
-    local _run_envs=(POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER)
-    docker_run; exit_on_err $0 $? || return $?
+function hooks_pre_docker_run_pg() {
+  POSTGRES_DB=${PGDATABASE}
+  POSTGRES_PASSWORD=${PGPASSWORD}
+  POSTGRES_USER=${PGUSER}
+  _run_envs=(POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER)
 }
 
-function impl_docker_pg() {
-  local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
-  local suffix=$2; dt_err_if_empty $0 "suffix"; exit_on_err $0 $? || return $?
-  dt_impl "${ctx}" "${suffix}" "${docker_methods[@]}"; exit_on_err $0 $? || return $?
-  eval "function docker_run_${suffix}() {( mode=\$1; $ctx && _docker_run_pg \${mode} )}"
-  eval "function docker_build_${suffix}() {( mode=\$1; $ctx && docker_pull \${mode} )}"
-}
-
-impl_docker_pg "ctx_conn_docker_pg_admin" "pg"
+dt_register ctx_conn_docker_pg_admin pg "${docker_methods[@]}"

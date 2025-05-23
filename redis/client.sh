@@ -92,36 +92,28 @@ function redis_cli_clean() {
 function redis_cli_conn_admin() { redis_conn ctx_conn_redis_admin }
 function redis_cli_conn_app() { redis_conn ctx_conn_redis_app }
 
-function redis_cli_conn_docker_admin() { redis_conn ctx_conn_redis_docker_admin }
-function redis_cli_conn_docker_app() { redis_conn ctx_conn_redis_docker_app }
+function redis_cli_conn_docker_admin() { redis_conn ctx_conn_docker_redis_admin }
+function redis_cli_conn_docker_app() { redis_conn ctx_conn_docker_redis_app }
 
 function redis_cli_init_docker() {
   (
     admin=ctx_conn_docker_redis_admin
     app=ctx_conn_docker_redis_app
-    docker_check_redis && \
+    docker_service_check_redis && \
     redis_set_requirepass $admin $admin && \
-    redis_create_user $app $admin && \
-    $app && redis_config_rewrite
+    redis_create_user $app $admin
   )
 }
 
 function redis_cli_clean_docker() {
-  (
-    admin=ctx_conn_docker_redis_admin
-    app=ctx_conn_docker_redis_app
-    redis_drop_user $app $admin && \
-    $app && redis_flushall && redis_config_rewrite
-  )
+  echo "Use docker_rm_redis instead."
 }
 
-function docker_exec_init_redis() {
-  docker_check_redis
-  local exec="$(ctx_docker_redis && docker_exec echo)"
-  local set_requirepass="$(ctx_conn_docker_redis_app && redis_set_requirepass echo)"
-  if [ -n "${set_requirepass}" ]; then dt_exec_or_echo "${exec} ${set_requirepass}"; fi
-  local create_user="$(ctx_conn_docker_redis_app && redis_create_user echo)"
-  dt_exec_or_echo "${exec} ${create_user}"
-  local config_rewrite="$(ctx_conn_docker_redis_app && redis_config_rewrite echo)"
-  if [ -n "${config_rewrite}" ]; then dt_exec_or_echo "${exec} ${config_rewrite}"; fi
-}
+#function docker_exec_init_redis() {
+#  docker_service_check_redis
+#  local exec="$(ctx_docker_redis && docker_exec echo)"
+#  local set_requirepass="$(ctx_conn_docker_redis_app && redis_set_requirepass echo)"
+#  if [ -n "${set_requirepass}" ]; then dt_exec_or_echo "${exec} ${set_requirepass}"; fi
+#  local create_user="$(ctx_conn_docker_redis_app && redis_create_user echo)"
+#  dt_exec_or_echo "${exec} ${create_user}"
+#}

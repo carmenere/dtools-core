@@ -28,33 +28,8 @@ function ctx_service_rabbitmq() {
   RABBIT_PORT_MGM=15672
   EXCHANGES=('ems')
   QUEUES=('notification' 'ems.error' 'ems.result' 'ems.task')
-  _export_envs=(
-    ERR_IF_USER_EXISTS
-    MAJOR
-    MINOR
-    PATCH
-    RABBIT_HOST
-    RABBIT_PORT
-    RABBIT_PORT_MGM
-  )
-}
-
-function service_stop_rabbitmq() {
-  (
-    local mode=$1
-    ctx_service_rabbitmq && dt_exec_or_echo "$(service) stop '$(rabbitmq_service)'" $mode
-  )
-}
-
-function service_start_rabbitmq() {
-  (
-    local mode=$1
-    ctx_service_rabbitmq && dt_exec_or_echo "$(service) start '$(rabbitmq_service)'" $mode
-  )
-}
-
-function service_restart_rabbitmq() {
-  service_stop_rabbitmq && service_start_rabbitmq
+  SERVICE_STOP="$(service) stop '$(rabbitmq_service)'"
+  SERVICE_START="$(service) start '$(rabbitmq_service)'"
 }
 
 function lsof_rabbitmq() {
@@ -67,3 +42,5 @@ function lsof_rabbitmq() {
     lsof_tcp
   )
 }
+
+dt_register "ctx_service_rabbitmq" "rabbitmq" "${service_methods[@]}"

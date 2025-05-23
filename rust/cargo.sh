@@ -291,8 +291,7 @@ cargo_methods+=(cargo_fmt)
 cargo_methods+=(cargo_fmt_fix)
 cargo_methods+=(cargo_test)
 
-function impl_cargo() {
-  local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
-  local suffix=$2; dt_err_if_empty $0 "suffix"; exit_on_err $0 $? || return $?
-  dt_impl "${ctx}" "${suffix}" "${cargo_methods[@]}"; exit_on_err $0 $? || return $?
-}
+cargo_install_methods=()
+
+cargo_install_methods+=(cargo_install)
+cargo_install_methods+=(cargo_uninstall)

@@ -342,7 +342,7 @@ function docker_service_check() {
 docker_methods=()
 
 docker_methods+=(docker_build)
-docker_methods+=(docker_check)
+docker_methods+=(docker_service_check)
 docker_methods+=(docker_exec)
 docker_methods+=(docker_exec_sh)
 docker_methods+=(docker_logs)
