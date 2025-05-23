@@ -221,5 +221,5 @@ function dt_init() {
   . "${DT_CORE}/rc.sh"
   . "${DT_TOOLS}/rc.sh"
   . "${DT_STANDS}/rc.sh"
-  . "${DT_LOCALS}/rc.sh"
+  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
 }
