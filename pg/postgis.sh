@@ -2,7 +2,7 @@ function postgis_install() {
   VERSION="3.3.3"
   LIBINTL_VERSION="0.24"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      sudo apt install postgresql-${PG_MAJOR}-postgis-3
+      sudo apt install postgresql-${MAJOR}-postgis-3
   elif [ "$(os_kernel)" = "Darwin" ]; then
       [ ! -d /tmp/postgis ] || sudo rm -rf /tmp/postgis
       sudo mkdir -p /tmp/postgis
@@ -13,7 +13,7 @@ function postgis_install() {
       cd postgis/postgis-${VERSION}
       ./configure --with-projdir=/opt/homebrew/opt/proj \
                   --without-raster --without-protobuf \
-                  --with-pgconfig="$(which pg_config)" \
+                  --with-pgconfig="${PG_CONFIG}" \
                   "LDFLAGS=${LDFLAGS} -L/opt/homebrew/Cellar/gettext/${LIBINTL_VERSION}/lib" \
                   "CFLAGS=-I/opt/homebrew/Cellar/gettext/${LIBINTL_VERSION}/include"
       make
