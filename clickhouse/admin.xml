@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<yandex>
+    <profiles>
+        <default>
+            <union_default_mode>ALL</union_default_mode>
+        </default>
+    </profiles>
+    <users>
+        <default>
+            <access_management>1</access_management>
+        </default>
+        <dt_admin>
+            <password>1234567890</password>
+            <access_management>1</access_management>
+        </dt_admin>
+    </users>
+</yandex>
+
