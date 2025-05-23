@@ -1,0 +1,122 @@
+function clickhouse_service() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "clickhouse@${MAJOR}.${MINOR}"
+  else
+    echo "clickhouse-server"
+  fi
+}
+
+function clickhouse_conf() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/etc/clickhouse-server/config.xml"
+  else
+    echo "/etc/clickhouse-server/config.xml"
+  fi
+}
+
+function clickhouse_install() {
+  local SUDO=$(dt_sudo)
+  if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
+    ${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg; exit_on_err $0 $? || return $?
+    curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | sudo gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg; exit_on_err $0 $? || return $?
+    echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee /etc/apt/sources.list.d/clickhouse.list; exit_on_err $0 $? || return $?
+    sudo apt-get update; exit_on_err $0 $? || return $?
+    sudo apt-get install -y clickhouse-server clickhouse-client; exit_on_err $0 $? || return $?
+
+  elif [ "$(os_kernel)" = "Darwin" ]; then
+    brew install "$(clickhouse_service)"
+
+  else
+    echo "Unsupported OS: '$(os_kernel)'"; exit;
+  fi
+}
+
+function clickhouse_prepare_admin_xml() {
+  if [ "$(os_name)" = "macos" ]; then
+    # sudo -E: indicates to the security policy that the user wishes to preserve their existing environment variables.
+    # The security policy may return an error if the user does not have permission to preserve the environment.
+    local SUDO="sudo -E"
+  else
+    local SUDO="sudo"
+  fi
+  dt_exec_or_echo "cp -f ${CH_USER_XML_DT} ${CH_USER_XML}"
+}
+
+#    ${SUDO} cat > ${CH_USER_XML} << EOF
+#<?xml version="1.0"?>
+#<yandex>
+# <profiles>
+#     <default>
+#         <union_default_mode>ALL</union_default_mode>
+#     </default>
+# </profiles>
+# <users>
+#     <default>
+#         <access_management>1</access_management>
+#     </default>
+#     <${CLICKHOUSE_USER}>
+#         <password>${CLICKHOUSE_PASSWORD}</password>
+#         <access_management>1</access_management>
+#     </${CLICKHOUSE_USER}>
+# </users>
+#</yandex>
+#EOF
+
+function clickhouse_user_xml_dir() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/etc/clickhouse-server/users.d"
+  else
+    echo "/etc/clickhouse-server/users.d"
+  fi
+}
+
+function ctx_service_clickhouse() {
+  CLICKHOUSE_HOST="localhost"
+  # for clickhouse-client
+  CLICKHOUSE_PORT=9000
+  # for applications
+  CLICKHOUSE_HTTP_PORT=8123
+  MAJOR=23; MINOR=5
+
+  CH_USER_XML_DT="${DT_CORE}/clickhouse/admin.xml"
+  CH_USER_XML="$(clickhouse_user_xml_dir)/admin.xml"; exit_on_err $0 $? || return $?
+  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err $0 $? || return $?
+
+  _export_envs=(
+    CLICKHOUSE_HOST
+    CLICKHOUSE_PORT
+    CLICKHOUSE_HTTP_PORT
+    CH_USER_XML
+    MAJOR
+    MINOR
+    CH_CONFIG_XML
+    CH_USER_XML_DT
+  )
+}
+
+function service_stop_clickhouse() {
+  (
+    local mode=$1
+    ctx_service_clickhouse && dt_exec_or_echo "$(service) stop '$(clickhouse_service)'" $mode
+  )
+}
+
+function service_start_clickhouse() {
+  (
+    local mode=$1
+    ctx_service_clickhouse && dt_exec_or_echo "$(service) start '$(clickhouse_service)'" $mode
+  )
+}
+
+function service_restart_clickhouse() {
+  service_stop_clickhouse && service_start_clickhouse
+}
+
+function lsof_clickhouse() {
+  ctx_service_clickhouse
+  HOST=${CLICKHOUSE_HOST}
+  PORT=${CLICKHOUSE_PORT}
+  lsof_tcp
+  PORT=${CLICKHOUSE_HTTP_PORT};
+  lsof_tcp
+}
