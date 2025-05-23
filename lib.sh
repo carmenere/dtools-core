@@ -163,11 +163,11 @@ function dt_register() {
 function dt_register_stand() {
   local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
   stand_${stand}
-  for step in ${steps}; do
-    eval "function stand_${stand}_${step}() {( stand_${stand} && dt_run_targets "\${${step}\[\@\]}" )}"
+  for func in ${register}; do
+    eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
   done
-  function stand_start_${stand}() {( dt_deploy_stand stand_${stand} )}
-  function stand_stop_${stand}() {( echo "the stand_stop_xxx command must be implemented explicitly for concrete stand." )}
+  function stand_up_${stand}() {( dt_up_stand stand_${stand} )}
+  function stand_down_${stand}() {( dt_down_stand stand_${stand} )}
 }
 
 function dt_sleep_5() {
@@ -194,13 +194,26 @@ function dt_paths() {
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
 }
 
-# Example: dt_deploy stand_host
-function dt_deploy_stand() {
+# Example: dt_up_stand stand_host
+function dt_up_stand() {
   local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
-  dt_info "Deploying stand ${BOLD}${stand}${RESET} ... "
+  dt_info "Up stand ${BOLD}${stand}${RESET} ... "
   $stand
-  for step in ${steps}; do
+  for step in ${up_steps}; do
     dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
+    for target in $(eval echo "\${${step}[@]}"); do
+      dt_target $target; exit_on_err $0 $? || return $?
+    done
+  done
+}
+
+# Example: dt_down_stand stand_host
+function dt_down_stand() {
+  local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
+  dt_info "Down stand ${BOLD}${stand}${RESET} ... "
+  $stand
+  for step in ${down_steps}; do
+    dt_info "Stopping step ${BOLD}${CYAN}$step${RESET} ... "
     for target in $(eval echo "\${${step}[@]}"); do
       dt_target $target; exit_on_err $0 $? || return $?
     done
