@@ -1,5 +1,5 @@
 # dtools
-The project **dtools-core** contains various primitives for writing scripts for dev, build, deploy and test automation..<br>
+The project **dtools-core** contains various primitives for writing scripts for _dev_, _build_, _deploy_ and _test_ automation.<br>
 
 <br>
 
