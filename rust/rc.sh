@@ -7,4 +7,4 @@ function load() {
   . "${self_dir}/crates/rc.sh"
 }
 
-load
+load $0

@@ -6,4 +6,4 @@ function load() {
   dt_rc_load $(basename "${self_dir}") "${self_dir}"
 }
 
-load
+load $0

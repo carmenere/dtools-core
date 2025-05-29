@@ -13,4 +13,4 @@ function load() {
   . "${self_dir}/python/rc.sh"
 }
 
-load
+load $0
