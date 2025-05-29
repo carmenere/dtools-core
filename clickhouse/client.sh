@@ -1,13 +1,13 @@
 function clickhouse_conn() {
   dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd=("clickhouse-client")
   if [ -n "${CLICKHOUSE_HOST}" ]; then cmd+=(--host "${CLICKHOUSE_HOST}"); fi
   if [ -n "${CLICKHOUSE_PORT}" ]; then cmd+=(--port "${CLICKHOUSE_PORT}"); fi
   if [ -n "${CLICKHOUSE_DB}" ]; then cmd+=(--database "${CLICKHOUSE_DB}"); fi
   if [ -n "${CLICKHOUSE_USER}" ]; then cmd+=(--user "${CLICKHOUSE_USER}"); fi
   if [ -n "${CLICKHOUSE_PASSWORD}" ]; then cmd+=(--password "${CLICKHOUSE_PASSWORD}"); fi
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function clickhouse_client_create_db() {
@@ -17,7 +17,7 @@ function clickhouse_client_create_db() {
   local query="$(${query_ctx} && clickhouse_sql_create_db)"
   local conn="$(${conn_ctx} && clickhouse_conn echo)"
   local cmd="${conn} --multiquery $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_client_drop_db() {
@@ -27,7 +27,7 @@ function clickhouse_client_drop_db() {
   local query="$(${query_ctx} && clickhouse_sql_drop_db)"
   local conn="$(${conn_ctx} && clickhouse_conn echo)"
   local cmd="${conn} --multiquery $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_client_create_user() {
@@ -37,7 +37,7 @@ function clickhouse_client_create_user() {
   local query="$(${query_ctx} && clickhouse_sql_create_user)"
   local conn="$(${conn_ctx} && clickhouse_conn echo)"
   local cmd="${conn} --multiquery $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_client_drop_user() {
@@ -47,7 +47,7 @@ function clickhouse_client_drop_user() {
   local query="$(${query_ctx} && clickhouse_sql_drop_user)"
   local conn="$(${conn_ctx} && clickhouse_conn echo)"
   local cmd="${conn} --multiquery $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_client_grant_user() {
@@ -57,7 +57,7 @@ function clickhouse_client_grant_user() {
   local query="$(${query_ctx} && clickhouse_sql_grant_user)"
   local conn="$(${conn_ctx} && clickhouse_conn echo)"
   local cmd="${conn} --multiquery $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_conn_admin() { ( ctx_conn_clickhouse_admin && clickhouse_conn ) }

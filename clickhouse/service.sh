@@ -16,16 +16,17 @@ function clickhouse_conf() {
 
 # ctx_service_clickhouse && clickhouse_install
 function clickhouse_install() {
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec_or_echo "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err $0 $? || return $?
+    dt_exec_or_echo ${mode} "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err $0 $? || return $?
+    dt_exec_or_echo ${mode} "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err $0 $? || return $?
+    dt_exec_or_echo ${mode} "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err $0 $? || return $?
+    dt_exec_or_echo ${mode} "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
+    dt_exec_or_echo ${mode} "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err $0 $? || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo "brew install '$(clickhouse_service)'"
+    dt_exec_or_echo ${mode} "brew install '$(clickhouse_service)'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; exit;
@@ -65,7 +66,7 @@ function clickhouse_gen_user_xml() {
   fi
   local query="$(clickhouse_user_xml)"
   local cmd="echo $'${query}' > ${CH_USER_XML}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function clickhouse_prepare() {

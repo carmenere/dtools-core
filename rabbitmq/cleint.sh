@@ -1,11 +1,11 @@
 function rabbitmq_conn() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd=("rabbitmqadmin")
   if [ -n "${RABBIT_HOST}" ]; then cmd+=(--host "${RABBIT_HOST}"); fi
   if [ -n "${RABBIT_PORT_MGM}" ]; then cmd+=(--port "${RABBIT_PORT_MGM}"); fi
   if [ -n "${RABBIT_USER}" ]; then cmd+=(--username "${RABBIT_USER}"); fi
   if [ -n "${RABBIT_PASSWORD}" ]; then cmd+=(--password "${RABBIT_PASSWORD}"); fi
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 # We do not need function "rabbitmqadmin_delete_exchanges", because application creates exchanges itself.
@@ -39,7 +39,7 @@ function rabbitmqadmin_delete_queues() {
 }
 
 function rabbitmqctl_check_user() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   ${cmd_ctx}
   local cmd="$(dt_sudo) rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^${RABBIT_USER}$'"
   if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
@@ -47,7 +47,7 @@ function rabbitmqctl_check_user() {
 }
 
 function rabbitmqctl_create_user() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd="$(dt_sudo) rabbitmqctl add_user ${RABBIT_USER} ${RABBIT_PASSWORD}"
   if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
   rabbitmqctl_check_user; err=$?
@@ -62,7 +62,7 @@ function rabbitmqctl_create_user() {
 }
 
 function rabbitmqctl_drop_user() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd="$(dt_sudo) rabbitmqctl delete_user ${RABBIT_USER}"
   if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
   rabbitmqctl_check_user; err=$?
@@ -71,12 +71,12 @@ function rabbitmqctl_drop_user() {
 }
 
 function rabbitmqctl_set_user_tags() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   dt_exec_or_echo "$(dt_sudo) rabbitmqctl set_user_tags ${RABBIT_USER} administrator" $mode
 }
 
 function rabbitmqctl_set_permissions() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   dt_exec_or_echo "$(dt_sudo) rabbitmqctl set_permissions -p / ${RABBIT_USER} '.*' '.*' '.*'" $mode
 }
 

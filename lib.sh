@@ -33,14 +33,14 @@ function dt_target() {
 
 # Example: dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
 function dt_err_if_empty() {
-  val="$(eval echo "\$$2")"
+  local val="$(eval echo "\$$2")"
   if [ -n "${val}" ]; then return 0; fi
   dt_error $1 "Parameter ${BOLD}$2${RESET} is empty"
   return 77
 }
 
 function dt_exec() {
-  cmd="$1" | sed 's/^[ \t]*//'
+  local cmd="$1" | sed 's/^[ \t]*//'
   if [ -z "$cmd" ]; then return 0; fi
   if [ "${DT_ECHO}" = "y" ]; then
     dt_echo "${DT_ECHO_COLOR} $cmd${RESET}"
@@ -54,7 +54,7 @@ function exit_on_err() {
   # $1: must contain $0 of caller
   # $2: error code
   # $3: error message, if it is empty use name of current function instead
-  err_msg=$3
+  local err_msg=$3
   if [ -z "${err_msg}" ]; then err_msg=$0; fi
   if [ "$2" != 0 ] ; then
     dt_error $1 "${err_msg}"
@@ -64,18 +64,18 @@ function exit_on_err() {
 
 # Example: ( ctx_cargo; dt_inline_envs )
 function dt_inline_envs() {
-  envs=()
-  for env in ${_inline_envs}; do
+  local envs=()
+  for env in ${_inline_envs[@]}; do
     if [ -z "$env" ]; then continue; fi
     local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
     if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi
   done
-  echo "${envs}"
+  echo "${envs[@]}"
 }
 
 # Example: ( ctx_cargo; dt_export_envs; export )
 function dt_export_envs() {
-  for env in ${_export_envs}; do
+  for env in ${_export_envs[@]}; do
     if [ -z "$env" ]; then continue; fi
     local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
     if [ -n "${val}" ]; then dt_exec_or_echo "export ${env}="${val}""; fi
@@ -83,7 +83,7 @@ function dt_export_envs() {
 }
 
 function dt_unexport_envs() {
-  for env in ${_export_envs}; do
+  for env in ${_export_envs[@]}; do
     dt_exec_or_echo "unset ${env}"
   done
 }
@@ -113,13 +113,14 @@ function dt_apply_ctx() {
 }
 
 function dt_exec_or_echo() {
-  cmd="$1"
-  mode="$2"
+  local mode="$1"
+  shift;
+  local cmd="$@"
   if [ -z "${cmd}" ]; then
     dt_error $0 "cmd is empty cmd='${cmd}'."; return 99
   fi
   if [ "$mode" = "echo" ]; then
-    echo "${cmd}"
+    echo -n "${cmd}"
   else
     dt_exec "${cmd}"
   fi
@@ -127,7 +128,7 @@ function dt_exec_or_echo() {
 
 function dt_run_targets() {
   if [ -z "$1" ]; then return 0; fi
-  targets=("$@")
+  local targets=("$@")
   for target in $@; do
     dt_target $target; exit_on_err $0 $? || return $?
   done
@@ -145,7 +146,7 @@ function dt_register() {
   local suffix=$2; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
   shift; shift
   local methods=("$@"); dt_err_if_empty $0 "methods"; exit_on_err $0 $? || return $?
-  for method in $methods; do
+  for method in ${methods[@]}; do
     local func=${method}_${suffix}
     eval "function ${func}() {( mode=\$1; ${ctx} && ${method} \${mode} )}"
   done
@@ -198,7 +199,7 @@ function dt_stand_up() {
   local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
   dt_info "Up stand ${BOLD}${stand}${RESET} ... "
   $stand
-  for step in ${up_steps}; do
+  for step in ${up_steps[@]}; do
     dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
     for target in $(eval echo "\${${step}[@]}"); do
       dt_target $target; exit_on_err $0 $? || return $?
@@ -211,7 +212,7 @@ function dt_stand_down() {
   local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
   dt_info "Down stand ${BOLD}${stand}${RESET} ... "
   $stand
-  for step in ${down_steps}; do
+  for step in ${down_steps[@]}; do
     dt_info "Stopping step ${BOLD}${CYAN}$step${RESET} ... "
     for target in $(eval echo "\${${step}[@]}"); do
       dt_target $target; exit_on_err $0 $? || return $?

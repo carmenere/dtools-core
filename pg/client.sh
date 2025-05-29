@@ -1,101 +1,100 @@
 function psql_conn() {
   local _inline_envs=(PGHOST PGPORT PGUSER PGDATABASE PGPASSWORD)
   dt_err_if_empty $0 "PG_DIR"; exit_on_err $0 $? || return $?
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd=("$(dt_inline_envs)")
-  cmd+=("${PG_DIR}/psql")
-  dt_exec_or_echo "${cmd}" $mode
+  local cmd+=("${PG_DIR}/psql")
+  dt_exec_or_echo $mode "${cmd[@]}" 
 }
 
 function psql_create_db() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_create_db)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_drop_db() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_drop_db)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_alter_role_password() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
   local query="$(${query_ctx} && pg_sql_alter_role_password)"
-  local conn="$(${conn_ctx} && psql_conn echo)"
+  local conn="$(${conn_ctx} &&  psql_conn echo)"
   local cmd="${conn} -c $'${query}'"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec "$cmd"
 }
 
 function psql_create_user() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_create_user)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_drop_user() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_drop_user)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_grant_user_app() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_grant_user_app)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_revoke_user_app() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_revoke_user_app)"
   # Connect to db behalf 'migrator'!
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_grant_user_migrator() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_grant_user_migrator)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_revoke_user_migrator() {
   local query_ctx=$1; dt_err_if_empty $0 "query_ctx"; exit_on_err $0 $? || return $?
   local conn_ctx=$2; dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$3
+  if [ -n "$3" ]; then local mode="$1"; else local mode='exec'; fi
   local query="$(${query_ctx} && pg_sql_revoke_user_migrator)"
   local conn="$(${conn_ctx} && psql_conn echo)"
   local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function _psql_init() {
@@ -132,7 +131,7 @@ function psql_conn_local_admin() {
     unset PGHOST
     sudo -u ${PGUSER} psql -d ${PGDATABASE}
   )
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function psql_conn_admin() {( ctx_conn_pg_admin && psql_conn )}

@@ -34,18 +34,19 @@ function pg_conf() {
 
 # ctx_service_pg && pg_install
 function pg_install() {
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      dt_exec_or_echo "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo "${SUDO} apt-get -y install \
+      dt_exec_or_echo ${mode} "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"; exit_on_err $0 $? || return $?
+      dt_exec_or_echo ${mode} "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"; exit_on_err $0 $? || return $?
+      dt_exec_or_echo ${mode} "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
+      dt_exec_or_echo ${mode} "${SUDO} apt-get -y install \
           postgresql-${MAJOR} \
           postgresql-server-dev-${MAJOR} \
           libpq-dev"; exit_on_err $0 $? || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo "brew install $(pg_service)"
+    dt_exec_or_echo ${mode} "brew install $(pg_service)"
   else
     echo "Unsupported OS: '$(os_kernel)'"; exit;
   fi
@@ -91,20 +92,23 @@ function pg_add_path() {
 #   '$a Trailor' : here pattern "$" matches last line and command "a" appends 'Trailor' after it
 # 2) The "t;" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
 function pg_hba_conf_add_policy() {
-  dt_exec_or_echo "sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  dt_exec_or_echo ${mode} "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
 }
 
 function pg_conf_set_port() {
-  dt_exec_or_echo "sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${PG_CONF}"
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  dt_exec_or_echo ${mode} "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${PG_CONF}"
 }
 
 function pg_prepare() {
-  local pg_hba_hash=$(sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
-  local pg_conf_hash=$(sha256sum "${PG_CONF}" | cut -d' ' -f 1)
+  local SUDO=$(dt_sudo)
+  local pg_hba_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
+  local pg_conf_hash=$(${SUDO} sha256sum "${PG_CONF}" | cut -d' ' -f 1)
   pg_hba_conf_add_policy
   pg_conf_set_port
-  local pg_hba_hash_new=$(sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
-  local pg_conf_hash_new=$(sha256sum "${PG_CONF}" | cut -d' ' -f 1)
+  local pg_hba_hash_new=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
+  local pg_conf_hash_new=$(${SUDO} sha256sum "${PG_CONF}" | cut -d' ' -f 1)
   if [ "${pg_hba_hash}" = "${pg_hba_hash_new}" ] && [ "${pg_conf_hash}" = "${pg_conf_hash_new}" ]; then return 0; fi
   service_stop
 }
@@ -115,8 +119,8 @@ function ctx_pg_vars() {
   PG_CONF=$(pg_conf); exit_on_err $0 $? || return $?
   # Depends on PG_DIR
   PG_CONFIG="${PG_DIR}/pg_config"
-  PG_CONFIG_LIBDIR="$("${PG_CONFIG}" --pkglibdir | tr ' ' '\n')"; exit_on_err $0 $? || return $?
-  PG_CONFIG_SHAREDIR="$("${PG_CONFIG}" --sharedir)"; exit_on_err $0 $? || return $?
+  PG_CONFIG_LIBDIR="$("${PG_CONFIG}" --pkglibdir | tr ' ' '\n')"
+  PG_CONFIG_SHAREDIR="$("${PG_CONFIG}" --sharedir)"
   PG_BINDIR="$("${PG_CONFIG}" --bindir)"
   SERVICE_STOP="$(service) stop '$(pg_service)'"
   SERVICE_START="$(service) start '$(pg_service)'"

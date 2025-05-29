@@ -1,9 +1,9 @@
 function redis_conn() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local cmd=("$(dt_inline_envs)")
   cmd+=("redis-cli -e -u")
   cmd+=("redis://${REDIS_USER}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}")
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function redis_set_requirepass() {
@@ -14,7 +14,7 @@ function redis_set_requirepass() {
   local query="$(${query_ctx} && redis_ql_set_requirepass)"
   local redis_conn="$(${conn_ctx} && redis_conn echo)"
   local cmd="${redis_conn} ${query}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_check_user() {
@@ -24,7 +24,7 @@ function redis_check_user() {
   local query="$(${query_ctx} && redis_ql_check_user)"
   local redis_conn="$(${conn_ctx} && redis_conn echo)"
   local cmd="${redis_conn} ${query}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_create_user() {
@@ -37,7 +37,7 @@ function redis_create_user() {
     dt_info "User ${BOLD}${REDIS_USER} exists${RESET}, skip create."; return 0
   fi
   local cmd="${redis_conn} ${query}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_drop_user() {
@@ -50,24 +50,24 @@ function redis_drop_user() {
     dt_info "User ${BOLD}${REDIS_USER} doesn't exist${RESET}, skip drop."; return 0
   fi
   local cmd="${redis_conn} ${query}"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_config_rewrite() {
   dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   if [ ${CONFIG_REWRITE} != "y" ]; then return 0; fi
   local redis_conn="$(${conn_ctx} && redis_conn echo)"
   local cmd="${redis_conn} CONFIG REWRITE"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_flushall() {
   dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local redis_conn="$(${conn_ctx} && redis_conn echo)"
   local cmd="${redis_conn} FLUSHALL"
-  dt_exec_or_echo "$cmd" $mode
+  dt_exec_or_echo $mode "$cmd"
 }
 
 function redis_cli_init() {

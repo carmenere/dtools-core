@@ -17,23 +17,25 @@ function ctx_sqlx() {
 }
 
 function sqlx_pre_run() {
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   dt_err_if_empty $0 "SCHEMAS"; exit_on_err $0 $? || return $?
   dt_err_if_empty $0 "TMP_SCHEMAS"; exit_on_err $0 $? || return $?
   rm -rf "${TMP_SCHEMAS}"
   mkdir -p "${TMP_SCHEMAS}"
-  cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
+  local cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
   cmd+=("do echo -e \"cp \${FILE} '${TMP_SCHEMAS}/'\"; cp "\${FILE}" '${TMP_SCHEMAS}'; done")
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd[@]}"
 }
 
 function sqlx_run() {
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local _inline_envs=(DATABASE_URL)
   dt_err_if_empty $0 "TMP_SCHEMAS"; exit_on_err $0 $? || return $?
   sqlx_pre_run $ctx $mode
-  cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs)")
   cmd+=(sqlx migrate run)
   cmd+=(--source "'${TMP_SCHEMAS}'")
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd[@]}"
 }
 
 function sqlx_prepare() {

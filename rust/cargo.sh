@@ -108,7 +108,7 @@ function cargo_install() {
   cmd+=(--version "${CRATE_VERSION}")
   _cargo_install_opts
   cmd+=(${CRATE_NAME})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_uninstall() {
@@ -116,7 +116,7 @@ function cargo_uninstall() {
   cmd=("$(dt_inline_envs)")
   cmd=(cargo uninstall)
   cmd+=(${CRATE_NAME})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_profile() {
@@ -160,7 +160,7 @@ function cargo_build() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo build)
   _cargo_build_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_fmt() {
@@ -172,7 +172,7 @@ function cargo_fmt() {
   cmd+=(fmt)
   _cargo_fmt_opts
   cmd+=(-- --check)
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_fmt_fix() {
@@ -183,7 +183,7 @@ function cargo_fmt_fix() {
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
   cmd+=(fmt)
   _cargo_fmt_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_test() {
@@ -192,7 +192,7 @@ function cargo_test() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo test)
   _cargo_test_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 # "cargo clippy" uses "cargo check" under the hood.
@@ -202,7 +202,7 @@ function cargo_clippy() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clippy)
   _cargo_clippy_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_clippy_fix() {
@@ -211,7 +211,7 @@ function cargo_clippy_fix() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clippy --fix --allow-staged)
   _cargo_clippy_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_doc() {
@@ -220,7 +220,7 @@ function cargo_doc() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo doc --no-deps --document-private-items)
   _cargo_doc_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_doc_open() {
@@ -229,7 +229,7 @@ function cargo_doc_open() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo doc --no-deps --document-private-items --open)
   _cargo_doc_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_clean() {
@@ -238,7 +238,7 @@ function cargo_clean() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clean)
   _cargo_clean_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 # BINS is an array, by default BINS=()

@@ -88,7 +88,7 @@ function cargo_sonar() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo sonar)
   _cargo_sonar_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function cargo_cyclonedx() {
@@ -96,5 +96,5 @@ function cargo_cyclonedx() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo cyclonedx --all)
   _cargo_cyclonedx_opts
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }

@@ -8,15 +8,15 @@ function service() {
 
 function service_stop() {
   (
-    local mode=$1
-    dt_exec_or_echo "${SERVICE_STOP}" $mode
+    if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+    dt_exec_or_echo $mode "${SERVICE_STOP}"
   )
 }
 
 function service_start() {
   (
-    local mode=$1
-    dt_exec_or_echo "${SERVICE_START}" $mode
+    if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+    dt_exec_or_echo $mode "${SERVICE_START}"
   )
 }
 
@@ -25,15 +25,18 @@ function service_restart() {
 }
 
 function service_prepare() {
-  dt_exec_or_echo "${SERVICE_PREPARE}" $mode
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  dt_exec_or_echo $mode "${SERVICE_PREPARE}"
 }
 
 function service_install() {
-  dt_exec_or_echo "${SERVICE_INSTALL}" $mode
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  dt_exec_or_echo $mode "${SERVICE_INSTALL}"
 }
 
 function service_lsof() {
-  dt_exec_or_echo "${SERVICE_LSOF}" $mode
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  dt_exec_or_echo $mode "${SERVICE_LSOF}"
 }
 
 service_methods=()

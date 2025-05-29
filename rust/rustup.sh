@@ -21,38 +21,38 @@ function rust_target_triple() {
 }
 
 function rustup_install() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${toolchain}"
 
-	dt_exec_or_echo "${cmd}" $mode
+	dt_exec_or_echo $mode "${cmd}"
 }
 
 function rustup_toolchain_install() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup toolchain install ${toolchain}"
-	dt_exec_or_echo "${cmd}" $mode
+	dt_exec_or_echo $mode "${cmd}"
 }
 
 function rustup_nightly_install() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local toolchain="${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup toolchain install ${toolchain}"
-	dt_exec_or_echo "${cmd}" $mode
+	dt_exec_or_echo $mode "${cmd}"
 }
 
 function rustup_default() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup default ${toolchain}"
-	dt_exec_or_echo "${cmd}" $mode
+	dt_exec_or_echo $mode "${cmd}"
 }
 
 function rustup_component_add() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
 	local cmd="rustup component add '${RUSTUP_COMPONENTS[@]}'"
-	dt_exec_or_echo "${cmd}" $mode
+	dt_exec_or_echo $mode "${cmd}"
 }
 
 function rustup_toolchain_list() {

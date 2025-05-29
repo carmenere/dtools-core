@@ -166,39 +166,39 @@ function docker_is_running() {
 }
 
 function docker_pull() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=("$(dt_inline_envs)")
   cmd+=(docker pull)
   docker_pull_opts && \
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_build() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=("$(dt_inline_envs)")
   cmd+=(docker build)
   $_hook_pre_docker_build && \
   docker_build_arg_opts && \
   docker_build_opts && \
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_exec() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   dt_exec_or_echo "docker exec -ti ${CONTAINER}" $mode
 }
 
 function docker_exec_sh() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   dt_exec_or_echo "docker exec -ti ${CONTAINER} /bin/sh" $mode
 }
 
 function docker_network_create() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local id="$(dt_exec_or_echo "docker network ls -q --filter name="^${BRIDGE}$"")"
   if [ -n "${id}" ]; then
@@ -215,25 +215,25 @@ function docker_network_create() {
   if [ -n "${DRIVER}" ]; then cmd+=(--driver=${DRIVER}); fi
   if [ -n "${SUBNET}" ]; then cmd+=(--subnet=${SUBNET}); fi
   cmd+=(${BRIDGE})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_network_rm() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker network rm ${BRIDGE})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_network_ls() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker network ls)
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_run() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   docker_network_create; exit_on_err $0 $? || return $?
   local id="$(dt_exec_or_echo "docker ps -aq --filter name="^${CONTAINER}$" --filter status=running")"
@@ -245,7 +245,7 @@ function docker_run() {
   if [ -n "${id}" ]; then
     dt_info "Container ${BOLD}${CONTAINER}${RESET} with id='${id}' was created but is stopped now, so start it."
     local cmd=(docker start ${CONTAINER})
-    dt_exec_or_echo "${cmd}" $mode
+    dt_exec_or_echo $mode "${cmd}"
     return 0
   fi
   local cmd=("$(dt_inline_envs)")
@@ -254,68 +254,68 @@ function docker_run() {
   _docker_run_publish_opts && \
   _docker_run_env_opts && \
   _docker_run_opts && \
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_start() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker start ${CONTAINER})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_stop() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker stop ${CONTAINER})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_rmi() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker rmi ${IMAGE})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_rm() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker rm --force ${CONTAINER})
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_rm_all() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   if [ -z "$(dt_exec_or_echo "docker ps -lq")" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
   local cmd=(docker rm --force $(docker ps -aq))
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_status() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker ps -a --filter name="^${CONTAINER}$")
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_logs() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker logs "${CONTAINER}")
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_logs_save_to_logfile() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   local cmd=(docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1')
-  dt_exec_or_echo "${cmd}" $mode
+  dt_exec_or_echo $mode "${cmd}"
 }
 
 function docker_prune() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   docker_rm_all $mode
   dt_exec_or_echo "docker system prune --force" $mode
@@ -324,7 +324,7 @@ function docker_prune() {
 }
 
 function docker_purge() {
-  local mode=$1
+  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
   docker_is_running; exit_on_err $0 $? || return $?
   docker_rm_all $mode
   dt_exec_or_echo "docker system prune --force --all --volumes" $mode
