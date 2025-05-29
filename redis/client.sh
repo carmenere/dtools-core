@@ -89,11 +89,15 @@ function redis_cli_clean() {
   )
 }
 
-function redis_cli_conn_admin() { redis_conn ctx_conn_redis_admin }
-function redis_cli_conn_app() { redis_conn ctx_conn_redis_app }
+function redis_cli_conn_admin() { redis_conn ctx_conn_redis_admin
+}
+function redis_cli_conn_app() { redis_conn ctx_conn_redis_app
+}
 
-function redis_cli_conn_docker_admin() { redis_conn ctx_conn_docker_redis_admin }
-function redis_cli_conn_docker_app() { redis_conn ctx_conn_docker_redis_app }
+function redis_cli_conn_docker_admin() { redis_conn ctx_conn_docker_redis_admin
+}
+function redis_cli_conn_docker_app() { redis_conn ctx_conn_docker_redis_app
+}
 
 function redis_cli_init_docker() {
   (

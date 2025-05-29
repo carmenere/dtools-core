@@ -1,14 +1,16 @@
-function self_dir() {
+function load() {
   #  $1: contains $0 of .sh script
-  if [ -n "${BASH_SOURCE}" ]; then self="${BASH_SOURCE[0]}"; else self="$1"; fi
-  echo "$(dirname $(realpath "${self}"))"
+  if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
+  local self_dir="$(dirname $(realpath "${self}"))"
+
+  dt_rc_load $(basename "${self_dir}") "${self_dir}"
+  
+  . "${self_dir}/clickhouse/rc.sh"
+  . "${self_dir}/pg/rc.sh"
+  . "${self_dir}/redis/rc.sh"
+  . "${self_dir}/rabbitmq/rc.sh"
+  . "${self_dir}/rust/rc.sh"
+  . "${self_dir}/python/rc.sh"
 }
 
-dt_rc_load $(basename "$(self_dir "$0")") "$(self_dir "$0")"
-
-. "$(self_dir "$0")/clickhouse/rc.sh"
-. "$(self_dir "$0")/pg/rc.sh"
-. "$(self_dir "$0")/redis/rc.sh"
-. "$(self_dir "$0")/rabbitmq/rc.sh"
-. "$(self_dir "$0")/rust/rc.sh"
-. "$(self_dir "$0")/python/rc.sh"
+load

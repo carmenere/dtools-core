@@ -42,14 +42,14 @@ function rabbitmqctl_check_user() {
   local mode=$1
   ${cmd_ctx}
   local cmd="$(dt_sudo) rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^${RABBIT_USER}$'"
-  if [ "$mode" = "echo" ]; then; echo "${cmd}"; return 0; fi
+  if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
   dt_exec "${cmd}"
 }
 
 function rabbitmqctl_create_user() {
   local mode=$1
   local cmd="$(dt_sudo) rabbitmqctl add_user ${RABBIT_USER} ${RABBIT_PASSWORD}"
-  if [ "$mode" = "echo" ]; then; echo "${cmd}"; return 0; fi
+  if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
   rabbitmqctl_check_user; err=$?
   if [ "${err}" = 0 ]; then
     if [ "${ERR_IF_USER_EXISTS}" = "y" ]; then
@@ -64,7 +64,7 @@ function rabbitmqctl_create_user() {
 function rabbitmqctl_drop_user() {
   local mode=$1
   local cmd="$(dt_sudo) rabbitmqctl delete_user ${RABBIT_USER}"
-  if [ "$mode" = "echo" ]; then; echo "${cmd}"; return 0; fi
+  if [ "$mode" = "echo" ]; then echo "${cmd}"; return 0; fi
   rabbitmqctl_check_user; err=$?
   if [ "${err}" != 0 ]; then dt_info "User ${BOLD}${RABBIT_USER} doesn't exist${RESET}, skip drop."; return 0; fi
   dt_exec "${cmd}" $mode

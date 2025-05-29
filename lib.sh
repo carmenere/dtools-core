@@ -97,10 +97,10 @@ function dt_rc_load() {
   dir=$2
   if [ -z "${description}" ]; then return 99; fi
   if [ -z "${dir}" ]; then return 99; fi
-  echo "Loading ${BOLD}$description${RESET} ... "
+  echo -e "Loading ${BOLD}$description${RESET} ... "
   for file in "$dir"/*.sh; do
     if [ "$(basename "$file")" != "rc.sh"  ]; then
-      echo -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
+      echo -e -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
       . "$file" || return 55
       echo " done.";
     fi
@@ -158,11 +158,11 @@ function dt_register() {
 function dt_register_stand() {
   local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
   stand_${stand}
-  for func in ${register}; do
+  for func in ${register[@]}; do
     eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
   done
-  function stand_up_${stand}() {( dt_stand_up stand_${stand} )}
-  function stand_down_${stand}() {( dt_stand_down stand_${stand} )}
+  eval "function stand_up_${stand}() {( dt_stand_up stand_${stand} )}"
+  eval "function stand_down_${stand}() {( dt_stand_down stand_${stand} )}"
 }
 
 function dt_sleep_5() {

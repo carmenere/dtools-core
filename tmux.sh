@@ -62,8 +62,10 @@ function tmux_connect() {
   dt_exec_or_echo "tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}""
 }
 
-function tmux_kill() { dt_exec_or_echo "tmux kill-server || true" }
-function tmux_sessions() { dt_exec_or_echo "tmux ls" }
+function tmux_kill() { dt_exec_or_echo "tmux kill-server || true"
+}
+function tmux_sessions() { dt_exec_or_echo "tmux ls"
+}
 
 tmux_methods=()
 
