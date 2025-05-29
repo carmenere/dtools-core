@@ -105,7 +105,7 @@ function pg_prepare() {
   pg_conf_set_port
   local pg_hba_hash_new=$(sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
   local pg_conf_hash_new=$(sha256sum "${PG_CONF}" | cut -d' ' -f 1)
-  if [ "${pg_hba_hash}" = "${pg_hba_hash_new}" ] && [ "${pg_conf_hash}" = "${pg_conf_hash_new}" ]; then; return 0; fi
+  if [ "${pg_hba_hash}" = "${pg_hba_hash_new}" ] && [ "${pg_conf_hash}" = "${pg_conf_hash_new}" ]; then return 0; fi
   service_stop
 }
 

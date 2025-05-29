@@ -74,7 +74,7 @@ function clickhouse_prepare() {
   fi
   clickhouse_gen_user_xml
   local user_xml_hash_new=$(sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
-  if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then; return 0; fi
+  if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then return 0; fi
   service_stop
 }
 
