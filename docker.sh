@@ -135,13 +135,13 @@ function _docker_run_opts() {
 
 function _docker_run_publish_opts() {
   if [ -z "${PUBLISH}" ]; then return 0; fi
-  for publish in ${PUBLISH}; do
+  for publish in ${PUBLISH[@]}; do
     cmd+=(--publish "${publish}")
   done
 }
 
 function _docker_run_env_opts() {
-  for e in ${_docker_run_envs}; do
+  for e in ${_docker_run_envs[@]}; do
     if [ -z "$e" ]; then continue; fi
     val=$(dt_escape_single_quotes "$(eval echo "\$$e")")
     echo "$e = $val"
@@ -150,7 +150,7 @@ function _docker_run_env_opts() {
 }
 
 function docker_build_arg_opts() {
-  for arg in ${_docker_build_args}; do
+  for arg in ${_docker_build_args[@]}; do
     if [ -z "$arg" ]; then continue; fi
     val=$(dt_escape_single_quotes "$(eval echo "\$$arg")")
     if [ -n "${val}" ]; then cmd+=(--build-arg "${arg}=$'${val}'"); fi

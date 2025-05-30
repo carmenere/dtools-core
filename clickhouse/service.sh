@@ -65,7 +65,7 @@ function clickhouse_gen_user_xml() {
     local SUDO="sudo"
   fi
   local query="$(clickhouse_user_xml)"
-  local cmd="echo $'${query}' > ${CH_USER_XML}"
+  local cmd="echo $'${query}' | sudo tee ${CH_USER_XML}"
   dt_exec "${cmd}"
 }
 

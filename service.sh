@@ -6,33 +6,18 @@ function service() {
   fi
 }
 
-function service_stop() {
-  (
+function service_stop() {(
     dt_exec "${SERVICE_STOP}"
-  )
-}
+)}
 
-function service_start() {
-  (
+function service_start() {(
     dt_exec "${SERVICE_START}"
-  )
-}
+)}
 
-function service_restart() {
-  service_stop && service_start
-}
-
-function service_prepare() {
-  dt_exec "${SERVICE_PREPARE}"
-}
-
-function service_install() {
-  dt_exec "${SERVICE_INSTALL}"
-}
-
-function service_lsof() {
-  dt_exec "${SERVICE_LSOF}"
-}
+function service_restart() { service_stop && service_start; }
+function service_prepare() { dt_exec "${SERVICE_PREPARE}"; }
+function service_install() { dt_exec "${SERVICE_INSTALL}"; }
+function service_lsof() { dt_exec "${SERVICE_LSOF}"; }
 
 service_methods=()
 
@@ -56,8 +41,6 @@ function console_start() {
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   console_log_file
   if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
-  echo "_inline_envs=${_inline_envs}"
-  echo "TTX_PGPORT=${TTX_PGPORT}"
   cmd=("$(dt_inline_envs)")
   cmd+=("${BINARY} ${OPTS} 2>&1")
   if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
@@ -74,9 +57,7 @@ function console_stop() {
   dt_info "${BOLD}done${RESET}"
 }
 
-function console_restart() {
-  console_stop && console_start
-}
+function console_restart() { console_stop && console_start; }
 
 console_methods=()
 

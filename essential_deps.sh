@@ -38,7 +38,7 @@ function dt_install_deps() {
 
   if [ -z "${DEPS}" ]; then return 0; fi
 
-  for dep in ${DEPS}; do
+  for dep in ${DEPS[@]}; do
     dt_exec "${PACMAN} ${dep}"
   done
 }

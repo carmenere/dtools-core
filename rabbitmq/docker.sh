@@ -8,7 +8,7 @@ function ctx_docker_rabbitmq() {
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="arm64v8/rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"
   else
-    BASE_IMAGE="${REGISTRY}/rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"
+    BASE_IMAGE="rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"
   fi
   CTX="."
   IMAGE=${BASE_IMAGE}

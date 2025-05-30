@@ -8,7 +8,7 @@ function ctx_docker_clickhouse() {
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="clickhouse/clickhouse-server:${MAJOR}.4.1.1943-alpine"
   else
-    BASE_IMAGE="${REGISTRY}/clickhouse/clickhouse-server:${MAJOR}.2.5.46-alpine"
+    BASE_IMAGE="clickhouse/clickhouse-server:${MAJOR}.2.5.46-alpine"
   fi
   CLICKHOUSE_PORT=9001
   CLICKHOUSE_HTTP_PORT=8124

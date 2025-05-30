@@ -17,7 +17,7 @@ function rabbitmqadmin_delete_exchanges() {
     dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
     local rabbitmqadmin="$(${conn_ctx} && rabbitmq_conn echo)"
     ${subcmd_ctx}
-    for exchange in $EXCHANGES; do
+    for exchange in ${EXCHANGES[@]}; do
       dt_exec "${rabbitmqadmin} delete exchange name='${exchange}' || true"
     done
   )
@@ -32,7 +32,7 @@ function rabbitmqadmin_delete_queues() {
     dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
     local rabbitmqadmin="$(${conn_ctx} && rabbitmq_conn echo)"
     ${subcmd_ctx}
-    for queue in $QUEUES; do
+    for queue in ${QUEUES[@]}; do
       dt_exec "${rabbitmqadmin} delete queue name='${queue}' || true"
     done
   )
@@ -40,37 +40,38 @@ function rabbitmqadmin_delete_queues() {
 
 function rabbitmqctl_check_user() {
   local mode=$1
-  local cmd="$(dt_sudo) rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^${RABBIT_USER}$'"
+  local cmd="${SUDO} rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^${RABBIT_USER}$'"
   if [ "${mode}" = "echo" ]; then echo "${cmd}"; else dt_exec "${cmd}"; fi
 }
 
 function rabbitmqctl_create_user() {
   local mode=$1
-  local cmd="$(dt_sudo) rabbitmqctl add_user ${RABBIT_USER} ${RABBIT_PASSWORD}"
+  local cmd="${SUDO} rabbitmqctl add_user ${RABBIT_USER} ${RABBIT_PASSWORD}"
   if [ "${mode}" = "echo" ]; then echo "${cmd}"; else dt_exec "${cmd}"; fi
 }
 
 function rabbitmqctl_drop_user() {
   local mode=$1
-  local cmd="$(dt_sudo) rabbitmqctl delete_user ${RABBIT_USER}"
+  local cmd="${SUDO} rabbitmqctl delete_user ${RABBIT_USER}"
   if [ "${mode}" = "echo" ]; then echo "${cmd}"; else dt_exec "${cmd}"; fi
 }
 
 function rabbitmqctl_set_user_tags() {
   local mode=$1
-  local cmd="$(dt_sudo) rabbitmqctl set_user_tags ${RABBIT_USER} administrator"
+  local cmd="${SUDO} rabbitmqctl set_user_tags ${RABBIT_USER} administrator"
   if [ "${mode}" = "echo" ]; then echo "${cmd}"; else dt_exec "${cmd}"; fi
 }
 
 function rabbitmqctl_set_permissions() {
   local mode=$1
-  local cmd="$(dt_sudo) rabbitmqctl set_permissions -p / ${RABBIT_USER} '.*' '.*' '.*'"
+  local cmd="${SUDO} rabbitmqctl set_permissions -p / ${RABBIT_USER} '.*' '.*' '.*'"
   if [ "${mode}" = "echo" ]; then echo "${cmd}"; else dt_exec "${cmd}"; fi
 }
 
 function rabbitmq_init() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+    SUDO=$(dt_sudo)
     ctx_conn_rabbitmq_app && rabbitmqctl_check_user; err=$?
     if ! dt_exists "User" "${RABBIT_USER}" ${err}; then
       rabbitmqctl_create_user && \
@@ -85,6 +86,7 @@ function rabbitmq_clean() {
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
     app=ctx_conn_rabbitmq_app
     admin=ctx_conn_rabbitmq_admin
+    SUDO=$(dt_sudo)
     $app && rabbitmqctl_check_user; err=$?
     if dt_exists "User" "${RABBIT_USER}" ${err}; then
       rabbitmqctl_drop_user && \

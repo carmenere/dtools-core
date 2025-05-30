@@ -11,7 +11,7 @@ function _cargo_workspace_opt() {
   if [ -z "${PACKAGE}" ]; then
     # If package is NOT specified use --workspace with --exclude
     cmd+=(--workspace)
-    for exc in ${EXCLUDE}; do
+    for exc in ${EXCLUDE[@]}; do
       cmd+=(--exclude ${exc})
     done
   fi
@@ -22,7 +22,7 @@ function _cargo_target_selection() {
   # When no target selection options are given, cargo build will build all binary and library targets of the selected packages.
   # Binaries are skipped if they have required-features that are missing.
   if [ -z "${BINS}" ]; then return 0; fi
-  for bin in ${BINS}; do
+  for bin in ${BINS[@]}; do
     cmd+=(--bin "${bin}")
   done
 }
@@ -157,8 +157,7 @@ function cargo_bin_dir() {
 }
 
 function cargo_build() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo build)
   _cargo_build_opts
@@ -166,8 +165,7 @@ function cargo_build() {
 }
 
 function cargo_fmt() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
@@ -178,8 +176,7 @@ function cargo_fmt() {
 }
 
 function cargo_fmt_fix() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
@@ -189,8 +186,7 @@ function cargo_fmt_fix() {
 }
 
 function cargo_test() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo test)
   _cargo_test_opts
@@ -199,8 +195,7 @@ function cargo_test() {
 
 # "cargo clippy" uses "cargo check" under the hood.
 function cargo_clippy() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clippy)
   _cargo_clippy_opts
@@ -208,8 +203,7 @@ function cargo_clippy() {
 }
 
 function cargo_clippy_fix() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clippy --fix --allow-staged)
   _cargo_clippy_opts
@@ -217,8 +211,7 @@ function cargo_clippy_fix() {
 }
 
 function cargo_doc() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo doc --no-deps --document-private-items)
   _cargo_doc_opts
@@ -226,8 +219,7 @@ function cargo_doc() {
 }
 
 function cargo_doc_open() {
-  local _inline_envs=(${rustup_envs[@]}${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo doc --no-deps --document-private-items --open)
   _cargo_doc_opts
@@ -235,8 +227,7 @@ function cargo_doc_open() {
 }
 
 function cargo_clean() {
-  local _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]})
-  _inline_envs+=("${_app_compile_envs}")
+  _inline_envs=(${rustup_envs[@]} ${cargo_envs[@]} ${_app_compile_envs[@]})
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo clean)
   _cargo_clean_opts

@@ -112,6 +112,7 @@ function pg_prepare() {
 }
 
 function ctx_pg_vars() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   PG_DIR=$(pg_dir); exit_on_err ${fname} $? || return $?
   PG_HBA_CONF=$(pg_hba_conf); exit_on_err ${fname} $? || return $?
   PG_CONF=$(pg_conf); exit_on_err ${fname} $? || return $?

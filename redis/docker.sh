@@ -8,7 +8,7 @@ function ctx_docker_redis() {
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="arm64v8/redis:${MAJOR}.${MINOR}.${PATCH}-alpine3.19"
   else
-    BASE_IMAGE="${REGISTRY}/xxxx/redis:${MAJOR}.${MINOR}.${PATCH}-alpine3.19"
+    BASE_IMAGE="redis:${MAJOR}.${MINOR}.${PATCH}-alpine3.19"
   fi
   CTX="."
   IMAGE=${BASE_IMAGE}
