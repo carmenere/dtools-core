@@ -34,19 +34,19 @@ function pg_conf() {
 
 # ctx_service_pg && pg_install
 function pg_install() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   local SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      dt_exec_or_echo ${mode} "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo ${mode} "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo ${mode} "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo ${mode} "${SUDO} apt-get -y install \
+      dt_exec "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"; exit_on_err ${fname} $? || return $?
+      dt_exec "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"; exit_on_err ${fname} $? || return $?
+      dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
+      dt_exec "${SUDO} apt-get -y install \
           postgresql-${MAJOR} \
           postgresql-server-dev-${MAJOR} \
-          libpq-dev"; exit_on_err $0 $? || return $?
+          libpq-dev"; exit_on_err ${fname} $? || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo ${mode} "brew install $(pg_service)"
+    dt_exec "brew install $(pg_service)"
   else
     echo "Unsupported OS: '$(os_kernel)'"; exit;
   fi
@@ -92,13 +92,11 @@ function pg_add_path() {
 #   '$a Trailor' : here pattern "$" matches last line and command "a" appends 'Trailor' after it
 # 2) The "t;" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
 function pg_hba_conf_add_policy() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
-  dt_exec_or_echo ${mode} "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
+  dt_exec "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
 }
 
 function pg_conf_set_port() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
-  dt_exec_or_echo ${mode} "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${PG_CONF}"
+  dt_exec "$(dt_sudo) sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${PG_CONF}"
 }
 
 function pg_prepare() {
@@ -114,9 +112,9 @@ function pg_prepare() {
 }
 
 function ctx_pg_vars() {
-  PG_DIR=$(pg_dir); exit_on_err $0 $? || return $?
-  PG_HBA_CONF=$(pg_hba_conf); exit_on_err $0 $? || return $?
-  PG_CONF=$(pg_conf); exit_on_err $0 $? || return $?
+  PG_DIR=$(pg_dir); exit_on_err ${fname} $? || return $?
+  PG_HBA_CONF=$(pg_hba_conf); exit_on_err ${fname} $? || return $?
+  PG_CONF=$(pg_conf); exit_on_err ${fname} $? || return $?
   # Depends on PG_DIR
   PG_CONFIG="${PG_DIR}/pg_config"
   PG_CONFIG_LIBDIR="$("${PG_CONFIG}" --pkglibdir | tr ' ' '\n')"

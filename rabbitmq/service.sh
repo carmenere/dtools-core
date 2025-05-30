@@ -8,12 +8,13 @@ function rabbitmq_service() {
 
 # ctx_service_rabbitmq && rabbitmq_install
 function rabbitmq_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      dt_exec_or_echo "${SUDO} apt install gnupg erlang -y"; exit_on_err $0 $? || return $?
-      dt_exec_or_echo "${SUDO} apt install rabbitmq-server -y"; exit_on_err $0 $? || return $?
+      dt_exec "${SUDO} apt install gnupg erlang -y"; exit_on_err ${fname} $? || return $?
+      dt_exec "${SUDO} apt install rabbitmq-server -y"; exit_on_err ${fname} $? || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo "brew install $(rabbitmq_service)"
+    dt_exec "brew install $(rabbitmq_service)"
   else
     echo "Unsupported OS: '$(os_kernel)'"
   fi

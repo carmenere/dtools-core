@@ -30,7 +30,6 @@ function ctx_deps_macos() {
 }
 
 function dt_install_deps() {
-  mode=$1
   if [ "$(os_name)" = "ubuntu" ] || [ "$(os_name)" = "debian" ]; then
     dt_target ctx_deps_ubuntu
   elif [ "$(os_name)" = "macos" ]; then
@@ -40,6 +39,6 @@ function dt_install_deps() {
   if [ -z "${DEPS}" ]; then return 0; fi
 
   for dep in ${DEPS}; do
-    dt_exec_or_echo "${PACMAN} ${dep}" mode=$1
+    dt_exec "${PACMAN} ${dep}"
   done
 }

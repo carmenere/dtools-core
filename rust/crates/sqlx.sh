@@ -17,29 +17,29 @@ function ctx_sqlx() {
 }
 
 function sqlx_pre_run() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
-  dt_err_if_empty $0 "SCHEMAS"; exit_on_err $0 $? || return $?
-  dt_err_if_empty $0 "TMP_SCHEMAS"; exit_on_err $0 $? || return $?
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "SCHEMAS"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
   rm -rf "${TMP_SCHEMAS}"
   mkdir -p "${TMP_SCHEMAS}"
   local cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
   cmd+=("do echo -e \"cp \${FILE} '${TMP_SCHEMAS}/'\"; cp "\${FILE}" '${TMP_SCHEMAS}'; done")
-  dt_exec_or_echo $mode "${cmd[@]}"
+  dt_exec "${cmd[@]}"
 }
 
 function sqlx_run() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   local _inline_envs=(DATABASE_URL)
-  dt_err_if_empty $0 "TMP_SCHEMAS"; exit_on_err $0 $? || return $?
-  sqlx_pre_run $ctx $mode
+  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
+  sqlx_pre_run $ctx
   local cmd=("$(dt_inline_envs)")
   cmd+=(sqlx migrate run)
   cmd+=(--source "'${TMP_SCHEMAS}'")
-  dt_exec_or_echo $mode "${cmd[@]}"
+  dt_exec "${cmd[@]}"
 }
 
 function sqlx_prepare() {
-  ( cd "${DT_PROJECT_DIR}" && dt_exec_or_echo "cargo sqlx prepare" ) #--workspace
+  ( cd "${DT_PROJECT_DIR}" && dt_exec "cargo sqlx prepare" ) #--workspace
 }
 
 sqlx_methods=()

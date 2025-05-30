@@ -16,17 +16,17 @@ function clickhouse_conf() {
 
 # ctx_service_clickhouse && clickhouse_install
 function clickhouse_install() {
-  if [ -n "$1" ]; then local mode="$1"; else local mode='exec'; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   local SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec_or_echo ${mode} "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo ${mode} "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo ${mode} "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo ${mode} "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo ${mode} "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err $0 $? || return $?
+    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err ${fname} $? || return $?
+    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err ${fname} $? || return $?
+    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err ${fname} $? || return $?
+    dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
+    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err ${fname} $? || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo ${mode} "brew install '$(clickhouse_service)'"
+    dt_exec "brew install '$(clickhouse_service)'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; exit;
@@ -66,15 +66,16 @@ function clickhouse_gen_user_xml() {
   fi
   local query="$(clickhouse_user_xml)"
   local cmd="echo $'${query}' > ${CH_USER_XML}"
-  dt_exec_or_echo $mode "$cmd"
+  dt_exec "${cmd}"
 }
 
 function clickhouse_prepare() {
+  local SUDO=$(dt_sudo)
   if [ -f "${CH_USER_XML}" ]; then
-    local user_xml_hash=$(sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
+    local user_xml_hash=$(${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
   fi
   clickhouse_gen_user_xml
-  local user_xml_hash_new=$(sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
+  local user_xml_hash_new=$(${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
   if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then return 0; fi
   service_stop
 }
@@ -88,8 +89,9 @@ function clickhouse_user_xml_dir() {
 }
 
 function ctx_clickhouse_vars() {
-  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; exit_on_err $0 $? || return $?
-  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err $0 $? || return $?
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; exit_on_err ${fname} $? || return $?
+  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err ${fname} $? || return $?
   SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
   SERVICE_START="$(service) start '$(clickhouse_service)'"
   SERVICE_PREPARE=clickhouse_prepare

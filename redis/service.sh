@@ -8,16 +8,17 @@ function redis_service() {
 
 # ctx_service_redis && redis_install
 function redis_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   SUDO=$(dt_sudo)
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec_or_echo "${SUDO} apt install lsb-release curl gpg"
-    dt_exec_or_echo "curl -fsSL https://packages.redis.io/gpg | ${SUDO} gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "echo 'deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(os_codename) main' | ${SUDO} tee /etc/apt/sources.list.d/redis.list"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "${SUDO} apt-get update"; exit_on_err $0 $? || return $?
-    dt_exec_or_echo "${SUDO} apt-get -y install redis"; exit_on_err $0 $? || return $?
+    dt_exec "${SUDO} apt install lsb-release curl gpg"
+    dt_exec "curl -fsSL https://packages.redis.io/gpg | ${SUDO} gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg"; exit_on_err ${fname} $? || return $?
+    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(os_codename) main' | ${SUDO} tee /etc/apt/sources.list.d/redis.list"; exit_on_err ${fname} $? || return $?
+    dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
+    dt_exec "${SUDO} apt-get -y install redis"; exit_on_err ${fname} $? || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec_or_echo "brew install $(redis_service)"
+    dt_exec "brew install $(redis_service)"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; exit;

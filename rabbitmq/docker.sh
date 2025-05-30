@@ -1,8 +1,9 @@
 function ctx_docker_rabbitmq() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx_service_rabbitmq && \
   ctx_docker_image && \
   ctx_docker_container && \
-  ctx_docker_network; exit_on_err $0 $? || return $?
+  ctx_docker_network; exit_on_err ${fname} $? || return $?
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="arm64v8/rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"

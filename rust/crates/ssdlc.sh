@@ -71,7 +71,7 @@ function cargo_audit() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo audit)
   _cargo_audit_opts
-  dt_exec_or_echo "${cmd} || true" $mode
+  dt_exec "${cmd[@]} || true"
 }
 
 function cargo_deny() {
@@ -80,7 +80,7 @@ function cargo_deny() {
   cmd+=(cargo deny)
   _cargo_deny_opts
   cmd+=(check)
-  dt_exec_or_echo "${cmd} || true" $mode
+  dt_exec "${cmd[@]} || true"
 }
 
 function cargo_sonar() {
@@ -88,7 +88,7 @@ function cargo_sonar() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo sonar)
   _cargo_sonar_opts
-  dt_exec_or_echo $mode "${cmd}"
+  dt_exec "${cmd[@]}"
 }
 
 function cargo_cyclonedx() {
@@ -96,5 +96,5 @@ function cargo_cyclonedx() {
   cmd=("$(dt_inline_envs)")
   cmd+=(cargo cyclonedx --all)
   _cargo_cyclonedx_opts
-  dt_exec_or_echo $mode "${cmd}"
+  dt_exec "${cmd[@]}"
 }

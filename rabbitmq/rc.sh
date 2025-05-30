@@ -1,5 +1,4 @@
 function load() {
-  #  $1: contains $0 of .sh script
   if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
   local self_dir="$(dirname $(realpath "${self}"))"
 

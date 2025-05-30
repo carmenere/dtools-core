@@ -16,7 +16,7 @@ function dt_info() {
 
 function dt_echo() {
   # $1: command to be echoed
-  >&2 echo -e "${BOLD}[dtools]${DT_ECHO_COLOR}[ECHO]${RESET} Executing command $1"
+  >&2 echo -e "${BOLD}[dtools]${DT_ECHO_COLOR}[ECHO]${RESET} $1"
 }
 
 function dt_debug() {
@@ -31,7 +31,7 @@ function dt_target() {
     $1
 }
 
-# Example: dt_err_if_empty $0 "conn_ctx"; exit_on_err $0 $? || return $?
+# Example: dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
 function dt_err_if_empty() {
   local val="$(eval echo "\$$2")"
   if [ -n "${val}" ]; then return 0; fi
@@ -39,23 +39,15 @@ function dt_err_if_empty() {
   return 77
 }
 
-function dt_exec() {
-  local cmd="$1" | sed 's/^[ \t]*//'
-  if [ -z "$cmd" ]; then return 0; fi
-  if [ "${DT_ECHO}" = "y" ]; then
-    dt_echo "${DT_ECHO_COLOR} $cmd${RESET}"
-  fi
-  if ! eval "$cmd"; then dt_error $0; return 100; fi
-}
-
-# Example: exit_on_err $0 $err_code
+# Example: exit_on_err ${fname} $err_code
 # $0 contains name of caller function
 function exit_on_err() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   # $1: must contain $0 of caller
   # $2: error code
   # $3: error message, if it is empty use name of current function instead
   local err_msg=$3
-  if [ -z "${err_msg}" ]; then err_msg=$0; fi
+  if [ -z "${err_msg}" ]; then err_msg=${fname}; fi
   if [ "$2" != 0 ] ; then
     dt_error $1 "${err_msg}"
     return $2
@@ -78,13 +70,15 @@ function dt_export_envs() {
   for env in ${_export_envs[@]}; do
     if [ -z "$env" ]; then continue; fi
     local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
-    if [ -n "${val}" ]; then dt_exec_or_echo "export ${env}="${val}""; fi
+    if [ -n "${val}" ]; then
+      dt_exec "export ${env}="${val}""
+    fi
   done
 }
 
 function dt_unexport_envs() {
   for env in ${_export_envs[@]}; do
-    dt_exec_or_echo "unset ${env}"
+    dt_exec "unset ${env}"
   done
 }
 
@@ -107,30 +101,54 @@ function dt_rc_load() {
   done
 }
 function dt_apply_ctx() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx="$1"
   #  if ctx is empty, it means nothing to apply
-  $ctx; exit_on_err $0 $? "Cannot apply context '${BOLD}${ctx}${RESET}'." || return $?
+  $ctx; exit_on_err ${fname} $? "Cannot apply context '${BOLD}${ctx}${RESET}'." || return $?
 }
 
-function dt_exec_or_echo() {
-  local mode="$1"
-  shift;
+function _dt_exec() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local cmd="$1" | sed 's/^[ \t]*//'
+  if [ -z "$cmd" ]; then return 0; fi
+  if [ "${DT_ECHO}" = "y" ]; then
+    dt_echo "Executing command: ${DT_ECHO_COLOR} ${cmd}${RESET}"
+  fi
+  if ! eval "$cmd"; then dt_error ${fname}; return 100; fi
+}
+
+function dt_exec() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   local cmd="$@"
   if [ -z "${cmd}" ]; then
-    dt_error $0 "cmd is empty cmd='${cmd}'."; return 99
+    dt_error ${fname} "Command is empty cmd='${cmd}'."; return 99
   fi
-  if [ "$mode" = "echo" ]; then
-    echo -n "${cmd}"
+  if [ "${DT_DRYRUN}" = "y" ]; then
+    dt_echo "${BOLD}Dry run${RESET}: ${cmd}"
   else
-    dt_exec "${cmd}"
+    _dt_exec "${cmd}"
+  fi
+}
+
+function dt_exists() {
+  entity=$1
+  value=$2
+  err=$3
+  if [ "$err" = 0 ]; then
+    dt_info "${entity} ${BOLD}${value} exists${RESET}."
+    return 0
+  else
+    dt_info "${entity} ${BOLD}${value} doesn't exist${RESET}."
+    return 1
   fi
 }
 
 function dt_run_targets() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ -z "$1" ]; then return 0; fi
   local targets=("$@")
   for target in $@; do
-    dt_target $target; exit_on_err $0 $? || return $?
+    dt_target $target; exit_on_err ${fname} $? || return $?
   done
 }
 
@@ -138,17 +156,22 @@ function is_function() {
   type "$1" | sed "s/$1//" | grep -qwi function
 }
 
+function dt_fname() {
+  if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi;
+}
+
 # Consider function docker_build()
 # dt_register ctx_conn_docker_pg_admin pg docker_methods
 # will generate function docker_build_pg() {( ctx_conn_docker_pg_admin && docker_build_pg )}
 function dt_register() {
-  local ctx=$1; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
-  local suffix=$2; dt_err_if_empty $0 "ctx"; exit_on_err $0 $? || return $?
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local ctx=$1; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
+  local suffix=$2; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
   shift; shift
-  local methods=("$@"); dt_err_if_empty $0 "methods"; exit_on_err $0 $? || return $?
+  local methods=("$@"); dt_err_if_empty ${fname} "methods"; exit_on_err ${fname} $? || return $?
   for method in ${methods[@]}; do
     local func=${method}_${suffix}
-    eval "function ${func}() {( mode=\$1; ${ctx} && ${method} \${mode} )}"
+    eval "function ${func}() {( ${ctx} && ${method} )}"
   done
 }
 
@@ -157,21 +180,39 @@ function dt_register() {
 # For example, for 'install_services' it generates
 # function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
 function dt_register_stand() {
-  local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
   stand_${stand}
   for func in ${register[@]}; do
     eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
   done
-  eval "function stand_up_${stand}() {( dt_stand_up stand_${stand} )}"
-  eval "function stand_down_${stand}() {( dt_stand_down stand_${stand} )}"
+  eval "function stand_up_${stand}() {( dt_run_stand stand_${stand} up )}"
+  eval "function stand_down_${stand}() {( dt_run_stand stand_${stand} down )}"
+}
+
+# Example1: dt_stand_up stand_host up
+# Example2: dt_stand_up stand_host down
+function dt_run_stand() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
+  local action=$2; dt_err_if_empty ${fname} "action"; exit_on_err ${fname} $? || return $?
+  local steps="${action}_steps"
+  dt_info "${action} stand ${BOLD}${stand}${RESET} ... "
+  $stand
+  for step in $(eval echo "\${${steps}[@]}"); do
+    dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
+    for target in $(eval echo "\${${step}[@]}"); do
+      dt_target $target; exit_on_err ${fname} $? || return $?
+    done
+  done
 }
 
 function dt_sleep_5() {
-  dt_exec_or_echo "sleep 5"
+  dt_exec "sleep 5"
 }
 
 function dt_sleep_1() {
-  dt_exec_or_echo "sleep 1"
+  dt_exec "sleep 1"
 }
 
 function dt_paths() {
@@ -194,33 +235,8 @@ function dt_paths() {
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
 }
 
-# Example: dt_stand_up stand_host
-function dt_stand_up() {
-  local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
-  dt_info "Up stand ${BOLD}${stand}${RESET} ... "
-  $stand
-  for step in ${up_steps[@]}; do
-    dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
-    for target in $(eval echo "\${${step}[@]}"); do
-      dt_target $target; exit_on_err $0 $? || return $?
-    done
-  done
-}
-
-# Example: dt_stand_down stand_host
-function dt_stand_down() {
-  local stand=$1; dt_err_if_empty $0 "stand"; exit_on_err $0 $? || return $?
-  dt_info "Down stand ${BOLD}${stand}${RESET} ... "
-  $stand
-  for step in ${down_steps[@]}; do
-    dt_info "Stopping step ${BOLD}${CYAN}$step${RESET} ... "
-    for target in $(eval echo "\${${step}[@]}"); do
-      dt_target $target; exit_on_err $0 $? || return $?
-    done
-  done
-}
-
 function dt_defaults() {
+  export DT_DRYRUN="n"
   export DT_PROFILES=("dev")
   export DT_ECHO="y"
   export DT_DEBUG="n"
