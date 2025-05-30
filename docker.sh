@@ -170,8 +170,7 @@ function docker_is_running() {
 function docker_pull() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running; exit_on_err ${fname} $? || return $?
-  local cmd=("$(dt_inline_envs)")
-  cmd+=(docker pull)
+  local cmd=(docker pull)
   docker_pull_opts && \
   dt_exec "${cmd[@]}"
 }
@@ -179,8 +178,7 @@ function docker_pull() {
 function docker_build() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running; exit_on_err ${fname} $? || return $?
-  local cmd=("$(dt_inline_envs)")
-  cmd+=(docker build)
+  local cmd=(docker build)
   $_hook_pre_docker_build && \
   docker_build_arg_opts && \
   docker_build_opts && \
@@ -250,8 +248,7 @@ function docker_run() {
     dt_exec "${cmd[@]}"
     return 0
   fi
-  local cmd=("$(dt_inline_envs)")
-  cmd+=(docker run)
+  local cmd=(docker run)
   $_hook_pre_docker_run && \
   _docker_run_publish_opts && \
   _docker_run_env_opts && \

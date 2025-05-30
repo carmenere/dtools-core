@@ -1,9 +1,9 @@
 function psql_conn() {
   local mode=$1
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local _inline_envs=(PGHOST PGPORT PGUSER PGDATABASE PGPASSWORD)
+  local _envs=(PGHOST PGPORT PGUSER PGDATABASE PGPASSWORD)
   dt_err_if_empty ${fname} "PG_DIR"; exit_on_err ${fname} $? || return $?
-  local cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_envs[@]}")")
   cmd+=("${PG_DIR}/psql")
   if [ "${mode}" = "echo" ]; then echo "${cmd[@]}"; else dt_exec "${cmd[@]}"; fi
 }

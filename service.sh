@@ -41,7 +41,7 @@ function console_start() {
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   console_log_file
   if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
-  cmd=("$(dt_inline_envs)")
+  cmd=("$(dt_inline_envs "${_inline_envs[@]}")")
   cmd+=("${BINARY} ${OPTS} 2>&1")
   if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
   dt_exec "${cmd[@]}"

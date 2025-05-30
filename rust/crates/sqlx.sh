@@ -29,10 +29,10 @@ function sqlx_pre_run() {
 
 function sqlx_run() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local _inline_envs=(DATABASE_URL)
+  local _envs=(DATABASE_URL)
   dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
   sqlx_pre_run $ctx
-  local cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_envs[@]}")")
   cmd+=(sqlx migrate run)
   cmd+=(--source "'${TMP_SCHEMAS}'")
   dt_exec "${cmd[@]}"

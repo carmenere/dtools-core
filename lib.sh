@@ -54,10 +54,9 @@ function exit_on_err() {
   fi
 }
 
-# Example: ( ctx_cargo; dt_inline_envs )
 function dt_inline_envs() {
   local envs=()
-  for env in ${_inline_envs[@]}; do
+  for env in "$@"; do
     if [ -z "$env" ]; then continue; fi
     local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
     if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi

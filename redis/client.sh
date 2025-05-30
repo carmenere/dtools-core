@@ -1,7 +1,6 @@
 function redis_conn() {
   local mode=$1
-  local cmd=("$(dt_inline_envs)")
-  cmd+=("redis-cli -e -u")
+  local cmd=("redis-cli -e -u")
   cmd+=("redis://${REDIS_USER}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}")
   if [ "${mode}" = "echo" ]; then echo "${cmd[@]}"; else dt_exec "${cmd[@]}"; fi
 }

@@ -21,6 +21,9 @@ function rust_target_triple() {
 }
 
 function rustup_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; exit_on_err ${fname} $? || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${toolchain}"
 
@@ -28,25 +31,37 @@ function rustup_install() {
 }
 
 function rustup_toolchain_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; exit_on_err ${fname} $? || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup toolchain install ${toolchain}"
-	dt_exec "${cmd}"
+	dt_exec "${cmd}" && rustup_nightly_install
 }
 
 function rustup_nightly_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "NIGHTLY_VERSION"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; exit_on_err ${fname} $? || return $?
+	if [ -z "${NIGHTLY_VERSION}" ]; then return 0; fi
   local toolchain="${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}"
-	local cmd="rustup toolchain install ${toolchain}"
+  local cmd="rustup toolchain install ${toolchain}"
 	dt_exec "${cmd}"
 }
 
 function rustup_default() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; exit_on_err ${fname} $? || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup default ${toolchain}"
 	dt_exec "${cmd}"
 }
 
 function rustup_component_add() {
-	local cmd="rustup component add '${RUSTUP_COMPONENTS[@]}'"
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "RUSTUP_COMPONENTS"; exit_on_err ${fname} $? || return $?
+	local cmd="rustup component add ${RUSTUP_COMPONENTS[@]}"
 	dt_exec "${cmd}"
 }
 
@@ -67,8 +82,7 @@ function ctx_rustup() {
   RUSTUP_TARGET_TRIPLE=$(rust_target_triple)
   RUSTUP_COMPONENTS=(clippy rustfmt)
   NIGHTLY_VERSION="nightly-2025-05-01"
-  _inline_envs=($rustup_envs[@])
-  _export_envs+=(${_inline_envs[@]})
+  _export_envs=($rustup_envs[@])
 }
 
 rustup_methods=()

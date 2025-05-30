@@ -68,7 +68,7 @@ function _cargo_cyclonedx_opts() {
 
 function cargo_audit() {
   cd "${MANIFEST_DIR}"
-  cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
   cmd+=(cargo audit)
   _cargo_audit_opts
   dt_exec "${cmd[@]} || true"
@@ -76,7 +76,7 @@ function cargo_audit() {
 
 function cargo_deny() {
   cd "${MANIFEST_DIR}"
-  cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
   cmd+=(cargo deny)
   _cargo_deny_opts
   cmd+=(check)
@@ -85,7 +85,7 @@ function cargo_deny() {
 
 function cargo_sonar() {
   cd "${MANIFEST_DIR}"
-  cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
   cmd+=(cargo sonar)
   _cargo_sonar_opts
   dt_exec "${cmd[@]}"
@@ -93,7 +93,7 @@ function cargo_sonar() {
 
 function cargo_cyclonedx() {
   cd "${DT_REPORTS}"
-  cmd=("$(dt_inline_envs)")
+  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
   cmd+=(cargo cyclonedx --all)
   _cargo_cyclonedx_opts
   dt_exec "${cmd[@]}"
