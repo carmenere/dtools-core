@@ -14,9 +14,10 @@ function dt_info() {
   >&2 echo -e "${BOLD}[dtools]${GREEN}[INFO]${RESET} $1"
 }
 
-function dt_debug() {
-  # $1: debug message
-  >&2 echo -e "${BOLD}${MAGENTA}[dtools][DEBUG]${RESET} $1"
+function dt_debug "$0"() {
+  # $1: must contain $0 of caller
+  # $2: debug message
+  >&2 echo -e "${BOLD}${MAGENTA}[dtools][DEBUG]<in function $1>${RESET} $2"
 }
 
 function dt_target() {
@@ -233,29 +234,68 @@ function dt_sleep_1() {
   dt_exec "sleep 1"
 }
 
+# vars - contains array with vars names
+# ctxes - contains array of ctxes
+# dst - is a new ctx, where we want merge vars
+function dt_load_ctxes() {
+  local ctxes vars val var ctx OPTS
+  OPTS=$(getopt -o v:c: --long vars:,ctxes: -- "$@")
+  dt_debug "$0" "OPTS=${OPTS}"
+  if [ $? -ne 0 ]; then
+    dt_error ${fname} "Failed to parse options"
+    return 99
+  fi
+  eval set -- "${OPTS}"
+
+  while true; do
+    case "$1" in
+      --vars) vars="${vars}$2"; shift 2;;
+      --ctxes) ctxes="${ctxes}$2"; shift 2;;
+      --) shift; break;;
+      *) echo "Unknown option $1"; return 99;;
+    esac
+  done
+  vars=($(echo "$vars" | tr ' ' '\n'))
+  ctxes=($(echo "$ctxes" | tr ' ' '\n'))
+  for ctx in ${ctxes[@]}; do
+    dt_debug "$0" "Running ctx ${ctx}"
+    ${ctx}
+  done
+  for var in ${vars[@]}; do
+    for ctx in ${ctxes[@]}; do
+      val=$(eval echo "\$${ctx}__$var")
+      if [ -z "${val}" ]; then
+        continue
+      fi
+      dt_debug "$0" "ctx=${ctx}: loading var $var=${val}"
+      eval "$var=\$${ctx}__$var"
+    done
+  done
+}
+
 function dt_load_ctx() {
+  local vars val var ctx
   ctx=$1; shift
   vars=("$@")
-  dt_debug "CTX '${ctx}':"
   for var in ${vars[@]}; do
     val=$(eval echo "\$${ctx}__$var")
-    dt_debug "Loading var=$var, value=${val}"
+    dt_debug "$0" "ctx=${ctx}: loading var $var=${val}"
     if [ -z "${val}" ]; then
-      dt_warning "Var ${var} is empty, ctx=${ctx}"
+      dt_warning "Var ${var} is empty"
     fi
     eval "$var=\$${ctx}__$var"
   done
 }
 
 function dt_set_ctx() {
+  local vars val var ctx
   ctx=$1; shift
   vars=("$@")
-  dt_debug "CTX '${ctx}':"
   for var in ${vars[@]}; do
     val=$(eval echo "\$${var}")
-    dt_debug "Setting var=$var, value=${val}"
+    dt_debug "$0" "ctx=${ctx}: setting var $var=${val}"
     if [ -z "${val}" ]; then
-      dt_warning "Var ${var} is empty, ctx=${ctx}"
+      dt_warning "Var ${var} is empty"
     fi
     eval "${ctx}__${var}=\"${val}\""
   done
