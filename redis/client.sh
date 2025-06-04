@@ -6,8 +6,8 @@ function redis_conn() {
 
 function redis_set_requirepass() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
+  local query_ctx=$1; dt_err_if_empty "query_ctx" "${query_ctx}"; exit_on_err ${fname} $? || return $?
+  local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
   ${query_ctx}
   if [ "${REQUIREPASS}" != "y" ]; then return 0; fi
   local query="$(redis_ql_set_requirepass)"
@@ -18,8 +18,8 @@ function redis_set_requirepass() {
 
 function redis_check_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
+  local query_ctx=$1; dt_err_if_empty "query_ctx" "${query_ctx}"; exit_on_err ${fname} $? || return $?
+  local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
   local query="$(${query_ctx} && redis_ql_check_user)"
   local redis_conn="$(${conn_ctx} && dt_echo redis_conn)"
   local cmd="${redis_conn} ${query}"
@@ -28,8 +28,8 @@ function redis_check_user() {
 
 function redis_create_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
+  local query_ctx=$1; dt_err_if_empty "query_ctx" "${query_ctx}"; exit_on_err ${fname} $? || return $?
+  local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
   local query="$(${query_ctx} && redis_ql_create_user)"
   local redis_conn="$(${conn_ctx} && dt_echo redis_conn)"
   local cmd="${redis_conn} ${query}"
@@ -38,8 +38,8 @@ function redis_create_user() {
 
 function redis_drop_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
+  local query_ctx=$1; dt_err_if_empty "query_ctx" "${query_ctx}"; exit_on_err ${fname} $? || return $?
+  local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
   local query="$(${query_ctx} && redis_ql_drop_user)"
   local redis_conn="$(${conn_ctx} && dt_echo redis_conn)"
   local cmd="${redis_conn} ${query}"

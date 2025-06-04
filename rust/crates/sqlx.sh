@@ -18,8 +18,8 @@ function ctx_sqlx() {
 
 function sqlx_pre_run() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "SCHEMAS"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty "SCHEMAS" "${SCHEMAS}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty "TMP_SCHEMAS" "${TMP_SCHEMAS}"; exit_on_err ${fname} $? || return $?
   rm -rf "${TMP_SCHEMAS}"
   mkdir -p "${TMP_SCHEMAS}"
   local cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
@@ -30,7 +30,7 @@ function sqlx_pre_run() {
 function sqlx_run() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   local _envs=(DATABASE_URL)
-  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty "TMP_SCHEMAS" "${TMP_SCHEMAS}"; exit_on_err ${fname} $? || return $?
   sqlx_pre_run $ctx
   local cmd=("$(dt_inline_envs "${_envs[@]}")")
   cmd+=(sqlx migrate run)

@@ -26,13 +26,27 @@ function dt_target() {
     $1
 }
 
-# Example: dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
+# Example: dt_err_if_empty "var_name" "${var_name}"; exit_on_err ${fname} $? || return $?
 function dt_err_if_empty() {
-  local val="$(eval echo "\$$2")"
-  if [ -n "${val}" ]; then return 0; fi
-  dt_error $1 "Parameter ${BOLD}$2${RESET} is empty"
-  return 77
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local parameter=$1
+  local val=$2
+  if [ -z "${val}" ]; then
+    dt_error ${fname} "Parameter ${BOLD}${parameter}${RESET} is empty"
+    return 77
+  fi
 }
+
+## Example: dt_err_if_empty "var_name" "${var_name}"; exit_on_err ${fname} $? || return $?
+#function dt_err_if_empty() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  local parameter=$1
+#  local val="$(eval echo "\$${parameter}")"
+#  if [ -z "${val}" ]; then
+#    dt_error ${fname} "Parameter ${BOLD}${parameter}${RESET} is empty"
+#    return 77
+#  fi
+#}
 
 # Example: exit_on_err ${fname} $err_code
 # $0 contains name of caller function
@@ -193,10 +207,10 @@ function dt_fname() {
 # will generate function docker_build_pg() {( ctx_conn_docker_pg_admin && docker_build_pg )}
 function dt_register() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local ctx=$1; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
-  local suffix=$2; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
-  shift; shift
-  local methods=("$@"); dt_err_if_empty ${fname} "methods"; exit_on_err ${fname} $? || return $?
+  local ctx=$1; dt_err_if_empty "ctx" "${ctx}"; exit_on_err ${fname} $? || return $?
+  local suffix=$2; dt_err_if_empty "suffix" "${suffix}"; exit_on_err ${fname} $? || return $?
+  shift 2
+  local methods=("$@"); dt_err_if_empty "methods" "${methods}"; exit_on_err ${fname} $? || return $?
   for method in ${methods[@]}; do
     local func=${method}_${suffix}
     eval "function ${func}() {( ${ctx} && ${method} )}"
@@ -209,7 +223,7 @@ function dt_register() {
 # function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
 function dt_register_stand() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
+  local stand=$1; dt_err_if_empty "stand" "${stand}"; exit_on_err ${fname} $? || return $?
   stand_${stand}
   for func in ${register[@]}; do
     eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
@@ -222,8 +236,8 @@ function dt_register_stand() {
 # Example2: dt_stand_up stand_host down
 function dt_run_stand() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
-  local action=$2; dt_err_if_empty ${fname} "action"; exit_on_err ${fname} $? || return $?
+  local stand=$1; dt_err_if_empty "stand" "${stand}"; exit_on_err ${fname} $? || return $?
+  local action=$2; dt_err_if_empty "action" "${action}"; exit_on_err ${fname} $? || return $?
   local steps="${action}_steps"
   dt_info "${action} stand ${BOLD}${stand}${RESET} ... "
   $stand
@@ -241,6 +255,60 @@ function dt_sleep_5() {
 
 function dt_sleep_1() {
   dt_exec "sleep 1"
+}
+
+# Example: dt_var ctx_name var_name value
+function dt_var() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local var=$1; dt_err_if_empty "var" "${var}"; exit_on_err ${fname} $? || return $?
+  shift
+  local val="$@"; dt_err_if_empty "val" "${val}"; exit_on_err ${fname} $? || return $?
+  echo "CTX=$CTX"
+  echo "var=$var"
+  echo "val=$val"
+  eval "ctx_${CTX}+=(${var})" && \
+  eval "${CTX}_${var}=\"${val}\""
+}
+
+function xxx() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  CTX=$0
+  eval "ctx_${CTX}=()"
+  dt_var A dsg dfg dg df g; exit_on_err ${fname} $? || return $?
+  dt_var B 123 4; exit_on_err ${fname} $? || return $?
+}
+
+function dt_merge() {
+  echo "$@"
+  OPTS=$(getopt -o d:v:c: --long dst:,vars:,ctxes: -- "$@")
+  # vars - contains array with vars names
+  # ctxes - contains array of ctxes
+  # dst - is a new ctx, where we want merge vars
+  echo "OPTS=${OPTS}"
+  if [ $? -ne 0 ]; then
+    dt_error $0 "Failed to parse options" >&2
+    return 99
+  fi
+  eval set -- "${OPTS}"
+  local ctxes vars ctx val dst
+  while true; do
+    case "$1" in
+      --vars) vars="${vars}$2"; shift 2;;
+      --dst) dst="$2"; shift 2;;
+      --ctxes) ctxes="${ctxes}$2"; shift 2;;
+      --) shift; break;;
+      *) echo "Unknown option $1"; return 99;;
+    esac
+  done
+  vars=($(echo "$vars" | tr ' ' '\n'))
+  ctxes=($(echo "$ctxes" | tr ' ' '\n'))
+  for var in ${vars[@]}; do
+    for ctx in ${ctxes[@]}; do
+      val="$(eval echo "\$${ctx}_${var}")"
+      if [ -z "${val}" ]; then continue; fi
+      eval ${dst}_${var}="${val}"
+    done
+  done
 }
 
 function dt_paths() {
