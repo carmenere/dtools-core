@@ -159,7 +159,7 @@ function docker_build_arg_opts() {
 
 function docker_ps() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   docker ps -a
 }
 
@@ -169,7 +169,7 @@ function docker_is_running() {
 
 function docker_pull() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker pull)
   docker_pull_opts && \
   dt_exec "${cmd[@]}"
@@ -177,7 +177,7 @@ function docker_pull() {
 
 function docker_build() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker build)
   $_hook_pre_docker_build && \
   docker_build_arg_opts && \
@@ -192,13 +192,13 @@ function docker_exec() {
 
 function docker_exec_sh() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   dt_exec "docker exec -ti ${CONTAINER} /bin/sh"
 }
 
 function docker_network_create() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local id="$(dt_exec "docker network ls -q --filter name="^${BRIDGE}$"")"
   if [ -n "${id}" ]; then
     if [ ${ERR_IF_BRIDGE_EXISTS} = "y" ]; then
@@ -219,22 +219,22 @@ function docker_network_create() {
 
 function docker_network_rm() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker network rm ${BRIDGE})
   dt_exec "${cmd[@]}"
 }
 
 function docker_network_ls() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker network ls)
   dt_exec "${cmd[@]}"
 }
 
 function docker_run() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
-  docker_network_create; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  docker_network_create; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local id="$(dt_exec "docker ps -aq --filter name="^${CONTAINER}$" --filter status=running")"
   if [ -n "${id}" ]; then
     dt_info "Container ${BOLD}${CONTAINER}${RESET} with id='${id}' is running, skip run."
@@ -257,35 +257,35 @@ function docker_run() {
 
 function docker_start() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker start ${CONTAINER})
   dt_exec "${cmd[@]}"
 }
 
 function docker_stop() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker stop ${CONTAINER})
   dt_exec "${cmd[@]}"
 }
 
 function docker_rmi() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker rmi ${IMAGE})
   dt_exec "${cmd[@]}"
 }
 
 function docker_rm() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker rm --force ${CONTAINER})
   dt_exec "${cmd[@]}"
 }
 
 function docker_rm_all() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   if [ -z "$(dt_exec "docker ps -lq")" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
   local cmd=(docker rm --force $(docker ps -aq))
   dt_exec "${cmd[@]}"
@@ -293,28 +293,28 @@ function docker_rm_all() {
 
 function docker_status() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker ps -a --filter name="^${CONTAINER}$")
   dt_exec "${cmd[@]}"
 }
 
 function docker_logs() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker logs "${CONTAINER}")
   dt_exec "${cmd[@]}"
 }
 
 function docker_logs_save_to_logfile() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   local cmd=(docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1')
   dt_exec "${cmd[@]}"
 }
 
 function docker_prune() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   docker_rm_all
   dt_exec "docker system prune --force"
   dt_exec "docker volume prune --force"
@@ -323,7 +323,7 @@ function docker_prune() {
 
 function docker_purge() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  docker_is_running; exit_on_err ${fname} $? || return $?
+  docker_is_running; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   docker_rm_all
   dt_exec "docker system prune --force --all --volumes"
   dt_exec "docker volume prune --force"

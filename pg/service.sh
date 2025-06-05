@@ -1,7 +1,7 @@
 version=( MAJOR MINOR PATCH )
 pg_socket=( PGHOST PGPORT )
 pg_paths=( BIN_DIR PG_HBA_CONF POSTGRESQL_CONF PG_CONFIG CONFIG_LIBDIR CONFIG_SHAREDIR )
-pg_vars=( ${version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} )
+vars_pg=( ${version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} )
 
 function pg_dir() {
   if [ "$(os_name)" = "macos" ]; then
@@ -30,13 +30,14 @@ function pg_conf() {
 }
 
 function pg_paths() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   pg_dir && pg_hba_conf && pg_conf; err=$?
   if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
 
   # Depends on BIN_DIR
   PG_CONFIG="${BIN_DIR}/pg_config"
   if [ ! -x "${BIN_DIR}" ]; then
-    dt_warning "The binary '${PG_CONFIG}' doesn't exist. Maybe pg of version ${MAJOR} hasn't been installed yet?"
+    dt_warning ${fname} "The binary '${PG_CONFIG}' doesn't exist. Maybe pg of version ${MAJOR} hasn't been installed yet?"
   else
     CONFIG_LIBDIR="$("${PG_CONFIG}" --pkglibdir | tr ' ' '\n')"
     CONFIG_SHAREDIR="$("${PG_CONFIG}" --sharedir)"
@@ -45,8 +46,8 @@ function pg_paths() {
 
 function pg_service() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
 
   if [ "$(os_name)" = "macos" ]; then
@@ -56,7 +57,7 @@ function pg_service() {
   fi
 
   pg_paths; err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
-
+  dt_debug ${fname} "BIN_DIR=${BIN_DIR}"
   STOP="$(service) stop '${SERVICE}'"
   START="$(service) start '${SERVICE}'"
   PREPARE=pg_prepare
@@ -67,8 +68,8 @@ function pg_service() {
 # ctx_service_pg && pg_install
 function pg_install() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
       dt_exec "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"
@@ -92,8 +93,8 @@ function pg_install() {
 
 function pg_add_path() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   NPATH="${PATH}"
   echo "${NPATH}" | grep -E -s "^${BIN_DIR}" 1>/dev/null 2>&1
@@ -135,8 +136,8 @@ function pg_add_path() {
 # 2) The "t;" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
 function pg_hba_conf_add_policy() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   old_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
   dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
@@ -147,8 +148,8 @@ function pg_hba_conf_add_policy() {
 
 function pg_conf_set_port() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   local old_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1)
   dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${POSTGRESQL_CONF}"
@@ -159,8 +160,8 @@ function pg_conf_set_port() {
 
 function pg_prepare() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   changed1=$(pg_hba_conf_add_policy) || return $?
   changed2=$(pg_conf_set_port) || return $?
@@ -170,22 +171,24 @@ function pg_prepare() {
 
 function lsof_pg() {
   if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
+    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
+    dt_load_ctx -c ${ctx} -i
   fi
   PORT=${PGPORT}; HOST=${PGHOST}
   lsof_tcp
 }
 
 function pg_v17() {
-  for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
   local ctx=$0
+  eval "vars_$0=vars_pg"
   MAJOR=17
   MINOR=5
   PGHOST="localhost"
   PGPORT=5432
   pg_service
-  dt_set_ctx $ctx ${pg_vars[@]}
+  dt_set_ctx $ctx ${vars_pg[@]}
 }
 
 dt_register "pg_v17" "pg" "${service_methods[@]}"

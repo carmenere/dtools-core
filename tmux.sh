@@ -12,7 +12,7 @@ function ctx_tmux() {
 
 function tmux_new() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty "TMX_SESSION" "${TMX_SESSION}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "TMX_SESSION"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   tmux has-session -t ${TMX_SESSION} || tmux new -s ${TMX_SESSION} -d
   tmux has-session -t ${TMX_SESSION} && \
   tmux set-option -t ${TMX_SESSION} -g default-command ${TMX_DEFAULT_CMD}
@@ -26,7 +26,7 @@ function tmux_new() {
 
 function tmux_close() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty "TMX_SESSION" "${TMX_SESSION}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "TMX_SESSION"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   tmux has-session -t ${TMX_SESSION} && tmux kill-session -t ${TMX_SESSION} || echo "Session ${TMX_SESSION} was not opened."
 }
 
@@ -40,17 +40,17 @@ function tmux_new_window() {
 
 function tmux_start() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  tmux_new; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty "TMX_WINDOW_NAME" "${TMX_WINDOW_NAME}"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty "TMX_START_CMD" "${TMX_START_CMD}"; exit_on_err ${fname} $? || return $?
+  tmux_new; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "TMX_WINDOW_NAME"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "TMX_START_CMD"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   tmux_select_window || tmux_new_window
   dt_exec "tmux send-keys -t ${TMX_SESSION}:${TMX_WINDOW_NAME} \"${TMX_START_CMD}\" ENTER"
 }
 
 function tmux_stop() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty "TMX_WINDOW_NAME" "${TMX_WINDOW_NAME}"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty "TMX_START_CMD" "${TMX_START_CMD}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "TMX_WINDOW_NAME"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "TMX_START_CMD"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   if tmux has-session -t ${TMX_SESSION}; then
     dt_exec "tmux kill-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}"
     dt_info "stopped"
@@ -60,7 +60,7 @@ function tmux_stop() {
 }
 
 function tmux_connect() {
-  dt_err_if_empty "TMX_SESSION" "${TMX_SESSION}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "TMX_SESSION"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   dt_exec "tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}""
 }
 

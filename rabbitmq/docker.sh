@@ -3,7 +3,7 @@ function ctx_docker_rabbitmq() {
   ctx_service_rabbitmq && \
   ctx_docker_image && \
   ctx_docker_container && \
-  ctx_docker_network; exit_on_err ${fname} $? || return $?
+  ctx_docker_network; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="arm64v8/rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"

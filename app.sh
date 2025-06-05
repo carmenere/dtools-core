@@ -7,7 +7,7 @@ function app_log_file() {
 
 function app_start() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty "BINARY" "${BINARY}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "BINARY"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   app_log_file
   if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
@@ -19,8 +19,8 @@ function app_start() {
 
 function app_stop() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty "PKILL_PATTERN" "${PKILL_PATTERN}"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty "APP" "${APP}"; exit_on_err ${fname} $? || return $?
+  dt_err_if_empty ${fname} "PKILL_PATTERN"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "APP"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   dt_info "Sending signal 'KILL' to ${BOLD}${APP}${RESET} ..."
   local cmd="ps -A -o pid,args | grep -v grep | grep '${PKILL_PATTERN}' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
   dt_exec "${cmd}"

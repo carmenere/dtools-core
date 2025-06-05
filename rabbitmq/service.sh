@@ -10,8 +10,8 @@ function rabbitmq_service() {
 function rabbitmq_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      dt_exec "${SUDO} apt install gnupg erlang -y"; exit_on_err ${fname} $? || return $?
-      dt_exec "${SUDO} apt install rabbitmq-server -y"; exit_on_err ${fname} $? || return $?
+      dt_exec "${SUDO} apt install gnupg erlang -y"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+      dt_exec "${SUDO} apt install rabbitmq-server -y"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   elif [ "$(os_kernel)" = "Darwin" ]; then
     dt_exec "brew install $(rabbitmq_service)"
   else

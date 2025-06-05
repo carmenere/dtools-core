@@ -11,9 +11,9 @@ function rabbitmq_conn() {
 function rabbitmqadmin_delete_exchanges() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    local subcmd_ctx=$1; dt_err_if_empty "subcmd_ctx" "${subcmd_ctx}"; exit_on_err ${fname} $? || return $?
-    local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
-    dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
+    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
     local rabbitmqadmin="$(${conn_ctx} && dt_echo rabbitmq_conn)"
     ${subcmd_ctx}
     for exchange in ${EXCHANGES[@]}; do
@@ -26,9 +26,9 @@ function rabbitmqadmin_delete_exchanges() {
 function rabbitmqadmin_delete_queues() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    local subcmd_ctx=$1; dt_err_if_empty "subcmd_ctx" "${subcmd_ctx}"; exit_on_err ${fname} $? || return $?
-    local conn_ctx=$2; dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
-    dt_err_if_empty "conn_ctx" "${conn_ctx}"; exit_on_err ${fname} $? || return $?
+    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
     local rabbitmqadmin="$(${conn_ctx} && dt_echo rabbitmq_conn)"
     ${subcmd_ctx}
     for queue in ${QUEUES[@]}; do

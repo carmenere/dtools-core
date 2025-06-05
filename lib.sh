@@ -1,56 +1,41 @@
-function dt_warning() {
-  # $1: info message
-  >&2 echo -e "${BOLD}[dtools]${CYAN}[WARNING]${RESET} $1"
-}
-
+# All functions "dt_error", "dt_warning", "dt_info" and "dt_debug" have the same signature:
+#   $1: must contain $0 of caller
+#   $2: must contain err message
 function dt_error() {
-  # $1: must contain $0 of caller
-  # $2: must contain err message
-  >&2 echo -e "${BOLD}[dtools]${RED}[ERROR]<in function $1>${RESET} $2"
-}
-
-function dt_info() {
-  # $1: info message
-  >&2 echo -e "${BOLD}[dtools]${GREEN}[INFO]${RESET} $1"
-}
-
-function dt_debug "$0"() {
-  # $1: must contain $0 of caller
-  # $2: debug message
-  >&2 echo -e "${BOLD}${MAGENTA}[dtools][DEBUG]<in function $1>${RESET} $2"
-}
-
-function dt_target() {
-  # $1: name of target. Each target is a callable.
-  if [ -z "$1" ]; then return 0; fi
-    dt_info "Running target ${BOLD}${GREEN}$1${RESET} ... "
-    $1
-}
-
-# Example: dt_err_if_empty "var_name" "${var_name}"
-err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-function dt_err_if_empty() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local parameter=$1
-  local val=$2
-  if [ -z "${val}" ]; then
-    dt_error ${fname} "Parameter ${BOLD}${parameter}${RESET} is empty"
-    return 77
+  if [ "${DT_SEVERITY}" -ge 0 ]; then
+    >&2 echo -e "${RED}${BOLD}[dtools][ERROR]${RESET}[$1] $2"
   fi
 }
 
-# Example: exit_on_err ${fname} $err_code
-# $0 contains name of caller function
-function exit_on_err() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  # $1: must contain $0 of caller
-  # $2: error code
-  # $3: error message, if it is empty use name of current function instead
-  local err=$3
-  if [ -z "${err}" ]; then err=${fname}; fi
-  if [ "$2" != 0 ] ; then
-    dt_error $1 "${err}"
-    return $2
+function dt_warning() {
+  if [ "${DT_SEVERITY}" -ge 1 ]; then
+    >&2 echo -e "${CYAN}${BOLD}[dtools][WARNING]${RESET}[$1] $2"
+  fi
+}
+
+function dt_info() {
+  if [ "${DT_SEVERITY}" -ge 2 ]; then
+    >&2 echo -e "${GREEN}${BOLD}[dtools][INFO]${RESET}[$1] $2"
+  fi
+}
+
+function dt_debug () {
+  if [ "${DT_SEVERITY}" -ge 3 ]; then
+    >&2 echo -e "${MAGENTA}${BOLD}[dtools][DEBUG]${RESET}[$1] $2"
+  fi
+}
+
+# Example: dt_err_if_empty ${fname} ${fname} "FOO"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+# where FOO is a name of some variable.
+# $1: must contain $0 of caller
+# $2: must contain name of variable
+function dt_err_if_empty() {
+  local fname=$1
+  local var=$2
+  local local val="$(eval echo "\$$var")"
+  if [ -z "${val}" ]; then
+    dt_error ${fname} "Parameter ${BOLD}${var}${RESET} is empty"
+    return 77
   fi
 }
 
@@ -102,14 +87,13 @@ function dt_exec() {
       >&2 echo -e "${BOLD}[dtools]${DT_ECHO_COLOR}[ECHO][EXEC]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
-    eval "${cmd}"
-    err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+    eval "${cmd}"; err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   fi
 }
 
 function dt_echo() {
   local fname saved_DT_DRYRUN saved_DT_ECHO
-  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   saved_DT_DRYRUN=${DT_DRYRUN}
   saved_DT_ECHO=${DT_DRYRUN}
   dt_dryrun_on
@@ -132,16 +116,6 @@ function dt_exists() {
     dt_info "${entity} ${BOLD}${value} doesn't exist${RESET}."
     return 1
   fi
-}
-
-function dt_run_targets() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  if [ -z "$1" ]; then return 0; fi
-  local targets=("$@")
-  for target in $@; do
-    dt_target $target
-    err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  done
 }
 
 function dt_dryrun_commands_only_on() {
@@ -172,191 +146,12 @@ function dt_fname() {
   if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi;
 }
 
-# Consider function docker_build()
-# dt_register ctx_conn_docker_pg_admin pg docker_methods
-# will generate function docker_build_pg() {( ctx_conn_docker_pg_admin && docker_build_pg )}
-function dt_register() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local ctx=$1; dt_err_if_empty "ctx" "${ctx}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  local suffix=$2; dt_err_if_empty "suffix" "${suffix}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  shift 2
-  local methods=("$@"); dt_err_if_empty "methods" "${methods}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-  for method in ${methods[@]}; do
-    local func=${method}_${suffix}
-    eval "function ${func}() { ${method} ${ctx} }"
-  done
-}
-
-# Consider example: dt_register_stand stand_host
-# It will generate all necessary functions of stand_host.
-# For example, for 'install_services' it generates
-# function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
-function dt_register_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty "stand" "${stand}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-  stand_${stand}
-  for func in ${register[@]}; do
-    eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
-  done
-  eval "function stand_up_${stand}() {( dt_run_stand stand_${stand} up )}"
-  eval "function stand_down_${stand}() {( dt_run_stand stand_${stand} down )}"
-}
-
-# Example1: dt_stand_up stand_host up
-# Example2: dt_stand_up stand_host down
-function dt_run_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty "stand" "${stand}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  local action=$2; dt_err_if_empty "action" "${action}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-  local steps="${action}_steps"
-  dt_info "${action} stand ${BOLD}${stand}${RESET} ... "
-  $stand
-  for step in $(eval echo "\${${steps}[@]}"); do
-    dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
-    for target in $(eval echo "\${${step}[@]}"); do
-      dt_target $target
-      err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-    done
-  done
-}
-
 function dt_sleep_5() {
   dt_exec "sleep 5"
 }
 
 function dt_sleep_1() {
   dt_exec "sleep 1"
-}
-
-# vars - contains array with vars names
-# ctxes - contains array of ctxes
-# dst - is a new ctx, where we want merge vars
-function dt_load_ctxes() {
-  local ctxes vars val var ctx OPTS
-  OPTS=$(getopt -o v:c: --long vars:,ctxes: -- "$@")
-  dt_debug "$0" "OPTS=${OPTS}"
-  if [ $? -ne 0 ]; then
-    dt_error ${fname} "Failed to parse options"
-    return 99
-  fi
-  eval set -- "${OPTS}"
-
-  while true; do
-    case "$1" in
-      --vars) vars="${vars}$2"; shift 2;;
-      --ctxes) ctxes="${ctxes}$2"; shift 2;;
-      --) shift; break;;
-      *) echo "Unknown option $1"; return 99;;
-    esac
-  done
-  vars=($(echo "$vars" | tr ' ' '\n'))
-  ctxes=($(echo "$ctxes" | tr ' ' '\n'))
-  for ctx in ${ctxes[@]}; do
-    dt_debug "$0" "Running ctx ${ctx}"
-    ${ctx}
-  done
-  for var in ${vars[@]}; do
-    for ctx in ${ctxes[@]}; do
-      val=$(eval echo "\$${ctx}__$var")
-      if [ -z "${val}" ]; then
-        continue
-      fi
-      dt_debug "$0" "ctx=${ctx}: loading var $var=${val}"
-      eval "$var=\$${ctx}__$var"
-    done
-  done
-}
-
-function dt_load_ctx() {
-  local vars val var ctx
-  ctx=$1; shift
-  vars=("$@")
-  for var in ${vars[@]}; do
-    val=$(eval echo "\$${ctx}__$var")
-    dt_debug "$0" "ctx=${ctx}: loading var $var=${val}"
-    if [ -z "${val}" ]; then
-      dt_warning "Var ${var} is empty"
-    fi
-    eval "$var=\$${ctx}__$var"
-  done
-}
-
-function dt_set_ctx() {
-  local vars val var ctx
-  ctx=$1; shift
-  vars=("$@")
-  for var in ${vars[@]}; do
-    val=$(eval echo "\$${var}")
-    dt_debug "$0" "ctx=${ctx}: setting var $var=${val}"
-    if [ -z "${val}" ]; then
-      dt_warning "Var ${var} is empty"
-    fi
-    eval "${ctx}__${var}=\"${val}\""
-  done
-}
-
-# vars - contains array with vars names
-# ctxes - contains array of ctxes
-# dst - is a new ctx, where we want merge vars
-function dt_export() {
-  echo "$@"
-  OPTS=$(getopt -o v:c: --long vars:,ctxes: -- "$@")
-  echo "OPTS=${OPTS}"
-  if [ $? -ne 0 ]; then
-    dt_error ${fname} "Failed to parse options"
-    return 99
-  fi
-  eval set -- "${OPTS}"
-  local ctxes vars ctx val
-  while true; do
-    case "$1" in
-      --vars) vars="${vars}$2"; shift 2;;
-      --ctxes) ctxes="${ctxes}$2"; shift 2;;
-      --) shift; break;;
-      *) echo "Unknown option $1"; return 99;;
-    esac
-  done
-  vars=($(echo "$vars" | tr ' ' '\n'))
-  ctxes=($(echo "$ctxes" | tr ' ' '\n'))
-  for var in ${vars[@]}; do
-    for ctx in ${ctxes[@]}; do
-      val=$(eval echo \"\$${ctx}__${var}\")
-      dt_exec "export ${ctx}__${var}=\"${val}\""
-    done
-  done
-}
-
-function dt_unexport() {
-  echo "$@"
-  OPTS=$(getopt -o v:c: --long vars:,ctxes: -- "$@")
-  echo "OPTS=${OPTS}"
-  if [ $? -ne 0 ]; then
-    dt_error ${fname} "Failed to parse options"
-    return 99
-  fi
-  eval set -- "${OPTS}"
-  local ctxes vars ctx val
-  while true; do
-    case "$1" in
-      --vars) vars="${vars}$2"; shift 2;;
-      --ctxes) ctxes="${ctxes}$2"; shift 2;;
-      --) shift; break;;
-      *) echo "Unknown option $1"; return 99;;
-    esac
-  done
-  vars=($(echo "$vars" | tr ' ' '\n'))
-  ctxes=($(echo "$ctxes" | tr ' ' '\n'))
-  for var in ${vars[@]}; do
-    for ctx in ${ctxes[@]}; do
-      dt_exec "unset ${ctx}__${var}"
-    done
-  done
 }
 
 function dt_paths() {
@@ -382,9 +177,9 @@ function dt_paths() {
 function dt_defaults() {
   export DT_DRYRUN="n"
   export DT_PROFILES=("dev")
+  export DT_SEVERITY=4
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"
-  export DT_DEBUG="n"
   export DT_ECHO_COLOR="${YELLOW}"
 }
 

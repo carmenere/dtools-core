@@ -34,7 +34,7 @@ function pg_ctl_stop() {
 
 function pg_ctl_clean() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  pg_ctl_stop; exit_on_err ${fname} $? || return $?
+  pg_ctl_stop; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   [ ! -d ${DATADIR} ] || rm -Rf ${DATADIR}
 }
 

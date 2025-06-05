@@ -18,11 +18,11 @@ function clickhouse_conf() {
 function clickhouse_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err ${fname} $? || return $?
-    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err ${fname} $? || return $?
-    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err ${fname} $? || return $?
+    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_exec "${SUDO} apt-get update"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
     dt_exec "brew install '$(clickhouse_service)'"
@@ -88,8 +88,8 @@ function clickhouse_user_xml_dir() {
 
 function ctx_clickhouse_vars() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; exit_on_err ${fname} $? || return $?
-  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err ${fname} $? || return $?
+  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  CH_CONFIG_XML=$(clickhouse_conf); err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
   SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
   SERVICE_START="$(service) start '$(clickhouse_service)'"
   SERVICE_PREPARE=clickhouse_prepare

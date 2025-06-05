@@ -13,7 +13,7 @@ function service_stop() {
     ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
     dt_load_ctx ${ctx} ${pg_vars[@]}
   fi
-  dt_debug "$0" "STOP=${STOP}"
+  dt_debug ${fname} "STOP=${STOP}"
   dt_exec "${STOP}"
 }
 
@@ -22,7 +22,7 @@ function service_start() {
     ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
     dt_load_ctx ${ctx} ${pg_vars[@]}
   fi
-  dt_debug "$0" "START=${START}"
+  dt_debug ${fname} "START=${START}"
   dt_exec "${START}"
 }
 
@@ -39,7 +39,7 @@ function service_prepare() {
     ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
     dt_load_ctx ${ctx} ${pg_vars[@]}
   fi
-  dt_debug "$0" "PREPARE=${PREPARE}"
+  dt_debug ${fname} "PREPARE=${PREPARE}"
   dt_exec "${PREPARE}"
 }
 
@@ -48,7 +48,7 @@ function service_install() {
     ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
     dt_load_ctx ${ctx} ${pg_vars[@]}
   fi
-  dt_debug "$0" "INSTALL=${INSTALL}"
+  dt_debug ${fname} "INSTALL=${INSTALL}"
   dt_exec "${INSTALL}"
 }
 function service_lsof() {
@@ -56,7 +56,7 @@ function service_lsof() {
     ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
     dt_load_ctx ${ctx} ${pg_vars[@]}
   fi
-  dt_debug "$0" "LSOF=${LSOF}"
+  dt_debug ${fname} "LSOF=${LSOF}"
   dt_exec "${LSOF}"
 }
 

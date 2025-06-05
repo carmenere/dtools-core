@@ -3,7 +3,7 @@ function ctx_docker_clickhouse() {
   ctx_service_clickhouse && \
   ctx_docker_image && \
   ctx_docker_container && \
-  ctx_docker_network; exit_on_err ${fname} $? || return $?
+  ctx_docker_network; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="clickhouse/clickhouse-server:${MAJOR}.4.1.1943-alpine"
