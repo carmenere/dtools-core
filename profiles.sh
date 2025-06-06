@@ -23,8 +23,8 @@ function profile_release() {
 # Otherwise returns nothing.
 function get_profile() {
   profile="$1"; rezult=
-  if [ -z ${profile} ]; then echo "Profile was not provided."; return 99; fi
-  for p in "${DT_PROFILES[@]}";  do
+  if [ -z "${profile}" ]; then echo "Profile was not provided."; return 99; fi
+  for p in ${DT_PROFILES[@]};  do
     if [ "$p" = "$profile" ]; then
       rezult="$profile"
       break

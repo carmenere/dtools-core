@@ -1,3 +1,5 @@
+service=( STOP START PREPARE INSTALL SERVICE )
+
 function service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "brew services"
@@ -6,18 +8,12 @@ function service() {
   fi
 }
 
-function service_stop() {(
-    dt_exec "${SUDO} ${SERVICE_STOP}"
-)}
-
-function service_start() {(
-    dt_exec "${SUDO} ${SERVICE_START}"
-)}
-
-function service_restart() { service_stop && service_start; }
-function service_prepare() { dt_exec "${SERVICE_PREPARE}"; }
-function service_install() { dt_exec "${SERVICE_INSTALL}"; }
-function service_lsof() { dt_exec "${SERVICE_LSOF}"; }
+function service_stop() { dt_exec "${STOP}" }
+function service_start() { dt_exec "${START}" }
+function service_restart() { service_stop && service_start }
+function service_prepare() { dt_exec "${PREPARE}" }
+function service_install() { dt_exec "${INSTALL}" }
+function service_lsof() { dt_exec "${LSOF}" }
 
 service_methods=()
 
