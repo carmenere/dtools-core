@@ -1,9 +1,12 @@
+pg_docker_vars=(${docker_vars[@]} ${pg_vars[@]})
+
 function ctx_docker_pg() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx_service_pg && \
-  ctx_docker_image && \
-  ctx_docker_container && \
-  ctx_docker_network; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local ctx=$0; dt_skip_if_initialized || return $?
+  eval "vars_${ctx}=pg_docker_vars"
+  dt_load_vars -c ctx_service_pg && \
+  dt_load_vars -c ctx_docker_image && \
+  dt_load_vars -c ctx_docker_container && \
+  dt_load_vars -c ctx_docker_network || return $?
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="arm64v8/postgres:${MAJOR}.${MINOR}-alpine3.21"
@@ -21,16 +24,15 @@ function ctx_docker_pg() {
   CONTAINER="postgres"
   RESTART="always"
   CHECK_CMD="sh -c 'pg_isready 1>/dev/null 2>&1'"
-
-  # hooks
-  _hook_pre_docker_run=hooks_pre_docker_run_pg
-  _docker_run_envs=(POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER)
+  docker_run_envs=(POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER)
+  hook_pre_docker_run=pre_docker_run_pg
+  dt_set_ctx -c ${ctx} -d
 }
 
-function hooks_pre_docker_run_pg() {
-  POSTGRES_DB=${PGDATABASE}
-  POSTGRES_PASSWORD=${PGPASSWORD}
-  POSTGRES_USER=${PGUSER}
+function pre_docker_run_pg() {
+  dt_load_vars -c ctx_docker_pg_admin -m 'PGPASSWORD=>POSTGRES_PASSWORD' -m 'PGDATABASE=>POSTGRES_DB' -m 'PGUSER=>POSTGRES_USER'
+
 }
 
-dt_register ctx_conn_docker_pg_admin pg "${docker_methods[@]}"
+dt_register "ctx_docker_pg" "pg" "${docker_methods[@]}"
+

@@ -34,7 +34,7 @@ function clickhouse_install() {
 
 function clickhouse_user_xml() {
   local query=$(
-    dt_escape_single_quotes "<?xml version=\"1.0\"?>
+    dt_escape_quote "<?xml version=\"1.0\"?>
 <yandex>
     <profiles>
         <default>

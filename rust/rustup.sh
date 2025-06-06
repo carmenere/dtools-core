@@ -22,8 +22,8 @@ function rust_target_triple() {
 
 function rustup_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN" || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${toolchain}"
 
@@ -32,8 +32,8 @@ function rustup_install() {
 
 function rustup_toolchain_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN" || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup toolchain install ${toolchain}"
 	dt_exec "${cmd}" && rustup_nightly_install
@@ -41,8 +41,8 @@ function rustup_toolchain_install() {
 
 function rustup_nightly_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "NIGHTLY_VERSION"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "NIGHTLY_VERSION" || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
 	if [ -z "${NIGHTLY_VERSION}" ]; then return 0; fi
   local toolchain="${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}"
   local cmd="rustup toolchain install ${toolchain}"
@@ -51,8 +51,8 @@ function rustup_nightly_install() {
 
 function rustup_default() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "RUSTUP_TOOLCHAIN" || return $?
+  dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup default ${toolchain}"
 	dt_exec "${cmd}"
@@ -60,7 +60,7 @@ function rustup_default() {
 
 function rustup_component_add() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "RUSTUP_COMPONENTS"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "RUSTUP_COMPONENTS" || return $?
 	local cmd="rustup component add ${RUSTUP_COMPONENTS[@]}"
 	dt_exec "${cmd}"
 }

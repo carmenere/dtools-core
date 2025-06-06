@@ -102,8 +102,8 @@ function cargo_cache_clean() {
 
 function cargo_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "CRATE_NAME"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  dt_err_if_empty ${fname} "CRATE_VERSION"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "CRATE_NAME" || return $?
+  dt_err_if_empty ${fname} "CRATE_VERSION" || return $?
   local cmd=(cargo install)
   cmd+=(--version "${CRATE_VERSION}")
   _cargo_install_opts
@@ -113,7 +113,7 @@ function cargo_install() {
 
 function cargo_uninstall() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "CRATE_NAME"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  dt_err_if_empty ${fname} "CRATE_NAME" || return $?
   local cmd=(cargo uninstall)
   cmd+=(${CRATE_NAME})
   dt_exec "${cmd[@]}"

@@ -1,4 +1,5 @@
 function postgis_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   VERSION="3.3.3"
   LIBINTL_VERSION="0.24"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -19,6 +20,6 @@ function postgis_install() {
       make
       make install
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 }

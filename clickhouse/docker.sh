@@ -29,7 +29,6 @@ function hooks_pre_docker_run_clickhouse() {
   CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
   CLICKHOUSE_USER=${CLICKHOUSE_USER}
   CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
-  echo "hooks_pre_docker_run_clickhouse: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT}"
 }
 
 dt_register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"

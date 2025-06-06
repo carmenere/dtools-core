@@ -1,4 +1,6 @@
 function ctx_pg_ctl() {
+  local ctx=$0; dt_skip_if_initialized || return $?
+  eval "vars_${ctx}=pg_vars"
   OS_USER="${PGUSER}"
   DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
   INITDB_AUTH_HOST="md5"
@@ -9,10 +11,12 @@ function ctx_pg_ctl() {
   PG_CTL_LOG="${DATADIR}/pg_ctl.logs"
   POSTMASTER="${DATADIR}/postmaster.pid"
   PG_CONF="${DATADIR}/postgresql.conf"
+  dt_set_ctx -c ${ctx}
 }
 
 function pg_ctl_initdb() {
-  if [ -f "${PG_CONF}" ]; then dt_info "Postgres has already initialized, datadir='${DATADIR}'"; return 0; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  if [ -f "${PG_CONF}" ]; then dt_info ${fname} "Postgres has already initialized, datadir='${DATADIR}'"; return 0; fi
   [ -d ${DATADIR} ] || mkdir -p ${DATADIR}
   chown -R ${OS_USER} ${DATADIR}
   bash -c "echo ${PGPASSWORD} > ${INITDB_PWFILE}"
@@ -58,11 +62,11 @@ pg_ctl_methods+=(pg_ctl_lsof)
 pg_ctl_methods+=(pg_ctl_conn)
 
 function ctx_pg_ctl_v17_5444() {
-  ctx_service_pg && \
-  pg_user_admin && \
-  pg_db_postgres && \
-  ctx_pg_ctl
+  dt_load_vars -c ctx_service_pg && \
+  dt_load_vars -c ctx_pg_admin && \
+  dt_load_vars -c ctx_pg_ctl || return $?
   PGPORT=5444
+  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_pg_ctl_v17_5444" "v17_5444" "${pg_ctl_methods[@]}"

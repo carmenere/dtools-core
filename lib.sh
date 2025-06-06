@@ -3,35 +3,42 @@
 #   $2: must contain err message
 function dt_error() {
   if [ "${DT_SEVERITY}" -ge 0 ]; then
-    >&2 echo -e "${RED}${BOLD}[dtools][ERROR]${RESET}[$1] $2"
+    >&2 echo -e "${RED}${BOLD}[dtools][ERROR][$1]${RESET} $2"
   fi
 }
 
 function dt_warning() {
   if [ "${DT_SEVERITY}" -ge 1 ]; then
-    >&2 echo -e "${CYAN}${BOLD}[dtools][WARNING]${RESET}[$1] $2"
+    >&2 echo -e "${CYAN}${BOLD}[dtools][WARNING][$1]${RESET} $2"
   fi
 }
 
 function dt_info() {
   if [ "${DT_SEVERITY}" -ge 2 ]; then
-    >&2 echo -e "${GREEN}${BOLD}[dtools][INFO]${RESET}[$1] $2"
+    >&2 echo -e "${GREEN}${BOLD}[dtools][INFO][$1]${RESET} $2"
   fi
 }
 
 function dt_debug () {
   if [ "${DT_SEVERITY}" -ge 3 ]; then
-    >&2 echo -e "${MAGENTA}${BOLD}[dtools][DEBUG]${RESET}[$1] $2"
+    >&2 echo -e "${MAGENTA}${BOLD}[dtools][DEBUG][$1]${RESET} $2"
   fi
 }
 
-# Example: dt_err_if_empty ${fname} ${fname} "FOO"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+function dt_severity_error() { DT_SEVERITY=0 }
+function dt_severity_warning() { DT_SEVERITY=1 }
+function dt_severity_info() { DT_SEVERITY=2 }
+function dt_severity_debug() { DT_SEVERITY=3 }
+
+# Example: dt_err_if_empty ${fname} ${fname} "FOO" || return $?
 # where FOO is a name of some variable.
 # $1: must contain $0 of caller
 # $2: must contain name of variable
 function dt_err_if_empty() {
   local fname=$1
   local var=$2
+  if [ -z "${fname}" ]; then dt_error "dt_err_if_empty" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
+  if [ -z "${var}" ]; then dt_error "dt_err_if_empty" "Parameter ${BOLD}var${RESET} must be provided"; return 55; fi
   local local val="$(eval echo "\$$var")"
   if [ -z "${val}" ]; then
     dt_error ${fname} "Parameter ${BOLD}${var}${RESET} is empty"
@@ -43,13 +50,13 @@ function dt_inline_envs() {
   local envs=()
   for env in "$@"; do
     if [ -z "$env" ]; then continue; fi
-    local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
+    local val=$(dt_escape_quote "$(eval echo "\$$env")")
     if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi
   done
   echo "${envs[@]}"
 }
 
-function dt_escape_single_quotes() {
+function dt_escape_quote() {
   echo "$1" | sed -e "s/'/\\\\'/g"
 }
 
@@ -84,7 +91,7 @@ function dt_exec() {
     fi
   else
     if [ "${DT_ECHO}" = "y" ]; then
-      >&2 echo -e "${BOLD}[dtools]${DT_ECHO_COLOR}[ECHO][EXEC]${RESET}"
+      >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][ECHO][EXEC]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
     eval "${cmd}"; err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
@@ -93,7 +100,7 @@ function dt_exec() {
 
 function dt_echo() {
   local fname saved_DT_DRYRUN saved_DT_ECHO
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   saved_DT_DRYRUN=${DT_DRYRUN}
   saved_DT_ECHO=${DT_DRYRUN}
   dt_dryrun_on
@@ -174,6 +181,7 @@ function dt_paths() {
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
 }
 
+# DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
   export DT_DRYRUN="n"
   export DT_PROFILES=("dev")

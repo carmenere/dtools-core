@@ -8,57 +8,12 @@ function service() {
   fi
 }
 
-function service_stop() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  dt_debug ${fname} "STOP=${STOP}"
-  dt_exec "${STOP}"
-}
-
-function service_start() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  dt_debug ${fname} "START=${START}"
-  dt_exec "${START}"
-}
-
-function service_restart() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  service_stop && service_start
-}
-
-function service_prepare() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  dt_debug ${fname} "PREPARE=${PREPARE}"
-  dt_exec "${PREPARE}"
-}
-
-function service_install() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  dt_debug ${fname} "INSTALL=${INSTALL}"
-  dt_exec "${INSTALL}"
-}
-function service_lsof() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${pg_vars[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx ${ctx} ${pg_vars[@]}
-  fi
-  dt_debug ${fname} "LSOF=${LSOF}"
-  dt_exec "${LSOF}"
-}
+function service_stop() { dt_exec "${STOP}" }
+function service_start() { dt_exec "${START}" }
+function service_restart() { service_stop && service_start }
+function service_prepare() { dt_exec "${PREPARE}" }
+function service_install() { dt_exec "${INSTALL}" }
+function service_lsof() { dt_exec "${LSOF}" }
 
 service_methods=()
 

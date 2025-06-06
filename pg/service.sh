@@ -1,7 +1,7 @@
-version=( MAJOR MINOR PATCH )
+pg_version=( MAJOR MINOR PATCH )
 pg_socket=( PGHOST PGPORT )
-pg_paths=( BIN_DIR PG_HBA_CONF POSTGRESQL_CONF PG_CONFIG CONFIG_LIBDIR CONFIG_SHAREDIR )
-vars_pg=( ${version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} )
+pg_paths=( BIN_DIR PG_HBA_CONF POSTGRESQL_CONF PG_CONFIG CONFIG_LIBDIR CONFIG_SHAREDIR PSQL )
+pg_vars=( ${pg_version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} )
 
 function pg_dir() {
   if [ "$(os_name)" = "macos" ]; then
@@ -32,10 +32,10 @@ function pg_conf() {
 function pg_paths() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   pg_dir && pg_hba_conf && pg_conf; err=$?
-  if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
-
+  if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   # Depends on BIN_DIR
   PG_CONFIG="${BIN_DIR}/pg_config"
+  PSQL="${BIN_DIR}/psql"
   if [ ! -x "${BIN_DIR}" ]; then
     dt_warning ${fname} "The binary '${PG_CONFIG}' doesn't exist. Maybe pg of version ${MAJOR} hasn't been installed yet?"
   else
@@ -45,19 +45,13 @@ function pg_paths() {
 }
 
 function pg_service() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
-
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "macos" ]; then
     SERVICE="postgresql@${MAJOR}"
   else
     SERVICE="postgresql"
   fi
-
-  pg_paths; err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
-  dt_debug ${fname} "BIN_DIR=${BIN_DIR}"
+  pg_paths; err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   STOP="$(service) stop '${SERVICE}'"
   START="$(service) start '${SERVICE}'"
   PREPARE=pg_prepare
@@ -67,35 +61,28 @@ function pg_service() {
 
 # ctx_service_pg && pg_install
 function pg_install() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
       dt_exec "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"
-      err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+      err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
       dt_exec "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"
-      err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+      err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
       dt_exec "${SUDO} apt-get update"
-      err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+      err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
       dt_exec "${SUDO} apt-get -y install \
           postgresql-${MAJOR} \
           postgresql-server-dev-${MAJOR} \
           libpq-dev"
-          err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+          err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
     dt_exec "brew install ${SERVICE}"
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 }
 
 function pg_add_path() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
   NPATH="${PATH}"
   echo "${NPATH}" | grep -E -s "^${BIN_DIR}" 1>/dev/null 2>&1
   if [ $? != 0 ] && [ -n "${BIN_DIR}" ]; then
@@ -135,34 +122,24 @@ function pg_add_path() {
 #   '$a Trailor' : here pattern "$" matches last line and command "a" appends 'Trailor' after it
 # 2) The "t;" command checks if the previous substitution was successful. If it was, it goto  to the end of the block , skipping the next commands.
 function pg_hba_conf_add_policy() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
-  old_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
-  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  old_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1) || return $?
+  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}" || return $?
+  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   new_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1)
-  if [ "${old_hash}" != "${new_hash}" ]; then echo "changed"; fi
+  if [ "${old_hash}" != "${new_hash}" ]; then dt_debug ${fname} "${PG_HBA_CONF} is changed"; echo "changed"; fi
 }
 
 function pg_conf_set_port() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
-  local old_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1)
-  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${POSTGRESQL_CONF}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error $0 "err=${err}"; return ${err}; fi
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local old_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1) || return $?
+  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${POSTGRESQL_CONF}" || return $?
+  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   local new_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1)
-  if [ "${old_hash}" != "${new_hash}" ]; then echo "changed"; fi
+  if [ "${old_hash}" != "${new_hash}" ]; then dt_debug ${fname} "${POSTGRESQL_CONF} is changed"; echo "changed"; fi
 }
 
 function pg_prepare() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
   changed1=$(pg_hba_conf_add_policy) || return $?
   changed2=$(pg_conf_set_port) || return $?
   if [ -z "${changed1}" ] && [ -z "${changed2}" ]; then return 0; fi
@@ -170,25 +147,19 @@ function pg_prepare() {
 }
 
 function lsof_pg() {
-  if [ -n "$1" ]; then
-    ctx=$1; for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-    dt_load_ctx -c ${ctx} -i
-  fi
   PORT=${PGPORT}; HOST=${PGHOST}
   lsof_tcp
 }
 
-function pg_v17() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  for var in ${vars_pg[@]}; do local ${var} 1>/dev/null 2>1; done
-  local ctx=$0
-  eval "vars_$0=vars_pg"
+function ctx_service_pg() {
+  local ctx=$0; dt_skip_if_initialized || return $?
+  eval "vars_${ctx}=pg_vars"
   MAJOR=17
   MINOR=5
   PGHOST="localhost"
-  PGPORT=5432
+  PGPORT=5431
   pg_service
-  dt_set_ctx $ctx ${vars_pg[@]}
+  dt_set_ctx -c ${ctx}
 }
 
-dt_register "pg_v17" "pg" "${service_methods[@]}"
+dt_register "ctx_service_pg" "pg" "${service_methods[@]}"

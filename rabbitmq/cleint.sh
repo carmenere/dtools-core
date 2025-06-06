@@ -11,9 +11,9 @@ function rabbitmq_conn() {
 function rabbitmqadmin_delete_exchanges() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx" || return $?
+    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
+    dt_err_if_empty ${fname} "conn_ctx" || return $?
     local rabbitmqadmin="$(${conn_ctx} && dt_echo rabbitmq_conn)"
     ${subcmd_ctx}
     for exchange in ${EXCHANGES[@]}; do
@@ -26,9 +26,9 @@ function rabbitmqadmin_delete_exchanges() {
 function rabbitmqadmin_delete_queues() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    local subcmd_ctx=$1; dt_err_if_empty ${fname} "subcmd_ctx" || return $?
+    local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
+    dt_err_if_empty ${fname} "conn_ctx" || return $?
     local rabbitmqadmin="$(${conn_ctx} && dt_echo rabbitmq_conn)"
     ${subcmd_ctx}
     for queue in ${QUEUES[@]}; do
@@ -94,10 +94,10 @@ function rabbitmq_init_docker() {
     docker_service_check_rabbitmq
     ctx_conn_docker_rabbitmq_app
     SUDO=
-    local check_user=$(dt_escape_single_quotes "$(dt_echo rabbitmqctl_check_user)")
-    local create_user=$(dt_escape_single_quotes "$(dt_echo rabbitmqctl_create_user)")
-    local set_user_tags=$(dt_escape_single_quotes "$(dt_echo rabbitmqctl_set_user_tags)")
-    local set_permissions=$(dt_escape_single_quotes "$(dt_echo rabbitmqctl_set_permissions)")
+    local check_user=$(dt_escape_quote "$(dt_echo rabbitmqctl_check_user)")
+    local create_user=$(dt_escape_quote "$(dt_echo rabbitmqctl_create_user)")
+    local set_user_tags=$(dt_escape_quote "$(dt_echo rabbitmqctl_set_user_tags)")
+    local set_permissions=$(dt_escape_quote "$(dt_echo rabbitmqctl_set_permissions)")
 
     dt_exec "$(docker_exec_rabbitmq) sh -c $'$check_user'"; err=$?
 

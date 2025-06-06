@@ -11,8 +11,8 @@ function clickhouse_conn() {
 
 function clickhouse_client_create_db() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
+  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   local query="$(${query_ctx} && clickhouse_sql_create_db)"
   local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
   local cmd="${conn} --multiquery $'${query}'"
@@ -21,8 +21,8 @@ function clickhouse_client_create_db() {
 
 function clickhouse_client_drop_db() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
+  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   local query="$(${query_ctx} && clickhouse_sql_drop_db)"
   local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
   local cmd="${conn} --multiquery $'${query}'"
@@ -31,8 +31,8 @@ function clickhouse_client_drop_db() {
 
 function clickhouse_client_create_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
+  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   local query="$(${query_ctx} && clickhouse_sql_create_user)"
   local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
   local cmd="${conn} --multiquery $'${query}'"
@@ -41,8 +41,8 @@ function clickhouse_client_create_user() {
 
 function clickhouse_client_drop_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
+  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   local query="$(${query_ctx} && clickhouse_sql_drop_user)"
   local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
   local cmd="${conn} --multiquery $'${query}'"
@@ -51,8 +51,8 @@ function clickhouse_client_drop_user() {
 
 function clickhouse_client_grant_user() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
+  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   local query="$(${query_ctx} && clickhouse_sql_grant_user)"
   local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
   local cmd="${conn} --multiquery $'${query}'"
@@ -67,8 +67,8 @@ function clickhouse_conn_docker_app() { ( ctx_conn_docker_clickhouse_app && clic
 function _clickhouse_client_init() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    app=$2; dt_err_if_empty ${fname} "app"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    admin=$1; dt_err_if_empty ${fname} "admin" || return $?
+    app=$2; dt_err_if_empty ${fname} "app" || return $?
     clickhouse_client_create_db $app $admin && \
     clickhouse_client_create_user $app $admin && \
     clickhouse_client_grant_user $app $admin
@@ -78,8 +78,8 @@ function _clickhouse_client_init() {
 function _clickhouse_client_clean() {
   (
     local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
-    app=$2; dt_err_if_empty ${fname} "app"; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+    admin=$1; dt_err_if_empty ${fname} "admin" || return $?
+    app=$2; dt_err_if_empty ${fname} "app" || return $?
     clickhouse_client_drop_db $app $admin && \
     clickhouse_client_drop_user $app $admin
   )
