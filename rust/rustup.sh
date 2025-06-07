@@ -1,5 +1,3 @@
-rustup_envs=(RUSTUP_TOOLCHAIN)
-
 function rust_arch() {
   arch=$(uname -m)
   if [ "${arch}" = "arm64" ]; then
@@ -77,12 +75,19 @@ function rustup_component_list() {
   dt_exec ${fname} "rustup component list"
 }
 
+function rustup_vars() {
+  rustup_vars=(RUSTUP_TOOLCHAIN)
+  echo "${rustup_vars[@]} " | xargs -n1 | sort -u | xargs
+}
+
 function ctx_rustup() {
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=$(rustup_vars)
   RUSTUP_TOOLCHAIN="1.86.0"
   RUSTUP_TARGET_TRIPLE=$(rust_target_triple)
   RUSTUP_COMPONENTS=(clippy rustfmt)
   NIGHTLY_VERSION="nightly-2025-05-01"
-  _export_envs=($rustup_envs[@])
+  dt_set_ctx -c ${ctx}
 }
 
 rustup_methods=()
@@ -93,4 +98,4 @@ rustup_methods+=(rustup_nightly_install)
 rustup_methods+=(rustup_default)
 rustup_methods+=(rustup_component_add)
 
-dt_register "ctx_rustup" "1_86" "${rustup_methods[@]}"
+dt_register "ctx_rustup" "1.86.0" "${rustup_methods[@]}"

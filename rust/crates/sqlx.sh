@@ -10,10 +10,18 @@ function ctx_crate_sqlx() {
 
 dt_register "ctx_crate_sqlx" "sqlx" "${cargo_install_methods[@]}"
 
+function sqlx_vars() {
+  sqlx_vars=(SCHEMAS TMP_SCHEMAS DATABASE_URL)
+  echo "${sqlx_vars[@]}" | xargs -n1 | sort -u | xargs
+}
+
 function ctx_sqlx() {
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=$(sqlx_vars)
   SCHEMAS="${DT_PROJECT}/migrations/schemas"
   TMP_SCHEMAS="${DT_ARTEFACTS}/schemas"
   DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
+  dt_set_ctx -c ${ctx}
 }
 
 function sqlx_pre_run() {

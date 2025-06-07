@@ -1,4 +1,5 @@
-cargo_envs=(CARGO_BUILD_TARGET CARGO_TARGET_DIR RUSTFLAGS)
+cargo_inline_envs=(CARGO_BUILD_TARGET CARGO_TARGET_DIR RUSTFLAGS)
+cargo_envs=(${rustup_envs[@]} ${cargo_inline_envs[@]})
 
 function _cargo_pkg_opt() {
   if [ -n "${PACKAGE}" ]; then
@@ -155,16 +156,20 @@ function cargo_bin_dir() {
 }
 
 function cargo_build() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=($(dt_inline_envs "${_envs[@]}"))
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=($(dt_inline_envs "${inline_envs[@]}"))
   cmd+=(cargo build)
   _cargo_build_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
 function cargo_fmt() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
   cmd+=(fmt)
@@ -174,8 +179,10 @@ function cargo_fmt() {
 }
 
 function cargo_fmt_fix() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
   cmd+=(fmt)
@@ -184,8 +191,10 @@ function cargo_fmt_fix() {
 }
 
 function cargo_test() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo test)
   _cargo_test_opts
   dt_exec ${fname} "${cmd[@]}"
@@ -193,48 +202,66 @@ function cargo_test() {
 
 # "cargo clippy" uses "cargo check" under the hood.
 function cargo_clippy() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo clippy)
   _cargo_clippy_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
 function cargo_clippy_fix() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo clippy --fix --allow-staged)
   _cargo_clippy_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
 function cargo_doc() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo doc --no-deps --document-private-items)
   _cargo_doc_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
 function cargo_doc_open() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]} ${app_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo doc --no-deps --document-private-items --open)
   _cargo_doc_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
 function cargo_clean() {
-  local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local fname cmd inline_envs
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  inline_envs=(${cargo_envs[@]})
+  cmd=("$(dt_inline_envs "${inline_envs[@]}")")
   cmd+=(cargo clean)
   _cargo_clean_opts
   dt_exec ${fname} "${cmd[@]}"
 }
 
+function cargo_vars() {
+  cargo_vars=(BINS BUILD_MODE CARGO_BUILD_TARGET CARGO_TARGET_DIR CLIPPY_LINTS CLIPPY_REPORT EXCLUDE FEATURES)
+  cargo_vars+=(MANIFEST MANIFEST_DIR MANIFEST_PATH MESSAGE_FORMAT PACKAGE PROFILE RUSTFLAGS)
+  cargo_vars+=(ALL_FEATURES FORCE FROZEN IGNORE_RUST_VERSION LOCKED NO_DEFAULT_FEATURES OFFLINE BINS_DIR)
+  echo "${cargo_vars[@]} $(rustup_vars) app_envs" | xargs -n1 | sort -u | xargs
+}
+
 # BINS is an array, by default BINS=()
 function ctx_cargo() {
-  ctx_rustup
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=$(cargo_vars)
   # inherited from ctx_rustup
   #  RUSTUP_TOOLCHAIN=
   #  NIGHTLY_VERSION=
@@ -254,7 +281,6 @@ function ctx_cargo() {
   PACKAGE=
   PROFILE=$(cargo_profile)
   RUSTFLAGS=''
-
   # Flags, can be y or n
   ALL_FEATURES=
   FORCE=
@@ -270,7 +296,8 @@ function ctx_cargo() {
   # MANIFEST_PATH depends on both MANIFEST and MANIFEST_DIR
   if [ -n "${MANIFEST_DIR}" ] && [ -n "${MANIFEST}" ]; then MANIFEST_PATH="${MANIFEST_DIR}/${MANIFEST}"; fi
 
-  _export_envs=(${rustup_envs[@]} ${cargo_envs[@]})
+  app_envs=()
+  dt_set_ctx -c ${ctx}
 }
 
 cargo_methods=()
