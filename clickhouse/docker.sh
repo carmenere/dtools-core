@@ -1,9 +1,12 @@
+clickhouse_docker_vars=(${docker_vars[@]} ${clickhouse_vars[@]})
+
 function ctx_docker_clickhouse() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx_service_clickhouse && \
-  ctx_docker_image && \
-  ctx_docker_container && \
-  ctx_docker_network; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=("${clickhouse_docker_vars}")
+  dt_load_vars -c ctx_service_clickhouse && \
+  dt_load_vars -c ctx_docker_image && \
+  dt_load_vars -c ctx_docker_container && \
+  dt_load_vars -c ctx_docker_network || return $?
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="clickhouse/clickhouse-server:${MAJOR}.4.1.1943-alpine"
@@ -20,15 +23,14 @@ function ctx_docker_clickhouse() {
   CONTAINER="clickhouse-server"
   RESTART="always"
   CHECK_CMD="sh -c \$'clickhouse-client --query \'exit\''"
-  _hook_pre_docker_run=hooks_pre_docker_run_clickhouse
-  _docker_run_envs=(CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT)
+  hook_pre_docker_run=pre_docker_run_clickhouse
+  dt_set_ctx -c ${ctx}
 }
 
-function hooks_pre_docker_run_clickhouse() {
-  CLICKHOUSE_DB=${CLICKHOUSE_DB}
-  CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
-  CLICKHOUSE_USER=${CLICKHOUSE_USER}
+function pre_docker_run_clickhouse() {
+  dt_load_vars -c ctx_docker_clickhouse_admin || return $?
+  docker_run_envs=(CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT)
   CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
 }
 
-dt_register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"
+dt_register "ctx_docker_clickhouse" "clickhouse" "${docker_methods[@]}"

@@ -8,7 +8,7 @@ docker_vars=(${docker_image_vars[@]} ${docker_container_vars[@]} ${docker_networ
 
 function ctx_docker_network() {
   local ctx=$0; dt_skip_if_initialized || return $?
-  eval "vars_${ctx}=docker_network_vars"
+  __vars=("${docker_network_vars}")
   SUBNET="192.168.111.0/24"
   BRIDGE="example"
   ERR_IF_BRIDGE_EXISTS="n"
@@ -22,7 +22,7 @@ function ctx_docker_network() {
 #   docker_build_args => "--env FOO=222 --env BAR=333"
 ctx_docker_image() {
   local ctx=$0; dt_skip_if_initialized || return $?
-  eval "vars_${ctx}=docker_image_vars"
+  __vars=("${docker_image_vars}")
   DEFAULT_IMAGE="alpine:3.21"
   BUILD_ARGS=
   CTX="."
@@ -54,7 +54,7 @@ ctx_docker_image() {
 #   docker_run_envs => "--env FOO=222 --env BAR=333"
 ctx_docker_container() {
   local ctx=$0; dt_skip_if_initialized || return $?
-  eval "vars_${ctx}=docker_container_vars"
+  __vars=("${docker_container_vars}")
   ATTACH=
   BACKGROUND=
   PSEUDO_TTY=

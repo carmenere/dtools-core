@@ -1,6 +1,6 @@
 function ctx_pg_ctl() {
-  local ctx=$0; dt_skip_if_initialized || return $?
-  eval "vars_${ctx}=pg_vars"
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=("${pg_vars}")
   OS_USER="${PGUSER}"
   DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
   INITDB_AUTH_HOST="md5"

@@ -25,10 +25,10 @@ function dt_debug () {
   fi
 }
 
-function dt_severity_error() { DT_SEVERITY=0 }
-function dt_severity_warning() { DT_SEVERITY=1 }
-function dt_severity_info() { DT_SEVERITY=2 }
-function dt_severity_debug() { DT_SEVERITY=3 }
+function severity_error() { DT_SEVERITY=0 }
+function severity_warning() { DT_SEVERITY=1 }
+function severity_info() { DT_SEVERITY=2 }
+function severity_debug() { DT_SEVERITY=3 }
 
 # Example: dt_err_if_empty ${fname} ${fname} "FOO" || return $?
 # where FOO is a name of some variable.
@@ -94,7 +94,7 @@ function dt_exec() {
       >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][ECHO][EXEC]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
-    eval "${cmd}"; err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+    eval "${cmd}" || return $?
   fi
 }
 
@@ -106,7 +106,7 @@ function dt_echo() {
   dt_dryrun_on
   DT_ECHO_STDOUT="y"
   DT_ECHO="n"
-  eval "$@"; err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+  eval "$@" || return $?
   DT_ECHO_STDOUT="n"
   DT_DRYRUN=${saved_DT_DRYRUN}
   DT_ECHO=${saved_DT_ECHO}
@@ -163,7 +163,6 @@ function dt_sleep_1() {
 
 function dt_paths() {
   if [ -z "${DT_DTOOLS}" ]; then DT_DTOOLS="$(pwd)"; fi
-
   # Paths that depend on DT_DTOOLS
   export DT_PROJECT=$(realpath "${DT_DTOOLS}"/..)
   export DT_ARTEFACTS="${DT_DTOOLS}/.artefacts"
@@ -171,15 +170,21 @@ function dt_paths() {
   export DT_LOCALS=${DT_DTOOLS}/locals
   export DT_STANDS=${DT_DTOOLS}/stands
   export DT_TOOLS=${DT_DTOOLS}/tools
-
   # Paths that depend on DT_ARTEFACTS
   export DT_LOGS="${DT_ARTEFACTS}/logs"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
+  # Cache for ctxes
+  export DT_CTXES=${DT_LOGS}/ctxes
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
+  # Delete all ctxes every time ". ./dtools/rc.sh" is called
+  rm -rf ${DT_CTXES} && mkdir -p ${DT_CTXES}
 }
+
+ID=0
+dt_vars=(__vars)
 
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {

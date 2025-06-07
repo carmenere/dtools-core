@@ -1,4 +1,8 @@
 function pg_sql_alter_role_password() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
+  dt_err_if_empty ${fname} "PGPASSWORD" || return $?
   query=$(
     dt_escape_quote "ALTER ROLE \"${PGUSER}\" WITH PASSWORD '${PGPASSWORD}'"
   )
@@ -8,6 +12,10 @@ function pg_sql_alter_role_password() {
 # In postgres the $$ ... $$ means dollar-quoted string.
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
 function pg_sql_create_user() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
+  dt_err_if_empty ${fname} "PGPASSWORD" || return $?
   query=$(
     dt_escape_quote "
     SELECT \$\$CREATE USER ${PGUSER} WITH ENCRYPTED PASSWORD '${PGPASSWORD}'\$\$
@@ -17,6 +25,9 @@ function pg_sql_create_user() {
 }
 
 function pg_sql_drop_user() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
   query=$(
     echo "DROP USER IF EXISTS ${PGUSER}"
   )
@@ -24,6 +35,9 @@ function pg_sql_drop_user() {
 }
 
 function pg_sql_create_db() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(
     dt_escape_quote "
     SELECT 'CREATE DATABASE ${PGDATABASE}'
@@ -33,6 +47,9 @@ function pg_sql_create_db() {
 }
 
 function pg_sql_drop_db() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(
     dt_escape_quote "
     SELECT 'DROP DATABASE IF EXISTS ${PGDATABASE}'
@@ -42,6 +59,10 @@ function pg_sql_drop_db() {
 }
 
 function pg_sql_grant_user_migrator() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
+  dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(
     dt_escape_quote "
       SELECT
@@ -56,6 +77,9 @@ function pg_sql_grant_user_migrator() {
 }
 
 function pg_sql_revoke_user_migrator() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
   query=$(
     dt_escape_quote "
       SELECT 'DROP OWNED BY ${PGUSER}'
@@ -65,6 +89,10 @@ function pg_sql_revoke_user_migrator() {
 }
 
 function pg_sql_grant_user_app() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
+  dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(
     dt_escape_quote "
     SELECT
@@ -82,6 +110,10 @@ function pg_sql_grant_user_app() {
 }
 
 function pg_sql_revoke_user_app() {
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "PGUSER" || return $?
+  dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(
     dt_escape_quote "
     SELECT

@@ -61,7 +61,7 @@ function _psql_clean() {
 
 function psql_conn_local_admin() {
   local cmd=$(
-    dt_load_vars -c ctx_pg_admin
+    dt_load_vars -c ctx_pg_admin || return $?
     unset PGHOST
     sudo -u ${PGUSER} psql -d ${PGDATABASE}
   )
@@ -106,13 +106,15 @@ function psql_conn_docker_app() {
 }
 
 function psql_init_docker() {
-  docker_service_check_pg && dt_load_vars -c ctx_docker_pg && \
+  docker_service_check_pg && \
+  dt_load_vars -c ctx_docker_pg && \
   _psql_init ctx_docker_pg_admin ctx_pg_migrator ctx_pg_app
 }
 
 # it's like docker_rm_pg && docker_run_pg
 function psql_clean_docker(){
-  docker_service_check_pg && dt_load_vars -c ctx_docker_pg && \
+  docker_service_check_pg && \
+  dt_load_vars -c ctx_docker_pg && \
   _psql_clean ctx_docker_pg_admin ctx_pg_migrator ctx_pg_app
 }
 

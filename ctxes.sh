@@ -1,7 +1,3 @@
-# "initialized_ctxes" is a cache for ctx that have already been initialized.
-# NOTE: "initialized_ctxes" is reset every time the command ". ./dtools/rs.sh" is run.
-initialized_ctxes=()
-
 function _check_optarg() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "${OPTARG:0:1}" = "-" ]; then
@@ -10,25 +6,22 @@ function _check_optarg() {
   fi
 }
 
-# Example: . <(dt_set_ctx ${ctx})
+# Usage: dt_set_ctx -c ${ctx}
 function dt_set_ctx() {
-  local vars val var ctx fctx prefix fname dump
+  local vars val var ctx ctx_file fname dump
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${id}" ]; then; ID=$((${ID}+1)); id=${ID}; fi
   ctx=
-  fctx=
-  prefix=
-  OPTSTRING=":c:d"
+  ctx_file=
+  OPTSTRING=":c:"
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: BEGIN"
   while getopts ${OPTSTRING} opt; do
-    dt_debug ${fname} "opt=${opt}, OPTARG=${OPTARG}, OPTIND=${OPTIND}"
+    dt_debug ${fname} "${BOLD}ID=${id}${RESET}: opt=${opt}, OPTARG=${OPTARG}, OPTIND=${OPTIND}"
     case ${opt} in
       c) _check_optarg || return $?
         if [ -n "${ctx}" ]; then dt_error ${fname} "Option '-c' cannot be used multiple times"; return 99; fi
         ctx=${OPTARG}
-        prefix=_${ctx}__
-        ;;
-      d) fctx="${DT_LOGS}/ctxes/${ctx}"
-         if [ ! -d "$(dirname ${fctx})" ]; then mkdir -p "$(dirname ${fctx})"; fi
-         :> "${fctx}"
+        ctx_file="${DT_CTXES}/${ctx}.txt"
         ;;
       :) echo "Option -${OPTARG} requires an argument."; return 88;;
       ?) echo "Invalid option: '-${OPTARG}'."; return 99;;
@@ -36,48 +29,32 @@ function dt_set_ctx() {
   done
   shift $((OPTIND - 1))
   if [ -n "$1" ]; then dt_error ${fname} "Positional parameters are not supported: \$@='$@'"; return 99; fi
-  vars=$(eval echo "\${vars_${ctx}}")
-  for var in $(eval echo "\${${vars}[@]}"); do
+  rm -f '${ctx_file}'
+  vars=($(eval echo "\${__vars}"))
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${BOLD}${ctx}${RESET}, vars=${vars}"
+  for var in ${vars[@]}; do
     val=$(eval echo "\$${var}")
-    dt_debug ${fname} "ctx=${ctx}: ${BOLD}setting${RESET} var ${BOLD}${var}${RESET}=${val}"
-    if [ -z "${val}" ]; then
-      dt_warning ${fname} "Var ${BOLD}${var}${RESET} is ${BOLD}empty${RESET}"
-    fi
-    eval "${prefix}${var}=\$'$(dt_escape_quote ${val})'"
-    if [ -n "${fctx}" ]; then
-      echo "${prefix}${var}=\$'$(dt_escape_quote ${val})'" >> "${fctx}"
+    dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ${BOLD}setting${RESET} var ${BOLD}${var}${RESET}=${val}"
+    eval "${var}=\$'$(dt_escape_quote ${val})'"
+    if [ -n "${ctx_file}" ]; then
+      echo -e "${var}=\$'$(dt_escape_quote ${val})'" >> "${ctx_file}"
     fi
   done
-  initialized_ctxes+=(${ctx})
-  dt_debug ${fname} "${BOLD}EXIT${RESET}"
-}
-
-function dt_ctx_is_initialized() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  for c in ${initialized_ctxes[@]};  do
-    dt_debug ${fname} "c=${c}, ctx=${ctx}"
-    if [ "${c}" = "${ctx}" ]; then
-      dt_debug ${fname} "${BOLD}hit${RESET}"
-      return 10
-    fi
-  done
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: END"
 }
 
 function dt_skip_if_initialized() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "initialized_ctxes=${BOLD}${initialized_ctxes}${RESET}"
-  dt_ctx_is_initialized; err=$?
-  if [ "${err}" = 10 ]; then
-    dt_debug ${fname} "${BOLD}${ctx}${RESET} has already been initialized, ${BOLD}skip${RESET}"
-  fi
-
-  if [ "${err}" != 0 ]; then
-    return ${err}
+  local ctx_file fname
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx_file="${DT_CTXES}/${ctx}.txt"
+  if [ -f "${ctx_file}" ]; then
+    dt_info ${fname} "${BOLD}ID=${id}${RESET}: ${BOLD}${ctx}${RESET} has already been initialized, ${BOLD}ctx cache${RESET} is in file ${BOLD}${ctx_file}${RESET}, ${BOLD}skip${RESET}"
+  else
+    return 101
   fi
 }
 
-# Consider function docker_build()
-# dt_register ctx_docker_pg_admin pg docker_methods
+# Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 # will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
 function dt_register() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
@@ -92,31 +69,18 @@ function dt_register() {
   done
 }
 
-function _dt_init_ctx() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_ctx_is_initialized "${ctx}"; err=$?
-  if [ "${err}" = 99 ]; then
-   return $?
-  elif [ "${err}" = 10 ]; then
-   dt_debug ${fname} "ctx '${BOLD}${ctx}${RESET}' has already been initialized, ${BOLD}skip${RESET}"
-   return 0
-  fi
-  dt_info ${fname} "initializing ctx '${ctx}' ..."
-  ${ctx}
-}
-
 function _dt_parse_ctxes() {
   local fname opt OPTSTRING OPTIND OPTARG
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  OPTSTRING=":c:v:m:e:u:"
+  OPTSTRING=":c:v:m:eu"
   while getopts ${OPTSTRING} opt; do
-    dt_debug ${fname} "opt=${opt}, OPTARG=${OPTARG}"
+    dt_debug ${fname} "${BOLD}ID=${id}${RESET}: opt=${opt}, OPTARG=${OPTARG}"
     case ${opt} in
       c) _check_optarg || return $?; ctxes+=(${OPTARG});;
       v) _check_optarg || return $?; filter+=(${OPTARG});;
       m) _check_optarg || return $?; map+=(${OPTARG});;
-      e) _check_optarg || return $?; export="${OPTARG}";;
-      u) _check_optarg || return $?; unexport="${OPTARG}";;
+      e) _check_optarg || return $?; export="y";;
+      u) _check_optarg || return $?; unexport="y";;
       :) echo "Option -${OPTARG} requires an argument."; return 88;;
       ?) echo "Invalid option: '-${OPTARG}'."; return 99;;
     esac
@@ -124,87 +88,59 @@ function _dt_parse_ctxes() {
 }
 
 function _remap() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname pair old new
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   for pair in ${map[@]};  do
     old=$(echo ${pair} | sed -E -e "s/^(.+)=>.+$/\1/") || return $?
     new=$(echo ${pair} | sed -E -e "s/^.+=>(.+)$/\1/") || return $?
     if [ "${old}" = "${var}" ]; then
-      dt_debug ${fname} "${BOLD}match${RESET} var=${BOLD}${var}${RESET}, old=${BOLD}${old}${RESET}, new=${new}"
-      dt_debug ${fname} "ctx=${ctx}: ${BOLD}loading remapped${RESET} var ${BOLD}${new}${RESET}=${val}"
-      eval "${new}=\$${prefix}${var}" || return $?
-      vname=${new}
-      remapped="y"
+      dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${ctx}: var ${BOLD}${old}${RESET} will be remapped to ${BOLD}${new}${RESET}"
+      var=${new}
       break
     fi
   done
 }
 
-function _export() {
-  if [ "${export}" = "both" ]; then
-    dt_exec "export ${prefix}${vname}" || return $?
-    dt_exec "export ${vname}" || return $?
-  elif [ "${export}" = "pref" ]; then
-    dt_exec "export ${prefix}${vname}" || return $?
-  elif [ "${export}" = "nopref" ]; then
-    dt_exec "export ${vname}" || return $?
-  fi
-}
-
-function _unexport() {
-  if [ "${unexport}" = "both" ]; then
-    dt_exec "typeset +x ${prefix}${vname}" || return $?
-    dt_exec "typeset +x ${vname}" || return $?
-  elif [ "${unexport}" = "pref" ]; then
-    dt_exec "typeset +x ${prefix}${vname}" || return $?
-  elif [ "${unexport}" = "nopref" ]; then
-    dt_exec "typeset +x ${vname}" || return $?
-  fi
-}
-
-# -m FOO=>B -m BAR=>X: rename vars during loading; can be used multiple times
-# -v FOO -v BAR: list of vars to be loaded, if empty - all vars of all ctxes will be loaded; can be used multiple times
-# -c %ctx_name%: contains name of ctx; can be used multiple times; every ctx is callable, so ecah %ctx_name% in the array "ctxes" will be called to init appropriate ctx
-# -e pref|nopref|both: export varibale, 3 modes: "pref" adds ctx prefix when export var, "nopref" exports var without any prefix, "both" - nopref + pref
-# -u pref|nopref|both: UNexport varibale, 3 modes: "pref" adds ctx prefix when unexport var, "nopref" unsets var without any prefix, "both" - nopref + pref
+# -m 'FOO=>B' -m 'BAR=>X': rename vars during loading; this option can be used multiple times, NOTE: mapping must be passed inside single quotes
+# -v FOO -v BAR: list of vars to be loaded, if empty - all vars of all ctxes will be loaded; this option can be used multiple times
+# -c %ctx_name%: contains name of ctx; this option can be used multiple times; every ctx is callable, so ecah %ctx_name% in the array "ctxes" will be called to init appropriate ctx
+# -e: export varibale
+# -u: UNexport varibale
 function dt_load_vars() {
-  local fname ctxes filter map ctx vars var val new old pair vname export unexport remapped prefix
+  local fname id ctxes filter map export unexport ctx ctx_file vars var val
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ID=$((${ID}+1)); id=${ID}
   ctxes=()
   filter=()
   map=()
   export=
   unexport=
-  _dt_parse_ctxes $@; err=$?
-  if [ "${err}" != 0 ]; then dt_error ${fname} "Error while parsing args: err=${err}"; return ${err}; fi
-  dt_debug ${fname} "ctxes='${ctxes}', filter='${filter}', map='${map}'"
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: BEGIN"
+  _dt_parse_ctxes $@ || return $?
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctxes='${ctxes}', filter='${filter}', map='${map}'"
   for ctx in ${ctxes[@]}; do
-    prefix="_${ctx}__"
-    dt_debug ${fname} "${BOLD}INIT CTX${RESET}: ctx=${ctx}"
-    ${ctx}
-    dt_debug ${fname} "${BOLD}CONTINUE LOAD${RESET}: ctx=${ctx}"
-    vars=$(eval echo "\${vars_${ctx}}")
+    ctx_file="${DT_CTXES}/${ctx}.txt"
+    dt_skip_if_initialized; if [ "$?" != 0 ]; then
+      dt_info ${fname} "${BOLD}ID=${id}${RESET}: Lazy initialization of ctx ${BOLD}${ctx}${RESET}"
+      ${ctx} || return $?
+      dt_info ${fname} "${BOLD}ID=${id}${RESET}: ctx ${BOLD}${ctx}${RESET} is initialized"
+    fi
+    dt_info ${fname} "${BOLD}ID=${id}${RESET}: sourcing file ${ctx_file}"
+    . "${ctx_file}" || return $?
     if [ -n "${filter}" ]; then
       vars=("${filter[@]}")
     else
-      vars=($(eval echo "\${${vars}[@]}"))
+      vars=($(eval echo "\${__vars}"))
     fi
+    dt_debug ${fname} "vars=${vars}"
     for var in ${vars[@]}; do
-      val=$(eval echo "\$${prefix}${var}")
-      dt_debug ${fname} "loop: prefix=${prefix}, var=${var}, val=${val}"
-      if [ -z "${val}" ]; then
-        dt_warning ${fname} "Var ${BOLD}${var}${RESET} is ${BOLD}empty${RESET}"
-      fi
-      remapped="n"
-      _remap; err=$?
-      if [ "${err}" != 0 ]; then dt_error ${fname} "Error while remapping: err=${err}"; return "${err}"; fi
-      if [ "${remapped}" = "n" ]; then
-        dt_debug ${fname} "ctx=${ctx}: ${BOLD}loading${RESET} var ${BOLD}${var}${RESET}=${val}"
-        eval "${var}=\$${prefix}${var}"
-        vname=${var}
-      fi
-      _export && _unexport; err=$?
-      if [ "${err}" != 0 ]; then dt_error ${fname} "Error while export/unexport: err=${err}"; return "${err}"; fi
+      val=$(eval echo "\$${var}")
+      _remap || $?
+      dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${ctx}: ${BOLD}loading${RESET} var ${BOLD}${var}${RESET}=${val}"
+      eval $(echo "${var}=\"${val}\"")
+      if [ "${export}" = "y" ]; then dt_exec "export ${var}" || return $?; fi
+      if [ "${unexport}" = "y" ]; then dt_exec "typeset +x ${var}" || return $?; fi
     done
   done
-  dt_debug ${fname} "${BOLD}EXIT${RESET}"
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: END"
 }
