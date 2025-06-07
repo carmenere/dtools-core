@@ -10,7 +10,7 @@ function _check_optarg() {
 function dt_set_ctx() {
   local vars val var ctx ctx_file fname dump
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  if [ -z "${id}" ]; then; ID=$((${ID}+1)); id=${ID}; fi
+  if [ -z "${id}" ]; then ID=$((${ID}+1)); id=${ID}; fi
   ctx=
   ctx_file=
   OPTSTRING=":c:"
@@ -29,16 +29,13 @@ function dt_set_ctx() {
   done
   shift $((OPTIND - 1))
   if [ -n "$1" ]; then dt_error ${fname} "Positional parameters are not supported: \$@='$@'"; return 99; fi
-  rm -f '${ctx_file}'
+  if [ -f "${ctx_file}" ]; then rm -f "${ctx_file}"; fi
   vars=($(eval echo "\${__vars}"))
-  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${BOLD}${ctx}${RESET}, vars=${vars}"
+  dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${BOLD}${ctx}${RESET}"
   for var in ${vars[@]}; do
     val=$(eval echo "\$${var}")
     dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ${BOLD}setting${RESET} var ${BOLD}${var}${RESET}=${val}"
-    eval "${var}=\$'$(dt_escape_quote ${val})'"
-    if [ -n "${ctx_file}" ]; then
-      echo -e "${var}=\$'$(dt_escape_quote ${val})'" >> "${ctx_file}"
-    fi
+    echo -e "${var}=\$'$(dt_escape_quote ${val})'" >> "${ctx_file}"
   done
   dt_debug ${fname} "${BOLD}ID=${id}${RESET}: END"
 }
@@ -48,7 +45,7 @@ function dt_skip_if_initialized() {
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx_file="${DT_CTXES}/${ctx}.txt"
   if [ -f "${ctx_file}" ]; then
-    dt_info ${fname} "${BOLD}ID=${id}${RESET}: ${BOLD}${ctx}${RESET} has already been initialized, ${BOLD}ctx cache${RESET} is in file ${BOLD}${ctx_file}${RESET}, ${BOLD}skip${RESET}"
+    dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ${BOLD}${ctx}${RESET} has already been initialized, ${BOLD}ctx cache${RESET} is in file ${BOLD}${ctx_file}${RESET}, ${BOLD}skip${RESET}"
   else
     return 101
   fi
@@ -65,7 +62,7 @@ function dt_register() {
   local methods=("$@")
   if [ -n "${methods}" ] && [ -z "${suffix}" ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   for method in ${methods[@]}; do
-    eval "function ${method}_${suffix}() { dt_load_vars -c ${ctx} && ${method} }"
+    eval "function ${method}_${suffix}() {( dt_load_vars -c ${ctx} && ${method} )}"
   done
 }
 
@@ -125,7 +122,7 @@ function dt_load_vars() {
       ${ctx} || return $?
       dt_info ${fname} "${BOLD}ID=${id}${RESET}: ctx ${BOLD}${ctx}${RESET} is initialized"
     fi
-    dt_info ${fname} "${BOLD}ID=${id}${RESET}: sourcing file ${ctx_file}"
+    dt_debug ${fname} "${BOLD}ID=${id}${RESET}: sourcing file ${ctx_file}"
     . "${ctx_file}" || return $?
     if [ -n "${filter}" ]; then
       vars=("${filter[@]}")
@@ -137,9 +134,9 @@ function dt_load_vars() {
       val=$(eval echo "\$${var}")
       _remap || $?
       dt_debug ${fname} "${BOLD}ID=${id}${RESET}: ctx=${ctx}: ${BOLD}loading${RESET} var ${BOLD}${var}${RESET}=${val}"
-      eval $(echo "${var}=\"${val}\"")
-      if [ "${export}" = "y" ]; then dt_exec "export ${var}" || return $?; fi
-      if [ "${unexport}" = "y" ]; then dt_exec "typeset +x ${var}" || return $?; fi
+      eval "${var}=\$'$(dt_escape_quote ${val})'"
+      if [ "${export}" = "y" ]; then dt_exec ${fname} "export ${var}" || return $?; fi
+      if [ "${unexport}" = "y" ]; then dt_exec ${fname} "typeset +x ${var}" || return $?; fi
     done
   done
   dt_debug ${fname} "${BOLD}ID=${id}${RESET}: END"

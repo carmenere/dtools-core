@@ -1,29 +1,21 @@
-function rabbitmq_user_admin() {
+rmq_account=( RABBIT_USER RABBIT_PASSWORD )
+
+function rmq_account_vars() {
+  echo "${rmq_account[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
+}
+
+function ctx_rabbitmq_admin() {
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=$(rmq_account_vars)
   RABBIT_USER="guest"
   RABBIT_PASSWORD="guest"
+  dt_set_ctx -c ${ctx}
 }
 
-function rabbitmq_user_app() {
+function ctx_rabbitmq_app() {
+  local ctx=$0; dt_skip_if_initialized && return 0
+  __vars=$(rmq_account_vars)
   RABBIT_USER="app_user"
   RABBIT_PASSWORD=12345
-}
-
-function ctx_conn_rabbitmq_admin() {
-  ctx_service_rabbitmq && \
-  rabbitmq_user_admin
-}
-
-function ctx_conn_rabbitmq_app() {
-  ctx_service_rabbitmq && \
-  rabbitmq_user_app
-}
-
-function ctx_conn_docker_rabbitmq_admin() {
-  ctx_docker_rabbitmq && \
-  rabbitmq_user_admin
-}
-
-function ctx_conn_docker_rabbitmq_app() {
-  ctx_docker_rabbitmq && \
-  rabbitmq_user_app
+  dt_set_ctx -c ${ctx}
 }

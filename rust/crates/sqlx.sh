@@ -24,7 +24,7 @@ function sqlx_pre_run() {
   mkdir -p "${TMP_SCHEMAS}"
   local cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
   cmd+=("do echo -e \"cp \${FILE} '${TMP_SCHEMAS}/'\"; cp "\${FILE}" '${TMP_SCHEMAS}'; done")
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function sqlx_run() {
@@ -35,11 +35,11 @@ function sqlx_run() {
   local cmd=("$(dt_inline_envs "${_envs[@]}")")
   cmd+=(sqlx migrate run)
   cmd+=(--source "'${TMP_SCHEMAS}'")
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function sqlx_prepare() {
-  ( cd "${DT_PROJECT_DIR}" && dt_exec "cargo sqlx prepare" ) #--workspace
+  ( cd "${DT_PROJECT_DIR}" && dt_exec ${fname} "cargo sqlx prepare" ) #--workspace
 }
 
 sqlx_methods=()

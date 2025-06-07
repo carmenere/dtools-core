@@ -27,7 +27,7 @@ function rustup_install() {
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${toolchain}"
 
-	dt_exec "${cmd}"
+	dt_exec ${fname} "${cmd}"
 }
 
 function rustup_toolchain_install() {
@@ -36,7 +36,7 @@ function rustup_toolchain_install() {
   dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup toolchain install ${toolchain}"
-	dt_exec "${cmd}" && rustup_nightly_install
+	dt_exec ${fname} "${cmd}" && rustup_nightly_install
 }
 
 function rustup_nightly_install() {
@@ -46,7 +46,7 @@ function rustup_nightly_install() {
 	if [ -z "${NIGHTLY_VERSION}" ]; then return 0; fi
   local toolchain="${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}"
   local cmd="rustup toolchain install ${toolchain}"
-	dt_exec "${cmd}"
+	dt_exec ${fname} "${cmd}"
 }
 
 function rustup_default() {
@@ -55,26 +55,26 @@ function rustup_default() {
   dt_err_if_empty ${fname} "RUSTUP_TARGET_TRIPLE" || return $?
   local toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
 	local cmd="rustup default ${toolchain}"
-	dt_exec "${cmd}"
+	dt_exec ${fname} "${cmd}"
 }
 
 function rustup_component_add() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   dt_err_if_empty ${fname} "RUSTUP_COMPONENTS" || return $?
 	local cmd="rustup component add ${RUSTUP_COMPONENTS[@]}"
-	dt_exec "${cmd}"
+	dt_exec ${fname} "${cmd}"
 }
 
 function rustup_toolchain_list() {
-  dt_exec "rustup toolchain list"
+  dt_exec ${fname} "rustup toolchain list"
 }
 
 function rustup_target_list() {
-  dt_exec "rustup target list"
+  dt_exec ${fname} "rustup target list"
 }
 
 function rustup_component_list() {
-  dt_exec "rustup component list"
+  dt_exec ${fname} "rustup component list"
 }
 
 function ctx_rustup() {

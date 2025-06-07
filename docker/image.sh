@@ -1,5 +1,8 @@
-docker_image_special=(hook_pre_docker_build docker_build_args ${dt_vars[@]})
-docker_image_vars=(DEFAULT_IMAGE BUILD_ARGS CTX DEFAULT_TAG DOCKERFILE BASE_IMAGE IMAGE NO_CACHE REGISTRY ${docker_image_special[@]})
+function docker_image_vars() {
+  docker_image_special=(hook_pre_docker_build docker_build_args ${dt_vars[@]})
+  docker_image_vars=(DEFAULT_IMAGE BUILD_ARGS CTX DEFAULT_TAG DOCKERFILE BASE_IMAGE IMAGE NO_CACHE REGISTRY ${docker_image_special[@]})
+  echo "${docker_image_vars[@]} ${docker_image_special[@]}"
+}
 
 #  FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 
@@ -9,7 +12,7 @@ docker_image_vars=(DEFAULT_IMAGE BUILD_ARGS CTX DEFAULT_TAG DOCKERFILE BASE_IMAG
 #   docker_build_args => "--env FOO=222 --env BAR=333"
 ctx_docker_image() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${docker_image_vars}")
+  __vars=$(docker_image_vars)
   DEFAULT_IMAGE="alpine:3.21"
   BUILD_ARGS=
   CTX="."
@@ -72,7 +75,7 @@ function docker_pull() {
   docker_is_running || return $?
   local cmd=(docker pull)
   docker_pull_opts && \
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function docker_build() {
@@ -81,11 +84,11 @@ function docker_build() {
   $hook_pre_docker_build && \
   _docker_build_arg_opts && \
   _docker_build_opts && \
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function docker_rmi() {
   docker_is_running || return $?
   local cmd=(docker rmi ${IMAGE})
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }

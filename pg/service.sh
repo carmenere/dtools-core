@@ -1,7 +1,10 @@
-pg_version=(MAJOR MINOR PATCH)
+pg_version=(MAJOR MINOR)
 pg_socket=(PGHOST PGPORT)
 pg_paths=(BIN_DIR PG_HBA_CONF POSTGRESQL_CONF PG_CONFIG CONFIG_LIBDIR CONFIG_SHAREDIR PSQL)
-pg_vars=(${pg_version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} ${dt_vars[@]})
+
+function pg_vars() {
+  echo "${pg_version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
+}
 
 function pg_dir() {
   if [ "$(os_name)" = "macos" ]; then
@@ -61,15 +64,15 @@ function pg_service() {
 function pg_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
-    dt_exec "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
-    dt_exec "${SUDO} apt-get update" || return $?
-    dt_exec "${SUDO} apt-get -y install \
+    dt_exec ${fname} "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
+    dt_exec ${fname} "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
+    dt_exec ${fname} "${SUDO} apt-get update" || return $?
+    dt_exec ${fname} "${SUDO} apt-get -y install \
       postgresql-${MAJOR} \
       postgresql-server-dev-${MAJOR} \
       libpq-dev" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec "brew install ${SERVICE}"
+    dt_exec ${fname} "brew install ${SERVICE}"
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
@@ -119,9 +122,13 @@ function pg_hba_conf_add_policy() {
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   dt_err_if_empty ${fname} "PG_HBA_CONF" || return $?
   old_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1) || return $?
-  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}" || return $?
+  dt_exec ${fname} "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${PG_HBA_CONF}" || return $?
   new_hash=$(${SUDO} sha256sum "${PG_HBA_CONF}" | cut -d' ' -f 1) || return $?
-  if [ "${old_hash}" != "${new_hash}" ]; then dt_debug ${fname} "${PG_HBA_CONF} is changed"; echo "changed"; fi
+  if [ "${old_hash}" != "${new_hash}" ]; then
+    dt_info ${fname} "${PG_HBA_CONF} is ${BOLD}is changed${RESET}"; return 59
+  else
+    dt_info ${fname} "${PG_HBA_CONF} is ${BOLD}not changed${RESET}"
+  fi
 }
 
 function pg_conf_set_port() {
@@ -130,16 +137,20 @@ function pg_conf_set_port() {
   dt_err_if_empty ${fname} "PGPORT" || return $?
   dt_err_if_empty ${fname} "POSTGRESQL_CONF" || return $?
   old_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1) || return $?
-  dt_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${POSTGRESQL_CONF}" || return $?
+  dt_exec ${fname} "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${PGPORT}/; t; \$a port = ${PGPORT}' ${POSTGRESQL_CONF}" || return $?
   new_hash=$(${SUDO} sha256sum "${POSTGRESQL_CONF}" | cut -d' ' -f 1) || return $?
-  if [ "${old_hash}" != "${new_hash}" ]; then dt_debug ${fname} "${POSTGRESQL_CONF} is changed"; echo "changed"; fi
+  if [ "${old_hash}" != "${new_hash}" ]; then
+    dt_info ${fname} "${POSTGRESQL_CONF} is ${BOLD}is changed${RESET}"; return 59
+  else
+    dt_info ${fname} "${POSTGRESQL_CONF} is ${BOLD}not changed${RESET}"
+  fi
 }
 
 function pg_prepare() {
-  local changed1 changed2
-  changed1=$(pg_hba_conf_add_policy) || return $?
-  changed2=$(pg_conf_set_port) || return $?
-  if [ -z "${changed1}" ] && [ -z "${changed2}" ]; then return 0; fi
+  local changed
+  pg_hba_conf_add_policy; if [ "$?" = 59 ]; then changed="y"; fi
+  pg_conf_set_port; if [ "$?" = 59 ]; then changed="y"; fi
+  if [ "${changed}" != "y" ]; then return 0; fi
   service_stop
 }
 
@@ -150,11 +161,11 @@ function lsof_pg() {
 
 function ctx_service_pg() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${pg_vars}")
+  __vars=$(pg_vars)
   MAJOR=17
   MINOR=5
   PGHOST="localhost"
-  PGPORT=5431
+  PGPORT=5430
   pg_service
   dt_set_ctx -c ${ctx}
 }

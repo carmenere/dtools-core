@@ -1,8 +1,11 @@
-docker_network_vars=(SUBNET BRIDGE ERR_IF_BRIDGE_EXISTS DRIVER ${dt_vars[@]})
+function docker_network_vars() {
+  docker_network_vars=(SUBNET BRIDGE ERR_IF_BRIDGE_EXISTS DRIVER ${dt_vars[@]})
+  echo "${docker_network_vars[@]}"
+}
 
 function ctx_docker_network() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${docker_network_vars}")
+  __vars=$(docker_network_vars)
   SUBNET="192.168.111.0/24"
   BRIDGE="example"
   ERR_IF_BRIDGE_EXISTS="n"
@@ -13,7 +16,7 @@ function ctx_docker_network() {
 function docker_network_create() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local id="$(dt_exec "docker network ls -q --filter name="^${BRIDGE}$"")"
+  local id="$(dt_exec ${fname} "docker network ls -q --filter name="^${BRIDGE}$"")"
   if [ -n "${id}" ]; then
     if [ ${ERR_IF_BRIDGE_EXISTS} = "y" ]; then
       dt_error ${fname} "Bridge ${BOLD}${BRIDGE}${RESET} with id='${id}' exists and ERR_IF_BRIDGE_EXISTS=${BOLD}y${RESET}."
@@ -28,17 +31,17 @@ function docker_network_create() {
   if [ -n "${DRIVER}" ]; then cmd+=(--driver=${DRIVER}); fi
   if [ -n "${SUBNET}" ]; then cmd+=(--subnet=${SUBNET}); fi
   cmd+=(${BRIDGE})
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} ${cmd[@]}
 }
 
 function docker_network_rm() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker network rm ${BRIDGE})
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} docker network rm ${BRIDGE}
 }
 
 function docker_network_ls() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker network ls)
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} docker network ls
 }

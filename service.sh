@@ -8,12 +8,32 @@ function service() {
   fi
 }
 
-function service_stop() { dt_exec "${STOP}" }
-function service_start() { dt_exec "${START}" }
-function service_restart() { service_stop && service_start }
-function service_prepare() { dt_exec "${PREPARE}" }
-function service_install() { dt_exec "${INSTALL}" }
-function service_lsof() { dt_exec "${LSOF}" }
+function service_stop() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_exec ${fname} "${STOP}"
+}
+
+function service_start() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_exec ${fname} "${START}"
+}
+
+function service_restart() { service_stop && service_start; }
+
+function service_prepare() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_exec ${fname} "${PREPARE}"
+}
+
+function service_install() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_exec ${fname} "${INSTALL}"
+}
+
+function service_lsof() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_exec ${fname} "${LSOF}"
+}
 
 service_methods=()
 

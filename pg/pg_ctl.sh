@@ -21,7 +21,7 @@ function pg_ctl_initdb() {
   chown -R ${OS_USER} ${DATADIR}
   bash -c "echo ${PGPASSWORD} > ${INITDB_PWFILE}"
 
-  dt_exec "${PG_BINDIR}/initdb --pgdata=${DATADIR} --username="${PGUSER}" --auth-local="${INITDB_AUTH_LOCAL}" --auth-host="${INITDB_AUTH_HOST}" --pwfile="${INITDB_PWFILE}""
+  dt_exec ${fname} "${PG_BINDIR}/initdb --pgdata=${DATADIR} --username="${PGUSER}" --auth-local="${INITDB_AUTH_LOCAL}" --auth-host="${INITDB_AUTH_HOST}" --pwfile="${INITDB_PWFILE}""
 
   rm "${INITDB_PWFILE}"
 }
@@ -29,7 +29,7 @@ function pg_ctl_initdb() {
 function pg_ctl_start() {
   pg_ctl_initdb
   local cmd=$(echo "${PG_BINDIR}/pg_ctl -D ${DATADIR} -l ${PG_CTL_LOG} -o \"-k ${DATADIR} -c logging_collector=${PG_CTL_LOGGING_COLLECTOR} -c config_file=${PG_CTL_CONF} -p ${PGPORT} -h ${PGHOST}\" start")
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function pg_ctl_stop() {
@@ -38,7 +38,7 @@ function pg_ctl_stop() {
 
 function pg_ctl_clean() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  pg_ctl_stop; err=$?; if [ "${err}" != 0 ]; then return ${err}; fi
+  pg_ctl_stop || return $?
   [ ! -d ${DATADIR} ] || rm -Rf ${DATADIR}
 }
 

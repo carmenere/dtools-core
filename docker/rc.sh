@@ -7,7 +7,9 @@ function load() {
 
 load $0
 
-docker_vars=(${docker_image_vars[@]} ${docker_container_vars[@]} ${docker_network_vars[@]})
+function docker_vars() {
+  echo "$(docker_image_vars) $(docker_container_vars) $(docker_network_vars)" | xargs -n1 | sort -u | xargs
+}
 
 docker_methods=()
 docker_methods+=(docker_build)

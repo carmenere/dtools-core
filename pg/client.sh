@@ -5,7 +5,7 @@ function psql_conn() {
   cmd=("$(dt_inline_envs "${conn_url[@]}")")
   dt_err_if_empty ${fname} "PSQL" || return $?
   cmd+=("${PSQL}")
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function psql_exec() {
@@ -20,18 +20,18 @@ function psql_exec() {
   dt_load_vars -c ${conn_ctx} && \
   conn="$(dt_echo psql_conn)" || return $?
   cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+  dt_exec ${fname} "${cmd}"
 }
 
-function psql_alter_role_password() { psql_exec $1 $2 pg_sql_alter_role_password }
-function psql_create_db() { psql_exec $1 $2 pg_sql_create_db }
-function psql_create_user() { psql_exec $1 $2 pg_sql_create_user }
-function psql_drop_db() { psql_exec $1 $2 pg_sql_drop_db }
-function psql_drop_user() { psql_exec $1 $2 pg_sql_drop_user }
-function psql_grant_user_app() { psql_exec $1 $2 pg_sql_grant_user_app }
-function psql_grant_user_migrator() { psql_exec $1 $2 pg_sql_grant_user_migrator }
-function psql_revoke_user_app() { psql_exec $1 $2 pg_sql_revoke_user_app }
-function psql_revoke_user_migrator() { psql_exec $1 $2 pg_sql_revoke_user_migrator }
+function psql_alter_role_password() { psql_exec $1 $2 pg_sql_alter_role_password; }
+function psql_create_db() { psql_exec $1 $2 pg_sql_create_db; }
+function psql_create_user() { psql_exec $1 $2 pg_sql_create_user; }
+function psql_drop_db() { psql_exec $1 $2 pg_sql_drop_db; }
+function psql_drop_user() { psql_exec $1 $2 pg_sql_drop_user; }
+function psql_grant_user_app() { psql_exec $1 $2 pg_sql_grant_user_app; }
+function psql_grant_user_migrator() { psql_exec $1 $2 pg_sql_grant_user_migrator; }
+function psql_revoke_user_app() { psql_exec $1 $2 pg_sql_revoke_user_app; }
+function psql_revoke_user_migrator() { psql_exec $1 $2 pg_sql_revoke_user_migrator; }
 
 function _psql_init() {
   local admin migrator app
@@ -65,56 +65,56 @@ function psql_conn_local_admin() {
     unset PGHOST
     sudo -u ${PGUSER} psql -d ${PGDATABASE}
   )
-  dt_exec "${cmd}"
+  dt_exec ${fname} "${cmd}"
 }
 
-function psql_conn_admin() {
+function psql_conn_admin() {(
   dt_load_vars -c ctx_service_pg -c ctx_pg_admin && psql_conn
-}
+)}
 
-function psql_conn_migrator() {
+function psql_conn_migrator() {(
   dt_load_vars -c ctx_service_pg -c ctx_pg_migrator && psql_conn
-}
+)}
 
-function psql_conn_app() {
+function psql_conn_app() {(
   dt_load_vars -c ctx_service_pg -c ctx_pg_app && psql_conn
-}
+)}
 
-function psql_init() {
+function psql_init() {(
   dt_load_vars -c ctx_service_pg && \
   _psql_init ctx_pg_admin ctx_pg_migrator ctx_pg_app
-}
+)}
 
-function psql_clean() {
+function psql_clean() {(
   dt_load_vars -c ctx_service_pg && \
   _psql_clean ctx_pg_admin ctx_pg_migrator ctx_pg_app
-}
+)}
 
-function psql_conn_docker_admin() {
+function psql_conn_docker_admin() {(
   docker_service_check_pg && \
   dt_load_vars -c ctx_docker_pg -c ctx_docker_pg_admin && psql_conn
-}
+)}
 
-function psql_conn_docker_migrator() {
+function psql_conn_docker_migrator() {(
   docker_service_check_pg && \
   dt_load_vars -c ctx_docker_pg -c ctx_pg_migrator && psql_conn
-}
+)}
 
-function psql_conn_docker_app() {
+function psql_conn_docker_app() {(
   docker_service_check_pg && \
   dt_load_vars -c ctx_docker_pg -c ctx_pg_app && psql_conn
-}
+)}
 
-function psql_init_docker() {
+function psql_init_docker() {(
   docker_service_check_pg && \
   dt_load_vars -c ctx_docker_pg && \
   _psql_init ctx_docker_pg_admin ctx_pg_migrator ctx_pg_app
-}
+)}
 
 # it's like docker_rm_pg && docker_run_pg
-function psql_clean_docker(){
+function psql_clean_docker(){(
   docker_service_check_pg && \
   dt_load_vars -c ctx_docker_pg && \
   _psql_clean ctx_docker_pg_admin ctx_pg_migrator ctx_pg_app
-}
+)}
 

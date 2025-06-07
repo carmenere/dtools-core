@@ -1,7 +1,10 @@
-clickhouse_version=(MAJOR MINOR PATCH)
+clickhouse_version=(MAJOR MINOR)
 clickhouse_socket=(CLICKHOUSE_HOST CLICKHOUSE_PORT)
 clickhouse_paths=(CH_USER_XML_DIR CH_USER_XML CH_CONFIG_XML)
-clickhouse_vars=(${clickhouse_version[@]} ${clickhouse_socket[@]} ${clickhouse_paths[@]} ${service[@]} ${dt_vars[@]})
+
+function clickhouse_vars() {
+  echo "${clickhouse_version[@]} ${clickhouse_socket[@]} ${clickhouse_paths[@]} ${service[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
+}
 
 function clickhouse_conf() {
   if [ "$(os_name)" = "macos" ]; then
@@ -23,13 +26,13 @@ function clickhouse_user_xml_dir() {
 function clickhouse_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
-    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
-    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
-    dt_exec "${SUDO} apt-get update" || return $?
-    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
+    dt_exec ${fname} "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
+    dt_exec ${fname} "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
+    dt_exec ${fname} "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
+    dt_exec ${fname} "${SUDO} apt-get update" || return $?
+    dt_exec ${fname} "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec "brew install '${SERVICE}'" || return $?
+    dt_exec ${fname} "brew install '${SERVICE}'" || return $?
   else
     dt_error ${fname}  "Unsupported OS: '$(os_kernel)'"; return 99
   fi
@@ -66,25 +69,28 @@ function clickhouse_user_xml() {
 function clickhouse_gen_user_xml() {
   local fname old_hash new_hash cmd query SUDO
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "CH_USER_XML" || return $?
   if [ "$(os_name)" != "macos" ]; then
     SUDO="sudo"
   fi
   if [ -f "${CH_USER_XML}" ]; then
-    old_hash=$(dt_exec "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
+    old_hash=$(dt_exec ${fname} "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
   fi
-  dt_debug ${fname} "old_hash=${BOLD}${old_hash}${RESET}"
   query="$(clickhouse_user_xml)" || return $?
   cmd="echo $'${query}' | tee ${CH_USER_XML}"
-  dt_exec "${cmd}" || return $?
-  new_hash=$(dt_exec "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
-  dt_debug ${fname} "new_hash=${new_hash}"
-  if [ "${old_hash}" != "${new_hash}" ]; then dt_debug ${fname} "${POSTGRESQL_CONF} is changed"; return 77; fi
+  dt_exec ${fname} "${cmd}" || return $?
+  new_hash=$(dt_exec ${fname} "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
+  if [ "${old_hash}" != "${new_hash}" ]; then
+    dt_info ${fname} "${CH_USER_XML} is ${BOLD}is changed${RESET}"; return 59
+  else
+    dt_info ${fname} "${CH_USER_XML} is ${BOLD}not changed${RESET}"
+  fi
 }
 
 function clickhouse_prepare() {
   local changed
-  changed=$(clickhouse_gen_user_xml); err=$?
-  if [ "${err}" != 77 ]; then return ${err}; fi
+  clickhouse_gen_user_xml; if [ "$?" = 59 ]; then changed="y"; fi
+  if [ "${changed}" != "y" ]; then return 0; fi
   service_stop
 }
 
@@ -111,7 +117,7 @@ function clickhouse_service() {
 
 function ctx_service_clickhouse() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${clickhouse_vars}")
+  __vars=$(clickhouse_vars)
   CLICKHOUSE_HOST="localhost"
   # for clickhouse-client
   CLICKHOUSE_PORT=9000
@@ -123,6 +129,8 @@ function ctx_service_clickhouse() {
   dt_set_ctx -c ${ctx}
 }
 
+dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"
+
 function lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}
   PORT=${CLICKHOUSE_PORT}
@@ -130,9 +138,3 @@ function lsof_clickhouse() {
   PORT=${CLICKHOUSE_HTTP_PORT};
   lsof_tcp
 }
-
-dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"
-
-#function service_prepare_clickhouse() {
-#  ctx_conn_clickhouse_admin && clickhouse_prepare $1
-#}

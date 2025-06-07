@@ -14,7 +14,7 @@ function app_start() {
   local cmd=("$(dt_inline_envs "${_inline_envs[@]}")")
   cmd+=("${BINARY} ${OPTS} 2>&1")
   if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
-  dt_exec "${cmd[@]}"
+  dt_exec ${fname} "${cmd[@]}"
 }
 
 function app_stop() {
@@ -23,7 +23,7 @@ function app_stop() {
   dt_err_if_empty ${fname} "APP" || return $?
   dt_info "Sending signal 'KILL' to ${BOLD}${APP}${RESET} ..."
   local cmd="ps -A -o pid,args | grep -v grep | grep '${PKILL_PATTERN}' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
-  dt_exec "${cmd}"
+  dt_exec ${fname} "${cmd}"
   dt_info "${BOLD}done${RESET}"
 }
 

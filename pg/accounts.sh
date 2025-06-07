@@ -1,9 +1,12 @@
-pg_account=( PGUSER PGDATABASE PGPASSWORD )
-pg_account_vars=( PGUSER PGDATABASE PGPASSWORD ${dt_vars[@]})
+pg_account=(PGUSER PGDATABASE PGPASSWORD)
+
+function pg_account_vars() {
+  echo "${pg_account[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
+}
 
 function ctx_pg_admin() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${pg_account_vars}")
+  __vars=$(pg_account_vars)
   if [ "$(os_name)" = "macos" ]; then
     PGUSER="${USER}"
   else
@@ -16,7 +19,7 @@ function ctx_pg_admin() {
 
 function ctx_pg_app() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${pg_account_vars}")
+  __vars=$(pg_account_vars)
   PGUSER="example_app"
   PGPASSWORD="1234567890"
   PGDATABASE="example"
@@ -25,7 +28,7 @@ function ctx_pg_app() {
 
 function ctx_pg_migrator() {
   local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${pg_account_vars}")
+  __vars=$(pg_account_vars)
   PGUSER="example_migrator"
   PGPASSWORD="1234567890"
   PGDATABASE="example"

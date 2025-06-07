@@ -25,10 +25,10 @@ function dt_debug () {
   fi
 }
 
-function severity_error() { DT_SEVERITY=0 }
-function severity_warning() { DT_SEVERITY=1 }
-function severity_info() { DT_SEVERITY=2 }
-function severity_debug() { DT_SEVERITY=3 }
+function severity_error() { DT_SEVERITY=0; }
+function severity_warning() { DT_SEVERITY=1; }
+function severity_info() { DT_SEVERITY=2; }
+function severity_debug() { DT_SEVERITY=3; }
 
 # Example: dt_err_if_empty ${fname} ${fname} "FOO" || return $?
 # where FOO is a name of some variable.
@@ -75,9 +75,10 @@ function dt_rc_load() {
   done
 }
 
-function dt_exec() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local cmd=$(echo "$@" | sed 's/^[ \t]*//')
+function dt_exec () {
+  local fname cmd
+  fname=$1; shift
+  cmd=$(echo "$@" | sed 's/^[ \t]*//')
   if [ -z "${cmd}" ]; then
     dt_error ${fname} "The command is empty cmd='${cmd}'."; return 99
   fi
@@ -91,7 +92,7 @@ function dt_exec() {
     fi
   else
     if [ "${DT_ECHO}" = "y" ]; then
-      >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][ECHO][EXEC]${RESET}"
+      >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][ECHO][EXEC][$fname]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
     eval "${cmd}" || return $?
@@ -154,11 +155,11 @@ function dt_fname() {
 }
 
 function dt_sleep_5() {
-  dt_exec "sleep 5"
+  dt_exec ${fname} "sleep 5"
 }
 
 function dt_sleep_1() {
-  dt_exec "sleep 1"
+  dt_exec ${fname} "sleep 1"
 }
 
 function dt_paths() {
@@ -183,9 +184,6 @@ function dt_paths() {
   rm -rf ${DT_CTXES} && mkdir -p ${DT_CTXES}
 }
 
-ID=0
-dt_vars=(__vars)
-
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
   export DT_DRYRUN="n"
@@ -205,3 +203,6 @@ function dt_init() {
   . "${DT_STANDS}/rc.sh"
   if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
 }
+
+ID=0
+dt_vars=(__vars)
