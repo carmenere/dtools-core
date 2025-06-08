@@ -1,7 +1,7 @@
 function dt_target() {
   # $1: name of target. Each target is a callable.
   if [ -z "$1" ]; then return 0; fi
-    dt_info "Running target ${BOLD}${GREEN}$1${RESET} ... "
+    dt_info "dt_target" "Running target ${BOLD}$1${RESET} ... "
     $1
 }
 
@@ -10,8 +10,9 @@ function dt_target() {
 # For example, for 'install_services' it generates
 # function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
 function dt_register_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
+  local fname stand
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
   err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
   stand_${stand}
   for func in ${register[@]}; do
@@ -24,16 +25,17 @@ function dt_register_stand() {
 # Example1: dt_stand_up stand_host up
 # Example2: dt_stand_up stand_host down
 function dt_run_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
+  local fname stand action steps
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
   err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  local action=$2; dt_err_if_empty ${fname} "action" "${action}"
+  action=$2; dt_err_if_empty ${fname} "action" "${action}"
   err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-  local steps="${action}_steps"
-  dt_info "${action} stand ${BOLD}${stand}${RESET} ... "
+  steps="${action}_steps"
+  dt_info ${fname} "${action} stand ${BOLD}${stand}${RESET} ... "
   $stand
   for step in $(eval echo "\${${steps}[@]}"); do
-    dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
+    dt_info ${fname} "Running step ${BOLD}$step${RESET} ... "
     for target in $(eval echo "\${${step}[@]}"); do
       dt_target $target
       err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
@@ -42,9 +44,10 @@ function dt_run_stand() {
 }
 
 function dt_run_targets() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname targets
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ -z "$1" ]; then return 0; fi
-  local targets=("$@")
+  targets=("$@")
   for target in $@; do
     dt_target $target
     err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi

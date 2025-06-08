@@ -48,3 +48,17 @@ function docker_purge() {
   dt_exec ${fname} "docker builder prune --force --all"
 }
 
+docker_methods=()
+docker_methods+=(docker_build)
+docker_methods+=(docker_service_check)
+docker_methods+=(docker_exec)
+docker_methods+=(docker_exec_sh)
+docker_methods+=(docker_logs)
+docker_methods+=(docker_pull)
+docker_methods+=(docker_rm)
+docker_methods+=(docker_rmi)
+docker_methods+=(docker_run)
+docker_methods+=(docker_start)
+docker_methods+=(docker_status)
+docker_methods+=(docker_stop)
+

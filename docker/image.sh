@@ -1,9 +1,3 @@
-function docker_image_vars() {
-  docker_image_special=(hook_pre_docker_build docker_build_args ${dt_vars[@]})
-  docker_image_vars=(DEFAULT_IMAGE BUILD_ARGS CTX DEFAULT_TAG DOCKERFILE BASE_IMAGE IMAGE NO_CACHE REGISTRY ${docker_image_special[@]})
-  echo "${docker_image_vars[@]} ${docker_image_special[@]}"
-}
-
 #  FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 
 # Doc:
@@ -11,8 +5,6 @@ function docker_image_vars() {
 #   docker_build_args=(FOO BAR)
 #   docker_build_args => "--env FOO=222 --env BAR=333"
 ctx_docker_image() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(docker_image_vars)
   DEFAULT_IMAGE="alpine:3.21"
   BUILD_ARGS=
   CTX="."
@@ -26,15 +18,14 @@ ctx_docker_image() {
   # Hooks
   hook_pre_docker_build=
   docker_build_args=()
-  dt_set_ctx -c ${ctx}
 }
 
 function docker_base_image() {
-  local img="${REGISTRY}/build/${DEFAULT_IMAGE}"
+  local image="${REGISTRY}/build/${DEFAULT_IMAGE}"
   if [ "$(uname -m)" = "arm64" ]; then
-    local img="arm64v8/${DEFAULT_IMAGE}"
+    local image="arm64v8/${DEFAULT_IMAGE}"
   fi
-  echo $img
+  echo ${image}
 }
 
 function docker_default_tag() {
@@ -42,7 +33,7 @@ function docker_default_tag() {
   if [ "$(uname -m)" = "arm64" ]; then
     tag="v0.0.1-arm64"
   fi
-  echo $tag
+  echo ${tag}
 }
 
 function docker_pull_opts() {

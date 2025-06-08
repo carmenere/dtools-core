@@ -1,9 +1,3 @@
-rabbitmq_vars=(ERR_IF_USER_EXISTS MAJOR MINOR PATCH RABBIT_HOST RABBIT_PORT RABBIT_PORT_MGM EXCHANGES QUEUES ${service[@]})
-
-function rabbitmq_vars() {
-    echo "${rabbitmq_vars[@]}" | xargs -n1 | sort -u | xargs
-}
-
 # ctx_service_rabbitmq && rabbitmq_install
 function rabbitmq_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
@@ -23,16 +17,14 @@ function rabbitmq_service() {
   else
     SERVICE="rabbitmq-server"
   fi
-  STOP="$(service) stop '${SERVICE}'"
-  START="$(service) start '${SERVICE}'"
-  PREPARE=
-  INSTALL=rabbitmq_install
+  STOP_CMD="$(service) stop '${SERVICE}'"
+  START_CMD="$(service) start '${SERVICE}'"
+  PREPARE_CMD=
+  INSTALL_CMD=rabbitmq_install
   LSOF=lsof_rabbitmq
 }
 
 function ctx_service_rabbitmq() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(rabbitmq_vars)
   ERR_IF_USER_EXISTS="n"
   MAJOR=3
   MINOR=8
@@ -43,7 +35,6 @@ function ctx_service_rabbitmq() {
   EXCHANGES=('ems')
   QUEUES=('notification' 'ems.error' 'ems.result' 'ems.task')
   rabbitmq_service
-  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_service_rabbitmq" "rabbitmq" "${service_methods[@]}"

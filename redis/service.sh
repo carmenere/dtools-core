@@ -1,9 +1,3 @@
-redis_vars=(CONFIG_REWRITE ERR_IF_USER_EXISTS REDIS_HOST MAJOR MINOR PATCH REDIS_PORT REQUIREPASS ${service[@]})
-
-function redis_vars() {
-    echo "${redis_vars[@]}" | xargs -n1 | sort -u | xargs
-}
-
 # ctx_service_redis && redis_install
 function redis_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
@@ -26,16 +20,14 @@ function redis_service() {
   else
     SERVICE="redis-server"
   fi
-  STOP="$(service) stop '${SERVICE}'"
-  START="$(service) start '${SERVICE}'"
-  PREPARE=
-  INSTALL=redis_install
+  STOP_CMD="$(service) stop '${SERVICE}'"
+  START_CMD="$(service) start '${SERVICE}'"
+  PREPARE_CMD=
+  INSTALL_CMD=redis_install
   LSOF=lsof_redis
 }
 
 function ctx_service_redis() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(redis_vars)
   CONFIG_REWRITE="y"
   ERR_IF_USER_EXISTS="n"
   REDIS_HOST="localhost"
@@ -45,7 +37,6 @@ function ctx_service_redis() {
   REDIS_PORT=6379
   REQUIREPASS="y"
   redis_service
-  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_service_redis" "redis" "${service_methods[@]}"

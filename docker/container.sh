@@ -1,9 +1,3 @@
-function docker_container_vars() {
-  docker_container_special=(hook_pre_docker_run docker_run_envs ${dt_vars[@]})
-  docker_container_vars=(ATTACH BACKGROUND PSEUDO_TTY PUBLISH REGISTRY RESTART RM SH STDIN COMMAND CONTAINER CHECK_CMD)
-  echo "${docker_container_vars[@]} ${docker_container_special[@]}"
-}
-
 # Doc:
 #   ATTACH: attach docker to current terminal (to STDIN, STDOUT or STDERR)
 #   BACKGROUND: run in background
@@ -18,8 +12,6 @@ function docker_container_vars() {
 #   docker_run_envs: array of envs that will be used for --env option, example: "--env VAR=VALUE"
 #   docker_run_envs => "--env FOO=222 --env BAR=333"
 ctx_docker_container() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(docker_container_vars)
   ATTACH=
   BACKGROUND=
   PSEUDO_TTY=
@@ -35,7 +27,6 @@ ctx_docker_container() {
   # Hooks
   hook_pre_docker_run=
   docker_run_envs=()
-  dt_set_ctx -c ${ctx}
 }
 
 function docker_exec() {
@@ -111,7 +102,7 @@ function docker_start() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker start ${CONTAINER})
+  cmd=(docker start ${CONTAINER})
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -119,7 +110,7 @@ function docker_stop() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker stop ${CONTAINER})
+  cmd=(docker stop ${CONTAINER})
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -127,7 +118,7 @@ function docker_rm() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker rm --force ${CONTAINER})
+  cmd=(docker rm --force ${CONTAINER})
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -136,7 +127,7 @@ function docker_rm_all() {
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
   if [ -z "$(dt_exec ${fname} "docker ps -lq")" ]; then dt_info ${fname} "docker_rm_all(): nothing to delete."; return 0; fi
-  local cmd=(docker rm --force $(docker ps -aq))
+  cmd=(docker rm --force $(docker ps -aq))
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -144,7 +135,7 @@ function docker_status() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker ps -a --filter name="^${CONTAINER}$")
+  cmd=(docker ps -a --filter name="^${CONTAINER}$")
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -152,7 +143,7 @@ function docker_logs() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker logs "${CONTAINER}")
+  cmd=(docker logs "${CONTAINER}")
   dt_exec ${fname} "${cmd[@]}"
 }
 
@@ -160,7 +151,7 @@ function docker_logs_save_to_logfile() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   docker_is_running || return $?
-  local cmd=(docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1')
+  cmd=(docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1')
   dt_exec ${fname} "${cmd[@]}"
 }
 

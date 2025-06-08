@@ -1,6 +1,4 @@
 function ctx_pg_ctl() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=("${pg_vars}")
   OS_USER="${PGUSER}"
   DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
   INITDB_AUTH_HOST="md5"
@@ -11,7 +9,6 @@ function ctx_pg_ctl() {
   PG_CTL_LOG="${DATADIR}/pg_ctl.logs"
   POSTMASTER="${DATADIR}/postmaster.pid"
   PG_CONF="${DATADIR}/postgresql.conf"
-  dt_set_ctx -c ${ctx}
 }
 
 function pg_ctl_initdb() {
@@ -62,11 +59,10 @@ pg_ctl_methods+=(pg_ctl_lsof)
 pg_ctl_methods+=(pg_ctl_conn)
 
 function ctx_pg_ctl_v17_5444() {
-  dt_load_vars -c ctx_service_pg && \
-  dt_load_vars -c ctx_pg_admin && \
-  dt_load_vars -c ctx_pg_ctl || return $?
+  ctx_service_pg && \
+  ctx_pg_admin && \
+  ctx_pg_ctl || return $?
   PGPORT=5444
-  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_pg_ctl_v17_5444" "v17_5444" "${pg_ctl_methods[@]}"

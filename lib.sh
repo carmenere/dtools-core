@@ -38,8 +38,8 @@ function dt_err_if_empty() {
   local fname=$1
   local var=$2
   if [ -z "${fname}" ]; then dt_error "dt_err_if_empty" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
-  if [ -z "${var}" ]; then dt_error "dt_err_if_empty" "Parameter ${BOLD}var${RESET} must be provided"; return 55; fi
-  local local val="$(eval echo "\$$var")"
+  if [ -z "${var}" ]; then dt_error "dt_err_if_empty" "Parameter ${BOLD}${var}${RESET} must be provided"; return 55; fi
+  local val="$(eval echo "\$$var")"
   if [ -z "${val}" ]; then
     dt_error ${fname} "Parameter ${BOLD}${var}${RESET} is empty"
     return 77
@@ -47,10 +47,11 @@ function dt_err_if_empty() {
 }
 
 function dt_inline_envs() {
-  local envs=()
+  local envs val
+  envs=()
   for env in "$@"; do
     if [ -z "$env" ]; then continue; fi
-    local val=$(dt_escape_quote "$(eval echo "\$$env")")
+    val=$(dt_escape_quote "$(eval echo "\$$env")")
     if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi
   done
   echo "${envs[@]}"
@@ -114,14 +115,16 @@ function dt_echo() {
 }
 
 function dt_exists() {
+  local fname entity value err
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   entity=$1
   value=$2
   err=$3
   if [ "$err" = 0 ]; then
-    dt_info "${entity} ${BOLD}${value} exists${RESET}."
+    dt_info ${fname} "${entity} ${BOLD}${value} exists${RESET}, err=${err}."
     return 0
   else
-    dt_info "${entity} ${BOLD}${value} doesn't exist${RESET}."
+    dt_info ${fname} "${entity} ${BOLD}${value} doesn't exist${RESET}, err=${err}."
     return 1
   fi
 }
@@ -187,7 +190,7 @@ function dt_paths() {
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
   export DT_DRYRUN="n"
-  export DT_PROFILES=("dev")
+  export DT_PROFILES=(dev hybrid)
   export DT_SEVERITY=4
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"
@@ -204,5 +207,24 @@ function dt_init() {
   if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
 }
 
-ID=0
-dt_vars=(__vars)
+dt_rename_function() {
+  declare -F "$1" > /dev/null || return 1
+  local func="$(declare -f "$1")"
+  eval "${2}(${func#*\(}"
+}
+
+# Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
+# will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
+function dt_register() {
+  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local ctx=$1
+  dt_err_if_empty ${fname} "ctx" || return $?
+  local suffix=$2
+  shift 2
+  local methods=("$@")
+  if [ -n "${methods}" ] && [ -z "${suffix}" ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+  for method in ${methods[@]}; do
+    eval "function ${method}_${suffix}() {( ${ctx} && ${method} )}"
+  done
+}
+

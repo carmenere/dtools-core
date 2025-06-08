@@ -1,11 +1,3 @@
-clickhouse_version=(MAJOR MINOR)
-clickhouse_socket=(CLICKHOUSE_HOST CLICKHOUSE_PORT)
-clickhouse_paths=(CH_USER_XML_DIR CH_USER_XML CH_CONFIG_XML)
-
-function clickhouse_vars() {
-  echo "${clickhouse_version[@]} ${clickhouse_socket[@]} ${clickhouse_paths[@]} ${service[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
-}
-
 function clickhouse_conf() {
   if [ "$(os_name)" = "macos" ]; then
     CH_CONFIG_XML="$(brew_prefix)/etc/clickhouse-server/config.xml"
@@ -41,7 +33,7 @@ function clickhouse_install() {
 function clickhouse_user_xml() {
   local fname query
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_load_vars -c ctx_clickhouse_admin || return $?
+  ctx_clickhouse_admin || return $?
   dt_err_if_empty ${fname} "CLICKHOUSE_USER" || return $?
   dt_err_if_empty ${fname} "CLICKHOUSE_PASSWORD" || return $?
   query=$(
@@ -95,7 +87,6 @@ function clickhouse_prepare() {
 }
 
 function clickhouse_paths() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   clickhouse_user_xml_dir && clickhouse_conf || return $?
   CH_USER_XML="${CH_USER_XML_DIR}/dt_admin.xml"
   CH_CONFIG_XML=${CH_CONFIG_XML}
@@ -108,16 +99,14 @@ function clickhouse_service() {
     SERVICE="clickhouse-server"
   fi
   clickhouse_paths || return $?
-  STOP="$(service) stop '${SERVICE}'"
-  START="$(service) start '${SERVICE}'"
-  PREPARE=clickhouse_prepare
-  INSTALL=clickhouse_install
+  STOP_CMD="$(service) stop '${SERVICE}'"
+  START_CMD="$(service) start '${SERVICE}'"
+  PREPARE_CMD=clickhouse_prepare
+  INSTALL_CMD=clickhouse_install
   LSOF=lsof_clickhouse
 }
 
 function ctx_service_clickhouse() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(clickhouse_vars)
   CLICKHOUSE_HOST="localhost"
   # for clickhouse-client
   CLICKHOUSE_PORT=9000
@@ -126,7 +115,6 @@ function ctx_service_clickhouse() {
   MAJOR=23
   MINOR=5
   clickhouse_service
-  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"

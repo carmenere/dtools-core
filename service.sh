@@ -1,4 +1,4 @@
-service=( STOP START PREPARE INSTALL SERVICE )
+service=( STOP_CMD START_CMD PREPARE_CMD INSTALL_CMD SERVICE )
 
 function service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -10,24 +10,24 @@ function service() {
 
 function service_stop() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${STOP}"
+  dt_exec ${fname} "${STOP_CMD}"
 }
 
 function service_start() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${START}"
+  dt_exec ${fname} "${START_CMD}"
 }
 
 function service_restart() { service_stop && service_start; }
 
 function service_prepare() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${PREPARE}"
+  dt_exec ${fname} "${PREPARE_CMD}"
 }
 
 function service_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${INSTALL}"
+  dt_exec ${fname} "${INSTALL_CMD}"
 }
 
 function service_lsof() {

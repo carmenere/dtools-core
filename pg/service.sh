@@ -1,11 +1,3 @@
-pg_version=(MAJOR MINOR)
-pg_socket=(PGHOST PGPORT)
-pg_paths=(BIN_DIR PG_HBA_CONF POSTGRESQL_CONF PG_CONFIG CONFIG_LIBDIR CONFIG_SHAREDIR PSQL)
-
-function pg_vars() {
-  echo "${pg_version[@]} ${pg_socket[@]} ${pg_paths[@]} ${service[@]} ${dt_vars[@]}" | xargs -n1 | sort -u | xargs
-}
-
 function pg_dir() {
   if [ "$(os_name)" = "macos" ]; then
     BIN_DIR="$(brew_prefix)/opt/postgresql@${MAJOR}/bin"
@@ -53,10 +45,10 @@ function pg_service() {
     SERVICE="postgresql"
   fi
   pg_paths || return $?
-  STOP="$(service) stop '${SERVICE}'"
-  START="$(service) start '${SERVICE}'"
-  PREPARE=pg_prepare
-  INSTALL=pg_install
+  STOP_CMD="$(service) stop '${SERVICE}'"
+  START_CMD="$(service) start '${SERVICE}'"
+  PREPARE_CMD=pg_prepare
+  INSTALL_CMD=pg_install
   LSOF=lsof_pg
 }
 
@@ -160,14 +152,11 @@ function lsof_pg() {
 }
 
 function ctx_service_pg() {
-  local ctx=$0; dt_skip_if_initialized && return 0
-  __vars=$(pg_vars)
   MAJOR=17
   MINOR=5
   PGHOST="localhost"
   PGPORT=5430
   pg_service
-  dt_set_ctx -c ${ctx}
 }
 
 dt_register "ctx_service_pg" "pg" "${service_methods[@]}"

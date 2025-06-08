@@ -1,14 +1,11 @@
 function redis_exec() {
   local fname query_ctx conn_ctx query conn cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "query_ctx=${query_ctx}"
   query_ctx=$1; dt_err_if_empty ${fname} "query_ctx" || return $?
   conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx" || return $?
   query=$3; dt_err_if_empty ${fname} "query" || return $?
-  dt_load_vars -c ${query_ctx} && \
-  query=$(${query}) && \
-  dt_load_vars -c ${conn_ctx} && \
-  conn="$(dt_echo redis_conn)" || return $?
+  query=$(${query_ctx} && ${query}) && \
+  conn="$(${conn_ctx} && dt_echo redis_conn)" || return $?
   cmd="${conn} ${query}"
   dt_exec ${fname} "${cmd}"
 }
@@ -16,7 +13,7 @@ function redis_exec() {
 function redis_conn() {
   local fname cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local cmd=("redis-cli -e -u")
+  cmd=("redis-cli -e -u")
   cmd+=("redis://${REDIS_USER}:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}")
   dt_exec ${fname} "${cmd[@]}"
 }
@@ -38,45 +35,48 @@ function redis_config_rewrite() {
 }
 
 function redis_flushall() {
-  local fname cmd
+  local fname redis_conn cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local redis_conn="$(dt_echo redis_conn)"
-  local cmd="${redis_conn} FLUSHALL"
+  redis_conn="$(dt_echo redis_conn)"
+  cmd="${redis_conn} FLUSHALL"
   dt_exec ${fname} "${cmd}"
 }
 
-function redis_cli_init() {
+function redis_cli_init() {(
   admin=ctx_redis_admin
   app=ctx_redis_app
+  ctx_service_redis || return $?
   redis_check_user ${app} ${admin}; err=$?
   if ! dt_exists "User" "$(${app} && echo ${REDIS_USER})" ${err}; then
     redis_create_user ${app} ${admin} && \
-    dt_load_vars -c ${admin} && \
+    ${admin} && \
     redis_set_requirepass ${admin} ${admin} && \
     redis_config_rewrite
   fi
-}
+)}
 
-function redis_cli_clean() {
+function redis_cli_clean() {(
   admin=ctx_redis_admin
   app=ctx_redis_app
+  ctx_service_redis || return $?
   redis_check_user ${app} ${admin}; err=$?
   if dt_exists "User" "$(${app} && echo ${REDIS_USER})" ${err}; then
     redis_drop_user ${app} ${admin} && \
-    dt_load_vars -c ${admin} && \
+    ${admin} && \
     redis_flushall && \
     redis_config_rewrite
   fi
-}
+)}
 
-function redis_cli_conn_admin() {( dt_load_vars -c ctx_redis_admin && redis_conn; )}
-function redis_cli_conn_app() {( dt_load_vars -c ctx_redis_app && redis_conn; )}
-function redis_cli_conn_docker_admin() {( dt_load_vars -c ctx_redis_admin && redis_conn; )}
-function redis_cli_conn_docker_app() {( dt_load_vars -c ctx_redis_app && redis_conn; )}
+function redis_cli_conn_admin() {( ctx_redis_admin && redis_conn; )}
+function redis_cli_conn_app() {( ctx_redis_app && redis_conn; )}
+function redis_cli_conn_docker_admin() {( ctx_redis_admin && redis_conn; )}
+function redis_cli_conn_docker_app() {( ctx_redis_app && redis_conn; )}
 
 function redis_cli_init_docker() {(
   admin=ctx_redis_admin
   app=ctx_redis_app
+  ctx_docker_redis || return $?
   docker_service_check_redis && \
   redis_check_user ${app} ${admin}; err=$?
   if ! dt_exists "User" "$(${app} && echo ${REDIS_USER})" ${err}; then

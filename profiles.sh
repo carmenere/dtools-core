@@ -2,10 +2,6 @@ function profile_dev() {
   DT_PROFILES+=("dev")
 }
 
-function profile_pg15() {
-  DT_PROFILES+=("pg15")
-}
-
 function profile_ci_tests() {
   DT_PROFILES+=("ci_tests")
 }
