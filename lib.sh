@@ -190,7 +190,7 @@ function dt_paths() {
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
   export DT_DRYRUN="n"
-  export DT_PROFILES=(dev hybrid)
+  export DT_PROFILES=(dev)
   export DT_SEVERITY=4
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"

@@ -21,6 +21,7 @@ function get_profile() {
   profile="$1"; rezult=
   if [ -z "${profile}" ]; then echo "Profile was not provided."; return 99; fi
   for p in ${DT_PROFILES[@]};  do
+    dt_debug ${fname} "p=${p}"
     if [ "$p" = "$profile" ]; then
       rezult="$profile"
       break

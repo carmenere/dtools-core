@@ -10,16 +10,17 @@ function dt_target() {
 # For example, for 'install_services' it generates
 # function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
 function dt_register_stand() {
-  local fname stand
+  local fname stand func
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
-  stand_${stand}
-  for func in ${register[@]}; do
-    eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
+  layout=$2; dt_err_if_empty ${fname} "layout" "${tiers}"
+  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+  tiers=($(echo $(${layout})))
+  for tier in ${tiers[@]}; do
+    eval "function ${stand}_${tier}() {( stand_${stand} && dt_run_targets "\${${tier}\[\@\]}" )}"
   done
-  eval "function stand_up_${stand}() {( dt_run_stand stand_${stand} up )}"
-  eval "function stand_down_${stand}() {( dt_run_stand stand_${stand} down )}"
+  eval "function stand_up_${stand}() {( stand_${stand} && dt_run_stand ${layout} up )}"
+  eval "function stand_down_${stand}() {( stand_${stand} && dt_run_stand ${layout} down )}"
 }
 
 # Example1: dt_stand_up stand_host up
@@ -30,15 +31,15 @@ function dt_run_stand() {
   stand=$1; dt_err_if_empty ${fname} "stand" "${stand}"
   err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   action=$2; dt_err_if_empty ${fname} "action" "${action}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
+  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
   steps="${action}_steps"
   dt_info ${fname} "${action} stand ${BOLD}${stand}${RESET} ... "
-  $stand
+  ${layout}
   for step in $(eval echo "\${${steps}[@]}"); do
     dt_info ${fname} "Running step ${BOLD}$step${RESET} ... "
     for target in $(eval echo "\${${step}[@]}"); do
       dt_target $target
-      err=$?; if [ "${err}" != 0 ]; then dt_error ${}fnam}e "err=${err}"; return ${err}; fi
+      err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
     done
   done
 }
