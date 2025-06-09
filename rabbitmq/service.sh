@@ -17,8 +17,8 @@ function rabbitmq_service() {
   else
     SERVICE="rabbitmq-server"
   fi
-  STOP_CMD="$(service) stop '${SERVICE}'"
-  START_CMD="$(service) start '${SERVICE}'"
+  STOP_CMD="$(os_service) stop '${SERVICE}'"
+  START_CMD="$(os_service) start '${SERVICE}'"
   PREPARE_CMD=
   INSTALL_CMD=rabbitmq_install
   LSOF=lsof_rabbitmq
@@ -37,7 +37,7 @@ function ctx_service_rabbitmq() {
   rabbitmq_service
 }
 
-dt_register "ctx_service_rabbitmq" "rabbitmq" "${service_methods[@]}"
+dt_register "ctx_service_rabbitmq" "rabbitmq" "$(os_service_methods)"
 
 function lsof_rabbitmq() {
   HOST=${RABBIT_HOST}

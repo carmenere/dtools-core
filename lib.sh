@@ -201,30 +201,50 @@ function dt_init() {
   dt_paths
   . "${DT_CORE}/colors.sh"
   dt_defaults
+  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
   . "${DT_CORE}/rc.sh"
   . "${DT_TOOLS}/rc.sh"
   . "${DT_STANDS}/rc.sh"
-  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
-}
 
-dt_rename_function() {
-  declare -F "$1" > /dev/null || return 1
-  local func="$(declare -f "$1")"
-  eval "${2}(${func#*\(}"
 }
 
 # Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 # will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
 function dt_register() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local ctx=$1
-  dt_err_if_empty ${fname} "ctx" || return $?
-  local suffix=$2
-  shift 2
-  local methods=("$@")
-  if [ -n "${methods}" ] && [ -z "${suffix}" ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+  local fname ctx suffix methods method
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  suffix=$2; dt_err_if_empty ${fname} "suffix" || return $?
+  methods=($(echo "$3"))
   for method in ${methods[@]}; do
-    eval "function ${method}_${suffix}() {( ${ctx} && ${method} )}"
+    eval "function ${method}_${suffix}() {( . ${ctx} && ${method} )}" || return $?
   done
+}
+
+function var_prf() {
+  echo "$1__"
+}
+
+# get var
+function gvar() {
+  var=$(var_prf $1)$2
+  val=$(eval echo "\${${${var}}}")
+  echo "${val}"
+}
+
+# set var
+function var() {
+  local fname ctx var val parent_val
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  var=$2; dt_err_if_empty ${fname} "var" || return $?
+  val=$3
+  var=$(var_prf ${ctx})${var}
+  parent_val=$(eval echo "\${${var}}")
+  dt_debug ${fname} "export var=${var}; val=${parent_val}, new_val=${val}"
+  if [ -z "${parent_val}" ]; then
+    eval "${var}=\"${val}\""
+  fi
+  export ${var}
 }
 

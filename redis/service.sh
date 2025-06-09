@@ -20,8 +20,8 @@ function redis_service() {
   else
     SERVICE="redis-server"
   fi
-  STOP_CMD="$(service) stop '${SERVICE}'"
-  START_CMD="$(service) start '${SERVICE}'"
+  STOP_CMD="$(os_service) stop '${SERVICE}'"
+  START_CMD="$(os_service) start '${SERVICE}'"
   PREPARE_CMD=
   INSTALL_CMD=redis_install
   LSOF=lsof_redis
@@ -39,7 +39,7 @@ function ctx_service_redis() {
   redis_service
 }
 
-dt_register "ctx_service_redis" "redis" "${service_methods[@]}"
+dt_register "ctx_service_redis" "redis" "$(os_service_methods)"
 
 function lsof_redis() {
   HOST=${REDIS_HOST}

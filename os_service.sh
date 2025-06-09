@@ -1,6 +1,4 @@
-service=( STOP_CMD START_CMD PREPARE_CMD INSTALL_CMD SERVICE )
-
-function service() {
+function os_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "brew services"
   else
@@ -8,41 +6,44 @@ function service() {
   fi
 }
 
-function service_stop() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${STOP_CMD}"
+#
+#function service_stop() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  dt_exec ${fname} "${STOP_CMD}"
+#}
+#
+#function service_start() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  dt_exec ${fname} "${START_CMD}"
+#}
+#
+#function service_restart() { service_stop && service_start; }
+#
+#function service_prepare() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  dt_exec ${fname} "${PREPARE_CMD}"
+#}
+#
+#function service_install() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  dt_exec ${fname} "${INSTALL_CMD}"
+#}
+#
+#function service_lsof() {
+#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  dt_exec ${fname} "${LSOF}"
+#}
+
+function os_service_methods() {
+  local methods=()
+  methods+=(service_start)
+  methods+=(service_stop)
+  methods+=(service_restart)
+  methods+=(service_prepare)
+  methods+=(service_install)
+  methods+=(service_lsof)
+  echo "${methods[@]}"
 }
-
-function service_start() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${START_CMD}"
-}
-
-function service_restart() { service_stop && service_start; }
-
-function service_prepare() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${PREPARE_CMD}"
-}
-
-function service_install() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${INSTALL_CMD}"
-}
-
-function service_lsof() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_exec ${fname} "${LSOF}"
-}
-
-service_methods=()
-
-service_methods+=(service_start)
-service_methods+=(service_stop)
-service_methods+=(service_restart)
-service_methods+=(service_prepare)
-service_methods+=(service_install)
-service_methods+=(service_lsof)
 
 # MacOS
 function brew_list_services() { brew services list; }

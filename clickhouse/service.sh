@@ -99,8 +99,8 @@ function clickhouse_service() {
     SERVICE="clickhouse-server"
   fi
   clickhouse_paths || return $?
-  STOP_CMD="$(service) stop '${SERVICE}'"
-  START_CMD="$(service) start '${SERVICE}'"
+  STOP_CMD="$(os_service) stop '${SERVICE}'"
+  START_CMD="$(os_service) start '${SERVICE}'"
   PREPARE_CMD=clickhouse_prepare
   INSTALL_CMD=clickhouse_install
   LSOF=lsof_clickhouse
@@ -117,7 +117,7 @@ function ctx_service_clickhouse() {
   clickhouse_service
 }
 
-dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"
+dt_register "ctx_service_clickhouse" "clickhouse" "$(os_service_methods)" || return $?
 
 function lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}
