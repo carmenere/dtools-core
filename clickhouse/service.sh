@@ -117,7 +117,7 @@ function ctx_service_clickhouse() {
   clickhouse_service
 }
 
-dt_register "ctx_service_clickhouse" "clickhouse" "$(os_service_methods)" || return $?
+dt_register "ctx_service_clickhouse" "clickhouse" "$(service_methods)" || return $?
 
 function lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}

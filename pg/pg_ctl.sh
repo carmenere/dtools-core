@@ -58,11 +58,11 @@ pg_ctl_methods+=(pg_ctl_stop)
 pg_ctl_methods+=(pg_ctl_lsof)
 pg_ctl_methods+=(pg_ctl_conn)
 
-function ctx_pg_ctl_v17_5444() {
-  ctx_service_pg && \
-  ctx_pg_admin && \
-  ctx_pg_ctl || return $?
-  PGPORT=5444
-}
+#function ctx_pg_ctl_v17_5444() {
+#  ctx_service_pg && \
+#  ctx_pg_admin && \
+#  ctx_pg_ctl || return $?
+#  PGPORT=5444
+#}
 
 dt_register "ctx_pg_ctl_v17_5444" "v17_5444" "${pg_ctl_methods[@]}"

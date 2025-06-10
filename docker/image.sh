@@ -20,19 +20,21 @@
 #  docker_build_args=()
 #}
 
-function docker_image_vars() {
-  local c=$1
+function ctx_docker_image() {
+  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
   var $c DEFAULT_IMAGE "alpine:3.21"
   var $c BUILD_ARGS 5
   var $c CTX "."
   var $c DEFAULT_TAG "$(docker_default_tag)"
-  var $c DOCKERFILE ""
-  var $c IMAGE ""
-  var $c NO_CACHE ""
+  var $c DOCKERFILE
+  var $c IMAGE
+  var $c NO_CACHE
   var $c REGISTRY "example.com"
   var $c BASE_IMAGE "$(docker_base_image $c)"
-  var $c hook_pre_docker_build ""
-  var $c docker_build_args ""
+  var $c hook_pre_docker_build
+  var $c docker_build_args
+  dt_cache ${c}
 }
 
 function docker_base_image() {

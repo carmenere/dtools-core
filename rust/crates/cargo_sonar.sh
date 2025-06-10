@@ -4,7 +4,7 @@ function ctx_crate_cargo_sonar() {
   CRATE_VERSION="1.3.0"
 }
 
-dt_register "ctx_crate_cargo_sonar" "cargo_sonar" "${cargo_install_methods[@]}"
+dt_register "ctx_crate_cargo_sonar" "cargo_sonar" "$(cargo_install_methods)"
 
 function _cargo_sonar_opts() {
   _cargo_shared_manifest_opts

@@ -7,34 +7,42 @@ function os_service() {
 }
 
 #
-#function service_stop() {
-#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  dt_exec ${fname} "${STOP_CMD}"
-#}
-#
-#function service_start() {
-#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  dt_exec ${fname} "${START_CMD}"
-#}
-#
-#function service_restart() { service_stop && service_start; }
-#
-#function service_prepare() {
-#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  dt_exec ${fname} "${PREPARE_CMD}"
-#}
-#
-#function service_install() {
-#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  dt_exec ${fname} "${INSTALL_CMD}"
-#}
-#
-#function service_lsof() {
-#  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  dt_exec ${fname} "${LSOF}"
-#}
+function service_stop() {
+  local ctx fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  "${stop_cmd}"
+}
 
-function os_service_methods() {
+function service_start() {
+  local fname ctx start_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${start_cmd}
+}
+
+function service_restart() { service_stop && service_start; }
+
+function service_prepare() {
+  local fname ctx prepare_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${prepare_cmd}
+}
+
+function service_install() {
+  local fname ctx install_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${install_cmd}
+}
+
+function service_lsof() {
+  local fname ctx lsof_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${lsof_cmd}
+}
+
+function service_methods() {
   local methods=()
   methods+=(service_start)
   methods+=(service_stop)

@@ -11,22 +11,26 @@
 #   PUBLISH+=("${PORT_22}:${PORT_44}/tcp")
 #   docker_run_envs: array of envs that will be used for --env option, example: "--env VAR=VALUE"
 #   docker_run_envs => "--env FOO=222 --env BAR=333"
-ctx_docker_container() {
-  ATTACH=
-  BACKGROUND=
-  PSEUDO_TTY=
-  PUBLISH=()
-  REGISTRY=
-  RESTART=
-  RM=
-  SH="/bin/sh"
-  STDIN=
-  COMMAND=
-  CONTAINER=
-  CHECK_CMD=
+
+function ctx_docker_container() {
+  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
+  var $c ATTACH
+  var $c BACKGROUND
+  var $c PSEUDO_TTY
+  var $c PUBLISH
+  var $c REGISTRY
+  var $c RESTART
+  var $c RM
+  var $c SH "/bin/sh"
+  var $c STDIN
+  var $c COMMAND
+  var $c CONTAINER
+  var $c CHECK_CMD
   # Hooks
-  hook_pre_docker_run=
-  docker_run_envs=()
+  var $c hook_pre_docker_run
+  var $c docker_run_envs
+  dt_cache ${c}
 }
 
 function docker_exec() {
@@ -34,7 +38,9 @@ function docker_exec() {
 }
 
 function docker_exec_sh() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname ctx CONTAINER; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  CONTAINER=$(gvar ${ctx} CONTAINER)
   docker_is_running || return $?
   dt_exec ${fname} "docker exec -ti ${CONTAINER} /bin/sh"
 }
@@ -73,10 +79,12 @@ function _docker_run_env_opts() {
 }
 
 function docker_run() {
-  local fname cmd id
-  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname ctx cmd id hook_pre_docker_run CONTAINER; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   docker_is_running || return $?
-  docker_network_create || return $?
+  docker_network_create ${ctx} || return $?
+  load_vars ${ctx} "hook_pre_docker_run CONTAINER"
+  hook_pre_docker_run=$(gvar ${ctx} hook_pre_docker_run)
   id="$(dt_exec ${fname} "docker ps -aq --filter name="^${CONTAINER}$" --filter status=running")"
   if [ -n "${id}" ]; then
     dt_info ${fname} "Container ${BOLD}${CONTAINER}${RESET} with id='${id}' is running, skip run."

@@ -1,16 +1,3 @@
-#if [ -n "${BASH_SOURCE}" ]; then CTX="${BASH_SOURCE[0]}"; else CTX="$0"; fi
-##eval "${ctx}=$(echo ${CTX} | tr './' '_')"
-
-#function major() { echo 17; }
-#function minor() { echo 5; }
-#function host() { echo "localhost"; }
-#function port() { echo 5430; }
-#function psql() { echo "$(bin_dir)/psql"; }
-#function pg_config() { echo "$(bin_dir)/pg_config"; }
-#function config_sharedir() { echo "$("$(pg_config)" --sharedir)"; }
-#function pg_paths() { local fname=$(dt_fname "${FUNCNAME[0]}" "$0"); }
-#function config_libdir() { echo "$("$(pg_config)" --pkglibdir | tr ' ' '\n')"; }
-
 function PG_CONFIG() {
   local fname ctx pg_config major
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
@@ -22,7 +9,7 @@ function PG_CONFIG() {
     dt_warning ${fname} "The binary '${pg_config}' doesn't exist. Maybe pg of version '${major}' hasn't been installed yet?"
     return 0
   fi
-  echo "${pg_config} $@"
+  echo "$(${pg_config} $@)"
 }
 
 function bin_dir() {
@@ -145,6 +132,7 @@ function pg_conf_set_port() {
   fi
 }
 
+# OS service methods
 function pg_prepare() {
   local changed
   pg_hba_conf_add_policy; if [ "$?" = 59 ]; then changed="y"; fi
@@ -158,40 +146,36 @@ function lsof_pg() {
   lsof_tcp
 }
 
-# OS service methods
-function os_service_start() { dt_exec ${CTX} "$(os_service) start '$(service)'"; }
-function os_service_stop() { dt_exec ${CTX} "$(os_service) stop '$(service)'"; }
-function os_service_prepare() { dt_exec ${CTX} "pg_prepare"; }
-function os_service_install() { dt_exec ${CTX} "pg_install"; }
-function os_service_lsof() { dt_exec ${CTX} "lsof_pg"; }
+function ctx_service_pg() {
+  local fname c BIN_DIR; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
 
-#dt_register "${CTX}" "pg" "$(os_service_methods)"
-
-function pg_vars() {
-  local c=$1
   var $c MAJOR 17 && \
   var $c MINOR 5 && \
   var $c PGHOST "localhost" && \
   var $c PGPORT 5430 && \
-  var $c SERVICE "$(service $c)" && \
-  var $c BIN_DIR "$(bin_dir $c)" && \
-  var $c PSQL "$(gvar $c BIN_DIR)/psql" && \
-  var $c PG_CONFIG "$(gvar $c BIN_DIR)/pg_config" && \
+  var $c SERVICE "$(service $c)"
+  BIN_DIR="$(bin_dir $c)"
+  var $c BIN_DIR "${BIN_DIR}" && \
+  var $c PSQL "${BIN_DIR}/psql" && \
+  var $c PG_CONFIG "${BIN_DIR}/pg_config" && \
   var $c PG_HBA_CONF "$(pg_hba_conf $c)" && \
   var $c POSTGRESQL_CONF "$(postgresql_conf $c)" && \
   var $c CONFIG_SHAREDIR "$(PG_CONFIG $c --sharedir)" && \
   var $c CONFIG_LIBDIR "$(PG_CONFIG $c --pkglibdir)"
+  var $c START_CMD "$(os_service) start '${SERVICE}'" && \
+  var $c STOP_CMD "$(os_service) stop '${SERVICE}'" && \
+  var $c PREPARE_CMD "pg_prepare" && \
+  var $c INSTALL_CMD "pg_install" && \
+  var $c LSOF_CMD "lsof_pg"
+  dt_cache ${c}
 }
 
-function ctx_service_pg() {
-  local ctx=$(dt_fname "${FUNCNAME[0]}" "$0")
-  drop_ctx ${ctx} && \
-  pg_vars ${ctx}
-}
+dt_register "ctx_service_pg" "pg" "$(service_methods)"
 
-function ctx_service_pg_tetrix() {
-  local ctx=$(dt_fname "${FUNCNAME[0]}" "$0")
-  drop_ctx ${ctx} && \
-  var ${ctx} PORT 7777 && \
-  pg_vars ${ctx}
-}
+#function ctx_service_pg_tetrix() {
+#  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+#  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
+#  var ${c} PORT 7777
+#  ctx_service_pg ${c} && dt_cache ${c}
+#}

@@ -47,14 +47,15 @@ function dt_err_if_empty() {
 }
 
 function dt_inline_envs() {
-  local envs val
-  envs=()
-  for env in "$@"; do
+  local envs val env
+  envs=($(echo "$1"))
+  e=()
+  for env in ${envs[@]}; do
     if [ -z "$env" ]; then continue; fi
     val=$(dt_escape_quote "$(eval echo "\$$env")")
-    if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi
+    if [ -n "${val}" ]; then e+=("${env}=$'${val}'"); fi
   done
-  echo "${envs[@]}"
+  echo "${e[@]}"
 }
 
 function dt_escape_quote() {
@@ -108,7 +109,7 @@ function dt_echo() {
   dt_dryrun_on
   DT_ECHO_STDOUT="y"
   DT_ECHO="n"
-  eval "$@" || return $?
+  $@ || return $?
   DT_ECHO_STDOUT="n"
   DT_DRYRUN=${saved_DT_DRYRUN}
   DT_ECHO=${saved_DT_ECHO}
@@ -190,7 +191,7 @@ function dt_paths() {
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
   export DT_DRYRUN="n"
-  export DT_PROFILES=(dev)
+  export DT_PROFILES=(dev pg_docker)
   export DT_SEVERITY=4
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"
@@ -205,46 +206,5 @@ function dt_init() {
   . "${DT_CORE}/rc.sh"
   . "${DT_TOOLS}/rc.sh"
   . "${DT_STANDS}/rc.sh"
-
+  drop_all_ctxes
 }
-
-# Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
-# will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
-function dt_register() {
-  local fname ctx suffix methods method
-  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  suffix=$2; dt_err_if_empty ${fname} "suffix" || return $?
-  methods=($(echo "$3"))
-  for method in ${methods[@]}; do
-    eval "function ${method}_${suffix}() {( . ${ctx} && ${method} )}" || return $?
-  done
-}
-
-function var_prf() {
-  echo "$1__"
-}
-
-# get var
-function gvar() {
-  var=$(var_prf $1)$2
-  val=$(eval echo "\${${${var}}}")
-  echo "${val}"
-}
-
-# set var
-function var() {
-  local fname ctx var val parent_val
-  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  var=$2; dt_err_if_empty ${fname} "var" || return $?
-  val=$3
-  var=$(var_prf ${ctx})${var}
-  parent_val=$(eval echo "\${${var}}")
-  dt_debug ${fname} "export var=${var}; val=${parent_val}, new_val=${val}"
-  if [ -z "${parent_val}" ]; then
-    eval "${var}=\"${val}\""
-  fi
-  export ${var}
-}
-

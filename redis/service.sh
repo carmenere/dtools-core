@@ -39,7 +39,7 @@ function ctx_service_redis() {
   redis_service
 }
 
-dt_register "ctx_service_redis" "redis" "$(os_service_methods)"
+dt_register "ctx_service_redis" "redis" "$(service_methods)"
 
 function lsof_redis() {
   HOST=${REDIS_HOST}

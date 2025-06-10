@@ -284,18 +284,22 @@ function ctx_cargo() {
   app_envs=()
 }
 
-cargo_methods=()
+function cargo_methods() {
+  local methods=()
+  methods+=(cargo_build)
+  methods+=(cargo_clippy)
+  methods+=(cargo_clippy_fix)
+  methods+=(cargo_doc)
+  methods+=(cargo_doc_open)
+  methods+=(cargo_fmt)
+  methods+=(cargo_fmt_fix)
+  methods+=(cargo_test)
+  echo "${methods}"
+}
 
-cargo_methods+=(cargo_build)
-cargo_methods+=(cargo_clippy)
-cargo_methods+=(cargo_clippy_fix)
-cargo_methods+=(cargo_doc)
-cargo_methods+=(cargo_doc_open)
-cargo_methods+=(cargo_fmt)
-cargo_methods+=(cargo_fmt_fix)
-cargo_methods+=(cargo_test)
-
-cargo_install_methods=()
-
-cargo_install_methods+=(cargo_install)
-cargo_install_methods+=(cargo_uninstall)
+function cargo_install_methods() {
+  local methods=()
+  methods+=(cargo_install)
+  methods+=(cargo_uninstall)
+  echo "${methods}"
+}

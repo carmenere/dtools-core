@@ -4,7 +4,7 @@ function ctx_crate_cargo_deny() {
   CRATE_VERSION="0.18.2"
 }
 
-dt_register "ctx_crate_cargo_deny" "cargo_deny" "${cargo_install_methods[@]}"
+dt_register "ctx_crate_cargo_deny" "cargo_deny" "$(cargo_install_methods)"
 
 function _cargo_deny_opts() {
   _cargo_shared_manifest_opts

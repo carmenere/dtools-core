@@ -1,8 +1,11 @@
 function ctx_docker_network() {
-  SUBNET="192.168.111.0/24"
-  BRIDGE="example"
-  ERR_IF_BRIDGE_EXISTS="n"
-  DRIVER="bridge"
+  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
+  var $c SUBNET "192.168.111.0/24"
+  var $c BRIDGE "example"
+  var $c ERR_IF_BRIDGE_EXISTS "n"
+  var $c DRIVER "bridge"
+  dt_cache ${c}
 }
 
 function docker_network_create() {
@@ -39,9 +42,12 @@ function docker_network_ls() {
   dt_exec ${fname} docker network ls
 }
 
-docker_network_methods=()
-docker_network_methods+=(docker_network_create)
-docker_network_methods+=(docker_network_rm)
-docker_network_methods+=(docker_network_ls)
+function docker_network_methods() {
+  local methods=()
+  methods+=(docker_network_create)
+  methods+=(docker_network_rm)
+  methods+=(docker_network_ls)
+  echo "${methods}"
+}
 
-dt_register "ctx_docker_network" "example" "${docker_network_methods[@]}"
+dt_register "ctx_docker_network" "example" "$(docker_network_methods)"

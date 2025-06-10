@@ -18,11 +18,12 @@ function profile_release() {
 # If requested profile is activated - just returns it back.
 # Otherwise returns nothing.
 function get_profile() {
+  local fname profile rezult; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   profile="$1"; rezult=
   if [ -z "${profile}" ]; then echo "Profile was not provided."; return 99; fi
   for p in ${DT_PROFILES[@]};  do
-    dt_debug ${fname} "p=${p}"
     if [ "$p" = "$profile" ]; then
+      dt_debug ${fname} "HIT: profile=${p}"
       rezult="$profile"
       break
     fi

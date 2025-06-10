@@ -4,7 +4,7 @@ function ctx_crate_cargo_cyclonedx() {
   CRATE_VERSION="0.5.7"
 }
 
-dt_register "ctx_crate_cargo_cyclonedx" "cargo_cyclonedx" "${cargo_install_methods[@]}"
+dt_register "ctx_crate_cargo_cyclonedx" "cargo_cyclonedx" "$(cargo_install_methods)"
 
 function _cargo_cyclonedx_opts() {
   _cargo_shared_manifest_opts
