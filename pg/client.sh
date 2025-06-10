@@ -1,8 +1,3 @@
-function psql_conn_url() {
-  vars=(PGUSER PGDATABASE PGPASSWORD PGHOST PGPORT)
-  echo "${vars}"
-}
-
 function psql_conn() {
   local fname ctx cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")

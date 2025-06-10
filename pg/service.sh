@@ -1,22 +1,9 @@
-function PG_CONFIG() {
-  local fname ctx pg_config major
-  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  shift
-  pg_config=$(gvar ${ctx} PG_CONFIG)
-  major=$(gvar ${ctx} MAJOR)
-  if [ ! -x "${pg_config}" ]; then
-    dt_warning ${fname} "The binary '${pg_config}' doesn't exist. Maybe pg of version '${major}' hasn't been installed yet?"
-    return 0
-  fi
-  echo "$(${pg_config} $@)"
-}
-
 function bin_dir() {
   local fname ctx major bind_dir
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  major=$(gvar ${ctx} MAJOR)
+  ctx=$1
+  major=$(gvar MAJOR ${ctx})
+
   if [ "$(os_name)" = "macos" ]; then
     bind_dir="$(brew_prefix)/opt/postgresql@${major}/bin"
   elif [ "$(os_name)" = "alpine" ]; then
@@ -33,9 +20,9 @@ function bin_dir() {
 function pg_hba_conf() {
   local ctx major service
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  major=$(gvar ${ctx} MAJOR)
-  service=$(gvar ${ctx} SERVICE)
+  ctx=$1
+  major=$(gvar MAJOR ${ctx})
+  service=$(gvar SERVICE ${ctx})
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/var/${service}/pg_hba.conf"
   else
@@ -46,9 +33,9 @@ function pg_hba_conf() {
 function postgresql_conf() {
   local ctx major service
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  major=$(gvar ${ctx} MAJOR)
-  service=$(gvar ${ctx} SERVICE)
+  ctx=$1
+  major=$(gvar MAJOR ${ctx})
+  service=$(gvar SERVICE ${ctx})
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/var/${service}/postgresql.conf"
   else
@@ -59,8 +46,8 @@ function postgresql_conf() {
 function service() {
   local ctx major
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  major=$(gvar ${ctx} MAJOR)
+  ctx=$1
+  major=$(gvar MAJOR ${ctx})
   if [ "$(os_name)" = "macos" ]; then
     echo "postgresql@${major}"
   else
@@ -72,9 +59,9 @@ function service() {
 function pg_install() {
   local fname ctx major
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  major=$(gvar ${ctx} MAJOR)
-  service=$(gvar ${ctx} SERVICE)
+  ctx=$1
+  major=$(gvar MAJOR ${ctx})
+  service=$(gvar SERVICE ${ctx})
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     dt_exec ${fname} "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
     dt_exec ${fname} "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
@@ -106,8 +93,8 @@ function pg_add_path() {
 function pg_hba_conf_add_policy() {
   local fname old_hash new_hash pg_hba_conf
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  pg_hba_conf=$(gvar ${ctx} PG_HBA_CONF)
+  ctx=$1
+  pg_hba_conf=$(gvar PG_HBA_CONF ${ctx})
   old_hash=$(${SUDO} sha256sum "${pg_hba_conf}" | cut -d' ' -f 1) || return $?
   dt_exec ${fname} "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' ${pg_hba_conf}" || return $?
   new_hash=$(${SUDO} sha256sum "${pg_hba_conf}" | cut -d' ' -f 1) || return $?
@@ -121,7 +108,7 @@ function pg_hba_conf_add_policy() {
 function pg_conf_set_port() {
   local fname old_hash new_hash postgresql_conf
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  postgresql_conf=$(gvar ${ctx} POSTGRESQL_CONF)
+  postgresql_conf=$(gvar POSTGRESQL_CONF ${ctx})
   old_hash=$(${SUDO} sha256sum "${postgresql_conf}" | cut -d' ' -f 1) || return $?
   dt_exec ${fname} "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(port)/; t; \$a port = $(port)' ${postgresql_conf}" || return $?
   new_hash=$(${SUDO} sha256sum "${postgresql_conf}" | cut -d' ' -f 1) || return $?
@@ -147,28 +134,33 @@ function lsof_pg() {
 }
 
 function ctx_service_pg() {
-  local fname c BIN_DIR; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
+  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  # c is send by parent and usen in function, but if function is called without ctx, c is empty
+  # but we must pass ctx to set_vars, so save if in ctx
+  c=$1; ctx=${c}; if [ -z "${ctx}" ]; then ctx=${fname}; if dt_cached ${ctx}; then return 0; fi; fi;
+  local MAJOR=17
+  local MINOR=5
+  local PGHOST="localhost"
+  local PGPORT=5430
+  local SERVICE="$(service $c)"
+  local BIN_DIR="$(bin_dir $c)"
+  local PSQL="${BIN_DIR}/psql"
+  local PG_CONFIG="${BIN_DIR}/pg_config"
+  local PG_HBA_CONF="$(pg_hba_conf $c)"
+  local POSTGRESQL_CONF="$(postgresql_conf $c)"
+  if [ ! -x "${PG_CONFIG}" ]; then
+    dt_warning ${fname} "The binary '${PG_CONFIG}' doesn't exist. Maybe pg of version '${MAJOR}' hasn't been installed yet?"
+  else
+    local CONFIG_SHAREDIR="$(${PG_CONFIG} --sharedir)"
+    local CONFIG_LIBDIR="$(${PG_CONFIG} --pkglibdir)"
+  fi
+  local START_CMD="$(os_service) start '${SERVICE}'"
+  local STOP_CMD="$(os_service) stop '${SERVICE}'"
+  local PREPARE_CMD="pg_prepare"
+  local INSTALL_CMD="pg_install"
+  local LSOF_CMD="lsof_pg"
 
-  var $c MAJOR 17 && \
-  var $c MINOR 5 && \
-  var $c PGHOST "localhost" && \
-  var $c PGPORT 5430 && \
-  var $c SERVICE "$(service $c)"
-  BIN_DIR="$(bin_dir $c)"
-  var $c BIN_DIR "${BIN_DIR}" && \
-  var $c PSQL "${BIN_DIR}/psql" && \
-  var $c PG_CONFIG "${BIN_DIR}/pg_config" && \
-  var $c PG_HBA_CONF "$(pg_hba_conf $c)" && \
-  var $c POSTGRESQL_CONF "$(postgresql_conf $c)" && \
-  var $c CONFIG_SHAREDIR "$(PG_CONFIG $c --sharedir)" && \
-  var $c CONFIG_LIBDIR "$(PG_CONFIG $c --pkglibdir)"
-  var $c START_CMD "$(os_service) start '${SERVICE}'" && \
-  var $c STOP_CMD "$(os_service) stop '${SERVICE}'" && \
-  var $c PREPARE_CMD "pg_prepare" && \
-  var $c INSTALL_CMD "pg_install" && \
-  var $c LSOF_CMD "lsof_pg"
-  dt_cache ${c}
+  set_vars ${ctx} "$(pg_vars) $(service_vars)"
 }
 
 dt_register "ctx_service_pg" "pg" "$(service_methods)"

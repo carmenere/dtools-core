@@ -42,6 +42,16 @@ function service_lsof() {
   ${lsof_cmd}
 }
 
+function service_vars() {
+  vars=()
+  local vars=(INSTALL)
+  vars+=(PREPARE)
+  vars+=(SERVICE)
+  vars+=(START)
+  vars+=(STOP)
+  echo "${vars[@]}"
+}
+
 function service_methods() {
   local methods=()
   methods+=(service_start)

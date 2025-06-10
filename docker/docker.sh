@@ -65,3 +65,54 @@ function docker_methods() {
   echo "${methods[@]}"
 }
 
+function docker_container_vars() {
+  local special=(hook_pre_docker_run)
+  special+=(docker_run_envs)
+
+  local vars=(ATTACH)
+  vars+=(BACKGROUND)
+  vars+=(CHECK_CMD)
+  vars+=(COMMAND)
+  vars+=(CONTAINER)
+  vars+=(PSEUDO_TTY)
+  vars+=(PUBLISH)
+  vars+=(REGISTRY)
+  vars+=(RESTART)
+  vars+=(RM)
+  vars+=(SH)
+  vars+=(STDIN)
+  echo "${vars[@]} ${special[@]}"
+}
+
+function docker_image_vars() {
+  local special=(hook_pre_docker_build)
+  special+=(docker_build_args)
+
+  local vars=(DEFAULT_IMAGE)
+  vars+=(BUILD_ARGS)
+  vars+=(CTX)
+  vars+=(DEFAULT_TAG)
+  vars+=(DOCKERFILE)
+  vars+=(BASE_IMAGE)
+  vars+=(IMAGE)
+  vars+=(NO_CACHE)
+  vars+=(REGISTRY)
+
+  echo "${vars[@]} ${special[@]}"
+}
+
+function docker_network_vars() {
+  local vars=(SUBNET)
+  vars+=(BRIDGE)
+  vars+=(ERR_IF_BRIDGE_EXISTS)
+  vars+=(DRIVER)
+  echo "${vars[@]}"
+}
+
+function docker_vars() {
+  local vars=(SUBNET)
+  vars+=(BRIDGE)
+  vars+=(ERR_IF_BRIDGE_EXISTS)
+  vars+=(DRIVER)
+  echo "$(docker_container_vars) $(docker_image_vars) $(docker_network_vars)"
+}

@@ -68,10 +68,10 @@ function var_prf() {
 # get var
 function gvar() {
   local fname var val; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; dt_err_if_empty ${fname} "var" || return $?
-  var=$2
-  var=$(var_prf $1)$2
-  val=$(eval echo "\${${var}}")
+  var=$1; dt_err_if_empty ${fname} "var" || return $?
+  ctx=$2
+  pvar=$(var_prf ${ctx})${var}
+  val=$(eval echo "\${${pvar}}")
   echo "${val}"
 }
 
@@ -83,10 +83,33 @@ function var() {
   val=$3
   prf=$(var_prf ${ctx})
   pvar=${prf}${var}
-  # if var exist - skip
+  # if pvar exist - skip
   if declare -p ${pvar} >/dev/null 2>&1; then return 0; fi
   dt_debug ${fname} "setting var=${prf}${BOLD}${var}${RESET}; val=${BOLD}${val}${RESET}"
   eval "export ${pvar}=\"${val}\""
+}
+
+function set_vars() {
+  local fname ctx vars var val prf pvar
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  vars=$2; dt_err_if_empty ${fname} "vars" || return $?
+  vars=($(echo "${vars}"))
+  for var in ${vars[@]}; do
+    prf=$(var_prf ${ctx})
+    pvar=${prf}${var}
+    pval=$(eval echo "\$${pvar}")
+    val=$(eval echo "\$${var}")
+    dt_debug ${fname} "${var}=${val}; ${pvar}=${pval}"
+    # if pvar exist - skip
+    if declare -p ${pvar} >/dev/null 2>&1; then continue; fi
+    # then if var doesn't exist - skip
+    if ! declare -p ${var} >/dev/null 2>&1; then continue; fi
+    val=$(eval echo "\$${var}")
+    dt_debug ${fname} "${BOLD}setting${RESET} ${prf}${BOLD}${var}${RESET}=${BOLD}${val}${RESET}"
+    eval "export ${pvar}=\"${val}\""
+  done
+  dt_cache ${ctx}
 }
 
 # Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
