@@ -196,6 +196,7 @@ function dt_defaults() {
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"
   export DT_ECHO_COLOR="${YELLOW}"
+  export DT_CTX_VARS=()
 }
 
 function dt_init() {

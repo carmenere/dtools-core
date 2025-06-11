@@ -1,10 +1,10 @@
 function pg_sql_alter_role_password() {
-  local fname query PGUSER PGDATABASE
+  local fname query ctx p PGUSER PGPASSWORD
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  dt_debug ${fname} "ctx=${ctx}"
-  load_vars ${ctx} "PGUSER PGPASSWORD"
-  dt_debug ${fname} "after: PGUSER=${PGUSER}"
+  p=$(mpref ${ctx})
+  PGPASSWORD=$(${p}password)
+  PGUSER=$(${p}user)
   dt_err_if_empty ${fname} "PGUSER" || return $?
   dt_err_if_empty ${fname} "PGPASSWORD" || return $?
   query=$(
@@ -16,7 +16,7 @@ function pg_sql_alter_role_password() {
 # In postgres the $$ ... $$ means dollar-quoted string.
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
 function pg_sql_create_user() {
-  local fname query PGUSER PGPASSWORD
+  local fname query ctx p PGUSER PGPASSWORD
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER PGPASSWORD"
@@ -31,7 +31,7 @@ function pg_sql_create_user() {
 }
 
 function pg_sql_drop_user() {
-  local fname query PGUSER
+  local fname query ctx p PGUSER
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER"
@@ -43,7 +43,7 @@ function pg_sql_drop_user() {
 }
 
 function pg_sql_create_db() {
-  local fname query PGDATABASE
+  local fname query ctx p PGDATABASE
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGDATABASE"
@@ -57,7 +57,7 @@ function pg_sql_create_db() {
 }
 
 function pg_sql_drop_db() {
-  local fname query PGUSER PGDATABASE
+  local fname query ctx p PGUSER PGDATABASE
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER PGDATABASE"
@@ -71,7 +71,7 @@ function pg_sql_drop_db() {
 }
 
 function pg_sql_grant_user_migrator() {
-  local fname query PGUSER PGDATABASE
+  local fname query ctx p PGUSER PGDATABASE
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER PGDATABASE"
@@ -91,7 +91,7 @@ function pg_sql_grant_user_migrator() {
 }
 
 function pg_sql_revoke_user_migrator() {
-  local fname query PGUSER
+  local fname query ctx p PGUSER
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER"
@@ -105,7 +105,7 @@ function pg_sql_revoke_user_migrator() {
 }
 
 function pg_sql_grant_user_app() {
-  local fname query PGUSER PGDATABASE
+  local fname query ctx p PGUSER PGDATABASE
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
   load_vars ${ctx} "PGUSER PGDATABASE"
@@ -128,12 +128,10 @@ function pg_sql_grant_user_app() {
 }
 
 function pg_sql_revoke_user_app() {
-  local fname query PGUSER PGDATABASE
+  local fname query ctx p PGUSER PGDATABASE
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  dt_debug ${fname} "ctx=${ctx}; will load vars"
   load_vars ${ctx} "PGUSER PGDATABASE"
-  dt_debug ${fname} "ctx=${ctx}; after load vars"
   dt_err_if_empty ${fname} "PGUSER" || return $?
   dt_err_if_empty ${fname} "PGDATABASE" || return $?
   query=$(

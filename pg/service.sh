@@ -1,9 +1,8 @@
-function bin_dir() {
-  local fname ctx major bind_dir
+function BIN_DIR() {
+  local fname c major bind_dir
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx=$1
-  major=$(gvar MAJOR ${ctx})
-
+  c=$1
+  major=$(gvar MAJOR ${c})
   if [ "$(os_name)" = "macos" ]; then
     bind_dir="$(brew_prefix)/opt/postgresql@${major}/bin"
   elif [ "$(os_name)" = "alpine" ]; then
@@ -12,12 +11,12 @@ function bin_dir() {
     bind_dir="/usr/lib/postgresql/${major}/bin"
   fi
   if [ ! -d "${bind_dir}" ]; then
-    dt_warning ${fname} "The directory '${bind_dir}' doesn't exist. Maybe pg of version '${major}' hasn't been installed yet?"
+    dt_warning ${fname} "The directory '${bind_dir}' doesn't exist"
   fi
   echo "${bind_dir}"
 }
 
-function pg_hba_conf() {
+function PG_HBA_CONF() {
   local ctx major service
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1
@@ -30,7 +29,7 @@ function pg_hba_conf() {
   fi
 }
 
-function postgresql_conf() {
+function POSTGRESQL_CONF() {
   local ctx major service
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1
@@ -43,7 +42,7 @@ function postgresql_conf() {
   fi
 }
 
-function service() {
+function SERVICE() {
   local ctx major
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1
@@ -133,41 +132,71 @@ function lsof_pg() {
   lsof_tcp
 }
 
-function ctx_service_pg() {
-  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  # c is send by parent and usen in function, but if function is called without ctx, c is empty
-  # but we must pass ctx to set_vars, so save if in ctx
-  c=$1; ctx=${c}; if [ -z "${ctx}" ]; then ctx=${fname}; if dt_cached ${ctx}; then return 0; fi; fi;
-  local MAJOR=17
-  local MINOR=5
-  local PGHOST="localhost"
-  local PGPORT=5430
-  local SERVICE="$(service $c)"
-  local BIN_DIR="$(bin_dir $c)"
-  local PSQL="${BIN_DIR}/psql"
-  local PG_CONFIG="${BIN_DIR}/pg_config"
-  local PG_HBA_CONF="$(pg_hba_conf $c)"
-  local POSTGRESQL_CONF="$(postgresql_conf $c)"
-  if [ ! -x "${PG_CONFIG}" ]; then
-    dt_warning ${fname} "The binary '${PG_CONFIG}' doesn't exist. Maybe pg of version '${MAJOR}' hasn't been installed yet?"
-  else
-    local CONFIG_SHAREDIR="$(${PG_CONFIG} --sharedir)"
-    local CONFIG_LIBDIR="$(${PG_CONFIG} --pkglibdir)"
-  fi
-  local START_CMD="$(os_service) start '${SERVICE}'"
-  local STOP_CMD="$(os_service) stop '${SERVICE}'"
-  local PREPARE_CMD="pg_prepare"
-  local INSTALL_CMD="pg_install"
-  local LSOF_CMD="lsof_pg"
+# $pctx is a parent ctx
+# $ctx is a local ctx
+# Vars "c" and "ctx" is NOT local! They are from caller!
+function ctx_root() {
+  local fname; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  cctx=$1
+  pctx=$2
+  if [ -n "${cctx}" ]; then ctx=${cctx}; fi
+  if [ -n "${pctx}" ] && [ -n "${cctx}" ]; then merge="y"
+  elif [ -z "${pctx}" ] && [ -z "${cctx}" ]; then merge="n"
+  else dt_error ${fname} "pctx and cctx must be both defined or both null"; return 99; fi
+  # If "$pctx" was NOT provided, then set "$pctx" to local "$ctx"
+  if [ -z "${pctx}" ]; then
+    pctx=${ctx}
+    # If local $ctx has already cached - skip
 
-  set_vars ${ctx} "$(pg_vars) $(service_vars)"
+    DT_CTX_VARS=()
+  fi
+  c=${ctx}
+}
+
+function merge_service_pg() {
+  ctx_service_pg $1 $2
+}
+
+# "c" is a parent ctx.
+# "ctx" is a local ctx, name of current function.
+# If parent "ctx" was not provided, "c" is equal to "ctx".
+function ctx_service_pg() {
+  local ctx pctx cctx merge
+  ctx_root $@
+  ctx=$(dt_fname "${FUNCNAME[0]}" "$0")
+  p=pctx
+  if dt_cached ${ctx}; then return 0; fi
+  echo "c=${c}, ctx=${ctx}"
+  var MAJOR 17
+  var MINOR 5
+  var PGHOST "localhost"
+  var PGPORT 5430
+  var SERVICE service
+  var BIN_DIR bin_dir
+  var PSQL "%s/psql"
+  var PG_CONFIG "%s/pg_config"
+  PG_HBA_CONF $c
+  POSTGRESQL_CONF $c
+  if [ ! -x "${PG_CONFIG}" ]; then
+    dt_warning ${fname} "The binary '${PG_CONFIG}' doesn't exist"
+  else
+    var CONFIG_SHAREDIR "$(${PG_CONFIG} --sharedir)"
+    var CONFIG_LIBDIR "$(${PG_CONFIG} --pkglibdir)"
+  fi
+  var PREPARE_CMD "pg_prepare"
+  var INSTALL_CMD "pg_install"
+  var LSOF_CMD "lsof_pg"
+  dt_cache $c
 }
 
 dt_register "ctx_service_pg" "pg" "$(service_methods)"
 
-#function ctx_service_pg_tetrix() {
-#  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-#  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
-#  var ${c} PORT 7777
-#  ctx_service_pg ${c} && dt_cache ${c}
-#}
+function ctx_service_pg_tetrix() {
+  local fname c; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  c=$1; if [ -z "${c}" ]; then c=${fname}; if dt_cached ${c}; then return 0; fi; fi;
+  ctx_service_pg
+  var ${c} PORT 7777
+  $(v FOO ctx_service_pg)
+  dt_cache ${c}
+}
+

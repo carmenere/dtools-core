@@ -1,10 +1,25 @@
+function pg_connurl() {
+  local vars=(PGDATABASE)
+  vars+=(PGHOST)
+  vars+=(PGPASSWORD)
+  vars+=(PGPORT)
+  vars+=(PGUSER)
+  echo "${vars}"
+}
+
 function psql_conn() {
   local fname ctx cmd
   fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
-  load_vars ${ctx} "$(psql_conn_url) PSQL"
-  cmd=($(dt_inline_envs "$(psql_conn_url)"))
+  p=$(mpref ${ctx})
+  local PGDATABASE=$(${p}database)
+  local PGHOST=$(${p}host)
+  local PGPASSWORD=$(${p}password)
+  local PGPORT=$(${p}port)
+  local PGUSER=$(${p}user)
+  local PSQL=$(${p}psql)
   dt_err_if_empty ${fname} "PSQL" || return $?
+  cmd=($(dt_inline_envs "$(pg_connurl)"))
   cmd+=("${PSQL}")
   dt_exec ${fname} "${cmd[@]}"
 }
@@ -36,7 +51,6 @@ function _psql_init() {
   admin=$1
   migrator=$2
   app=$3
-  $admin && $migrator && $app && \
   psql_alter_role_password $admin $admin && \
   psql_create_db $migrator $admin && \
   psql_create_user $migrator $admin && \
@@ -51,12 +65,12 @@ function _psql_clean() {
   admin=$1
   migrator=$2
   app=$3
-  $admin && $migrator && $app && \
-  psql_revoke_user_app $app $admin && \
-  psql_revoke_user_migrator $migrator $admin && \
-  psql_drop_db $migrator $admin && \
-  psql_drop_user $app $admin && \
-  psql_drop_user $migrator $admin
+  $admin && $migrator && $app
+#  psql_revoke_user_app $app $admin && \
+#  psql_revoke_user_migrator $migrator $admin && \
+#  psql_drop_db $migrator $admin && \
+#  psql_drop_user $app $admin && \
+#  psql_drop_user $migrator $admin
 }
 
 function psql_conn_local_admin() {
