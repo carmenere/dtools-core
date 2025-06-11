@@ -1,16 +1,16 @@
-function clickhouse_service() {
+function clickhouse_conf() {
   if [ "$(os_name)" = "macos" ]; then
-    echo "clickhouse@${MAJOR}.${MINOR}"
+    CH_CONFIG_XML="$(brew_prefix)/etc/clickhouse-server/config.xml"
   else
-    echo "clickhouse-server"
+    CH_CONFIG_XML="/etc/clickhouse-server/config.xml"
   fi
 }
 
-function clickhouse_conf() {
+function clickhouse_user_xml_dir() {
   if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/etc/clickhouse-server/config.xml"
+    CH_USER_XML_DIR="$(brew_prefix)/etc/clickhouse-server/users.d"
   else
-    echo "/etc/clickhouse-server/config.xml"
+    CH_USER_XML_DIR="/etc/clickhouse-server/users.d"
   fi
 }
 
@@ -18,23 +18,26 @@ function clickhouse_conf() {
 function clickhouse_install() {
   local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err ${fname} $? || return $?
-    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err ${fname} $? || return $?
-    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err ${fname} $? || return $?
-
+    dt_exec ${fname} "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
+    dt_exec ${fname} "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
+    dt_exec ${fname} "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
+    dt_exec ${fname} "${SUDO} apt-get update" || return $?
+    dt_exec ${fname} "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec "brew install '$(clickhouse_service)'"
-
+    dt_exec ${fname} "brew install '${SERVICE}'" || return $?
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname}  "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 }
 
 function clickhouse_user_xml() {
-  local query=$(
-    dt_escape_single_quotes "<?xml version=\"1.0\"?>
+  local fname query
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx_clickhouse_admin || return $?
+  dt_err_if_empty ${fname} "CLICKHOUSE_USER" || return $?
+  dt_err_if_empty ${fname} "CLICKHOUSE_PASSWORD" || return $?
+  query=$(
+    dt_escape_quote "<?xml version=\"1.0\"?>
 <yandex>
     <profiles>
         <default>
@@ -56,45 +59,51 @@ function clickhouse_user_xml() {
 }
 
 function clickhouse_gen_user_xml() {
-  if [ "$(os_name)" = "macos" ]; then
-    # sudo -E: indicates to the security policy that the user wishes to preserve their existing environment variables.
-    # The security policy may return an error if the user does not have permission to preserve the environment.
-    local SUDO="sudo -E"
-  else
-    local SUDO="sudo"
+  local fname old_hash new_hash cmd query SUDO
+  fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  dt_err_if_empty ${fname} "CH_USER_XML" || return $?
+  if [ "$(os_name)" != "macos" ]; then
+    SUDO="sudo"
   fi
-  local query="$(clickhouse_user_xml)"
-  local cmd="echo $'${query}' | sudo tee ${CH_USER_XML}"
-  dt_exec "${cmd}"
+  if [ -f "${CH_USER_XML}" ]; then
+    old_hash=$(dt_exec ${fname} "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
+  fi
+  query="$(clickhouse_user_xml)" || return $?
+  cmd="echo $'${query}' | tee ${CH_USER_XML}"
+  dt_exec ${fname} "${cmd}" || return $?
+  new_hash=$(dt_exec ${fname} "${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1") || return $?
+  if [ "${old_hash}" != "${new_hash}" ]; then
+    dt_info ${fname} "${CH_USER_XML} is ${BOLD}is changed${RESET}"; return 59
+  else
+    dt_info ${fname} "${CH_USER_XML} is ${BOLD}not changed${RESET}"
+  fi
 }
 
 function clickhouse_prepare() {
-  if [ -f "${CH_USER_XML}" ]; then
-    local user_xml_hash=$(${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
-  fi
-  clickhouse_gen_user_xml
-  local user_xml_hash_new=$(${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
-  if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then return 0; fi
+  local changed
+  clickhouse_gen_user_xml; if [ "$?" = 59 ]; then changed="y"; fi
+  if [ "${changed}" != "y" ]; then return 0; fi
   service_stop
 }
 
-function clickhouse_user_xml_dir() {
-  if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/etc/clickhouse-server/users.d"
-  else
-    echo "/etc/clickhouse-server/users.d"
-  fi
+function clickhouse_paths() {
+  clickhouse_user_xml_dir && clickhouse_conf || return $?
+  CH_USER_XML="${CH_USER_XML_DIR}/dt_admin.xml"
+  CH_CONFIG_XML=${CH_CONFIG_XML}
 }
 
-function ctx_clickhouse_vars() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; exit_on_err ${fname} $? || return $?
-  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err ${fname} $? || return $?
-  SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
-  SERVICE_START="$(service) start '$(clickhouse_service)'"
-  SERVICE_PREPARE=clickhouse_prepare
-  SERVICE_INSTALL=clickhouse_install
-  SERVICE_LSOF=lsof_clickhouse
+function clickhouse_service() {
+  if [ "$(os_name)" = "macos" ]; then
+    SERVICE="clickhouse@${MAJOR}.${MINOR}"
+  else
+    SERVICE="clickhouse-server"
+  fi
+  clickhouse_paths || return $?
+  STOP_CMD="$(os_service) stop '${SERVICE}'"
+  START_CMD="$(os_service) start '${SERVICE}'"
+  PREPARE_CMD=clickhouse_prepare
+  INSTALL_CMD=clickhouse_install
+  LSOF=lsof_clickhouse
 }
 
 function ctx_service_clickhouse() {
@@ -105,8 +114,10 @@ function ctx_service_clickhouse() {
   CLICKHOUSE_HTTP_PORT=8123
   MAJOR=23
   MINOR=5
-  ctx_clickhouse_vars
+  clickhouse_service
 }
+
+dt_register "ctx_service_clickhouse" "clickhouse" "$(service_methods)" || return $?
 
 function lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}
@@ -114,10 +125,4 @@ function lsof_clickhouse() {
   lsof_tcp
   PORT=${CLICKHOUSE_HTTP_PORT};
   lsof_tcp
-}
-
-dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"
-
-function service_prepare_clickhouse() {
-  ctx_conn_clickhouse_admin && clickhouse_prepare $1
 }

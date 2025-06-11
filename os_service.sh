@@ -1,4 +1,4 @@
-function service() {
+function os_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "brew services"
   else
@@ -6,27 +6,62 @@ function service() {
   fi
 }
 
-function service_stop() {(
-    dt_exec "${SUDO} ${SERVICE_STOP}"
-)}
+#
+function service_stop() {
+  local ctx fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  "${stop_cmd}"
+}
 
-function service_start() {(
-    dt_exec "${SUDO} ${SERVICE_START}"
-)}
+function service_start() {
+  local fname ctx start_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${start_cmd}
+}
 
 function service_restart() { service_stop && service_start; }
-function service_prepare() { dt_exec "${SERVICE_PREPARE}"; }
-function service_install() { dt_exec "${SERVICE_INSTALL}"; }
-function service_lsof() { dt_exec "${SERVICE_LSOF}"; }
 
-service_methods=()
+function service_prepare() {
+  local fname ctx prepare_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${prepare_cmd}
+}
 
-service_methods+=(service_start)
-service_methods+=(service_stop)
-service_methods+=(service_restart)
-service_methods+=(service_prepare)
-service_methods+=(service_install)
-service_methods+=(service_lsof)
+function service_install() {
+  local fname ctx install_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${install_cmd}
+}
+
+function service_lsof() {
+  local fname ctx lsof_cmd; fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  ctx=$1; dt_err_if_empty ${fname} "ctx" || return $?
+  start_cmd=$(gvar ${ctx} START_CMD)
+  ${lsof_cmd}
+}
+
+function service_vars() {
+  vars=()
+  local vars=(INSTALL)
+  vars+=(PREPARE)
+  vars+=(SERVICE)
+  vars+=(START)
+  vars+=(STOP)
+  echo "${vars[@]}"
+}
+
+function service_methods() {
+  local methods=()
+  methods+=(service_start)
+  methods+=(service_stop)
+  methods+=(service_restart)
+  methods+=(service_prepare)
+  methods+=(service_install)
+  methods+=(service_lsof)
+  echo "${methods[@]}"
+}
 
 # MacOS
 function brew_list_services() { brew services list; }
