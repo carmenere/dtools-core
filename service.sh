@@ -7,26 +7,28 @@ function service() {
 }
 
 function service_stop() {(
-    dt_exec "${SUDO} ${SERVICE_STOP}"
+    cmd_exec "${SUDO} ${SERVICE_STOP}"
 )}
 
 function service_start() {(
-    dt_exec "${SUDO} ${SERVICE_START}"
+    cmd_exec "${SUDO} ${SERVICE_START}"
 )}
 
 function service_restart() { service_stop && service_start; }
-function service_prepare() { dt_exec "${SERVICE_PREPARE}"; }
-function service_install() { dt_exec "${SERVICE_INSTALL}"; }
-function service_lsof() { dt_exec "${SERVICE_LSOF}"; }
+function service_prepare() { cmd_exec "${SERVICE_PREPARE}"; }
+function service_install() { cmd_exec "${SERVICE_INSTALL}"; }
+function service_lsof() { cmd_exec "${SERVICE_LSOF}"; }
 
-service_methods=()
-
-service_methods+=(service_start)
-service_methods+=(service_stop)
-service_methods+=(service_restart)
-service_methods+=(service_prepare)
-service_methods+=(service_install)
-service_methods+=(service_lsof)
+function service_methods() {
+  local methods=()
+  methods+=(service_start)
+  methods+=(service_stop)
+  methods+=(service_restart)
+  methods+=(service_prepare)
+  methods+=(service_install)
+  methods+=(service_lsof)
+  echo "${methods[@]}"
+}
 
 # MacOS
 function brew_list_services() { brew services list; }

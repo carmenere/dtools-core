@@ -8,7 +8,7 @@ function ctx_crate_sqlx() {
   OFFLINE=
 }
 
-dt_register "ctx_crate_sqlx" "sqlx" "${cargo_install_methods[@]}"
+register "ctx_crate_sqlx" "sqlx" "${cargo_install_methods[@]}"
 
 function ctx_sqlx() {
   SCHEMAS="${DT_PROJECT}/migrations/schemas"
@@ -17,29 +17,29 @@ function ctx_sqlx() {
 }
 
 function sqlx_pre_run() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "SCHEMAS"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "SCHEMAS" || return $?
+  err_if_empty ${fname} "TMP_SCHEMAS" || return $?
   rm -rf "${TMP_SCHEMAS}"
   mkdir -p "${TMP_SCHEMAS}"
   local cmd=("find '${SCHEMAS}' -type f | while read FILE; ")
   cmd+=("do echo -e \"cp \${FILE} '${TMP_SCHEMAS}/'\"; cp "\${FILE}" '${TMP_SCHEMAS}'; done")
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function sqlx_run() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   local _envs=(DATABASE_URL)
-  dt_err_if_empty ${fname} "TMP_SCHEMAS"; exit_on_err ${fname} $? || return $?
+  err_if_empty ${fname} "TMP_SCHEMAS" || return $?
   sqlx_pre_run $ctx
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(sqlx migrate run)
   cmd+=(--source "'${TMP_SCHEMAS}'")
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function sqlx_prepare() {
-  ( cd "${DT_PROJECT_DIR}" && dt_exec "cargo sqlx prepare" ) #--workspace
+  ( cd "${PROJECT_DIR}" && cmd_exec "cargo sqlx prepare" ) #--workspace
 }
 
 sqlx_methods=()

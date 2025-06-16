@@ -8,7 +8,7 @@ function openssl_dir() {
 
 function py_set_paths() {
   version="$1"
-  if [ -z "${version}" ]; then dt_error "Var version is empty"; return 99; fi
+  if [ -z "${version}" ]; then error "Var version is empty"; return 99; fi
   export PREFIX="${DT_TOOLCHAIN}/py/${version}"
   export TAR="Python-${version}.tgz"
   export SRC="${DL}/Python-${version}"
@@ -51,25 +51,25 @@ function ctx_python() {
 
 function python_build() {
   export
-  dt_exec "make -f ${PYMAKE} python3"
+  cmd_exec "make -f ${PYMAKE} python3"
 }
 
 function python_venv_init() {
-    dt_exec "make -f ${PYMAKE} venv-init"
+    cmd_exec "make -f ${PYMAKE} venv-init"
 }
 
 function python_pip_init() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  dt_exec "make -f ${PYMAKE} pip-init"
+  cmd_exec "make -f ${PYMAKE} pip-init"
 }
 
 function python_venv_clean() {
-  dt_exec "make -f ${PYMAKE} venv-clean"
+  cmd_exec "make -f ${PYMAKE} venv-clean"
 }
 
 function python_pip_clean() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  dt_exec "make -f ${PYMAKE} pip-clean"
+  cmd_exec "make -f ${PYMAKE} pip-clean"
 }
 
 function python_prepare() {

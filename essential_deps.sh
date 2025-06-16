@@ -29,16 +29,16 @@ function ctx_deps_macos() {
   PACMAN="brew install"
 }
 
-function dt_install_deps() {
+function install_deps() {
   if [ "$(os_name)" = "ubuntu" ] || [ "$(os_name)" = "debian" ]; then
-    dt_target ctx_deps_ubuntu
+    target ctx_deps_ubuntu
   elif [ "$(os_name)" = "macos" ]; then
-    dt_target ctx_deps_macos
+    target ctx_deps_macos
   fi
 
   if [ -z "${DEPS}" ]; then return 0; fi
 
   for dep in ${DEPS[@]}; do
-    dt_exec "${PACMAN} ${dep}"
+    cmd_exec "${PACMAN} ${dep}"
   done
 }

@@ -1,6 +1,6 @@
 function clickhouse_user_admin() {
   CLICKHOUSE_PASSWORD="1234567890"
-  CLICKHOUSE_USER="dt_admin"
+  CLICKHOUSE_USER="admin"
 }
 
 function clickhouse_db_default() {

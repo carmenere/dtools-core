@@ -8,7 +8,7 @@ function redis_db_0() {
 }
 
 function redis_user_app() {
-  REDIS_USER="dt_user"
+  REDIS_USER="user"
   REDIS_PASSWORD="12345"
 }
 

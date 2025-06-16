@@ -17,28 +17,28 @@ function ctx_crate_cargo_audit() {
   LOCKED="y"
   OFFLINE=
 }
-dt_register "ctx_crate_cargo_audit" "cargo_audit" "${cargo_install_methods[@]}"
+register "ctx_crate_cargo_audit" "cargo_audit" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_deny() {
   ctx_crate_defaults
   CRATE_NAME="cargo-deny"
   CRATE_VERSION="0.18.2"
 }
-dt_register "ctx_crate_cargo_deny" "cargo_deny" "${cargo_install_methods[@]}"
+register "ctx_crate_cargo_deny" "cargo_deny" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_sonar() {
   ctx_crate_defaults
   CRATE_NAME="cargo-sonar"
   CRATE_VERSION="1.3.0"
 }
-dt_register "ctx_crate_cargo_sonar" "cargo_sonar" "${cargo_install_methods[@]}"
+register "ctx_crate_cargo_sonar" "cargo_sonar" "${cargo_install_methods[@]}"
 
 function ctx_crate_cargo_cyclonedx() {
   ctx_crate_defaults
   CRATE_NAME="cargo-cyclonedx"
   CRATE_VERSION="0.5.7"
 }
-dt_register "ctx_crate_cargo_cyclonedx" "cargo_cyclonedx" "${cargo_install_methods[@]}"
+register "ctx_crate_cargo_cyclonedx" "cargo_cyclonedx" "${cargo_install_methods[@]}"
 
 function _cargo_audit_opts() {
   _cargo_shared_manifest_opts
@@ -68,33 +68,33 @@ function _cargo_cyclonedx_opts() {
 
 function cargo_audit() {
   cd "${MANIFEST_DIR}"
-  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
+  local cmd=("$(inline_envs "${_export_envs[@]}")")
   cmd+=(cargo audit)
   _cargo_audit_opts
-  dt_exec "${cmd[@]} || true"
+  cmd_exec "${cmd[@]} || true"
 }
 
 function cargo_deny() {
   cd "${MANIFEST_DIR}"
-  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
+  local cmd=("$(inline_envs "${_export_envs[@]}")")
   cmd+=(cargo deny)
   _cargo_deny_opts
   cmd+=(check)
-  dt_exec "${cmd[@]} || true"
+  cmd_exec "${cmd[@]} || true"
 }
 
 function cargo_sonar() {
   cd "${MANIFEST_DIR}"
-  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
+  local cmd=("$(inline_envs "${_export_envs[@]}")")
   cmd+=(cargo sonar)
   _cargo_sonar_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_cyclonedx() {
   cd "${DT_REPORTS}"
-  local cmd=("$(dt_inline_envs "${_export_envs[@]}")")
+  local cmd=("$(inline_envs "${_export_envs[@]}")")
   cmd+=(cargo cyclonedx --all)
   _cargo_cyclonedx_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }

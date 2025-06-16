@@ -23,12 +23,12 @@ touch rc.sh
 ```
 5. Add to `rc.sh`:
 ```bash
-DT_DTOOLS=$(dirname "$(realpath $0)")
+DTOOLS=$(dirname "$(realpath $0)")
 
 echo "Loading lib ... "
-. "${DT_DTOOLS}/core/lib.sh"
+. "${DTOOLS}/core/lib.sh"
 
-dt_init
+init
 ```
 6. Create directories:
 ```bash
@@ -90,7 +90,7 @@ project_root_dir
 │   ├── tools/
 │   │   ├── ...
 │   │   └── rc.sh
-│   └── rc.sh   # Loads "${DT_DTOOLS}/core/lib.sh" and calls "dt_init" function.
+│   └── rc.sh   # Loads "${DTOOLS}/core/lib.sh" and calls "init" function.
 ├── ...
 ```
 

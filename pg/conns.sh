@@ -1,67 +1,38 @@
-function pg_db_postgres() {
-  PGDATABASE="postgres"
+pg_connurl() {
+  local vars=(PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER)
+  echo "${vars}"
 }
 
-function pg_db_example() {
-  PGDATABASE="example"
+ctx_socket_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ "$(get_profile pg_docker)" = "pg_docker" ]; then
+    load_vars ctx_docker_pg "PGHOST PGPORT" || return $?
+  else
+    load_vars ctx_service_pg "PGHOST PGPORT" || return $?
+  fi
+  load_vars ctx_service_pg "PSQL" || return $?
+
+  dt_debug ${fname} "PGPORT=${PGPORT}, PGHOST=${PGHOST}"
 }
 
-function pg_user_admin() {
-  PGPASSWORD="postgres"
+ctx_account_admin_pg() {
   if [ "$(os_name)" = "macos" ]; then
     PGUSER="${USER}"
   else
-    PGUSER=postgres
+    PGUSER="postgres"
   fi
-}
-
-function pg_user_docker_admin() {
   PGPASSWORD="postgres"
-  PGUSER=postgres
+  PGDATABASE="postgres"
 }
 
-function pg_user_app() {
-  PGPASSWORD="12345"
-  PGUSER="example_app"
-}
-
-function pg_user_migrator() {
-  PGPASSWORD="12345"
+ctx_account_migrator_pg() {
   PGUSER="example_migrator"
+  PGPASSWORD="1234567890"
+  PGDATABASE="example"
 }
 
-function ctx_conn_pg_admin() {
-  ctx_service_pg && \
-  pg_db_postgres && \
-  pg_user_admin
-}
-
-function ctx_conn_pg_migrator() {
-  ctx_service_pg && \
-  pg_db_example && \
-  pg_user_migrator
-}
-
-function ctx_conn_pg_app() {
-  ctx_service_pg && \
-  pg_db_example && \
-  pg_user_app
-}
-
-function ctx_conn_docker_pg_admin() {
-  ctx_docker_pg && \
-  pg_db_postgres && \
-  pg_user_docker_admin
-}
-
-function ctx_conn_docker_pg_migrator() {
-  ctx_docker_pg && \
-  pg_db_example && \
-  pg_user_migrator
-}
-
-function ctx_conn_docker_pg_app() {
-  ctx_docker_pg && \
-  pg_db_example && \
-  pg_user_app
+ctx_account_app_pg() {
+  ctx_account_migrator_pg || return $?
+  PGUSER="example_app"
+  PGPASSWORD="1234567890"
 }

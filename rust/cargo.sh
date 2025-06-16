@@ -101,22 +101,22 @@ function cargo_cache_clean() {
 }
 
 function cargo_install() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "CRATE_NAME"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty ${fname} "CRATE_VERSION"; exit_on_err ${fname} $? || return $?
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "CRATE_NAME" || return $?
+  err_if_empty ${fname} "CRATE_VERSION" || return $?
   local cmd=(cargo install)
   cmd+=(--version "${CRATE_VERSION}")
   _cargo_install_opts
   cmd+=(${CRATE_NAME})
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_uninstall() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "CRATE_NAME"; exit_on_err ${fname} $? || return $?
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "CRATE_NAME" || return $?
   local cmd=(cargo uninstall)
   cmd+=(${CRATE_NAME})
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_profile() {
@@ -156,80 +156,80 @@ function cargo_bin_dir() {
 
 function cargo_build() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=($(dt_inline_envs "${_envs[@]}"))
+  local cmd=($(inline_envs "${_envs[@]}"))
   cmd+=(cargo build)
   _cargo_build_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_fmt() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
   cmd+=(fmt)
   _cargo_fmt_opts
   cmd+=(-- --check)
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_fmt_fix() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo)
   if [ -n "${NIGHTLY_VERSION}" ]; then cmd+=("+${NIGHTLY_VERSION}"); fi
   cmd+=(fmt)
   _cargo_fmt_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_test() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo test)
   _cargo_test_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 # "cargo clippy" uses "cargo check" under the hood.
 function cargo_clippy() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo clippy)
   _cargo_clippy_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_clippy_fix() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo clippy --fix --allow-staged)
   _cargo_clippy_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_doc() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo doc --no-deps --document-private-items)
   _cargo_doc_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_doc_open() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo doc --no-deps --document-private-items --open)
   _cargo_doc_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 function cargo_clean() {
   local _envs=(${_export_envs[@]} ${_app_compile_envs[@]})
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
+  local cmd=("$(inline_envs "${_envs[@]}")")
   cmd+=(cargo clean)
   _cargo_clean_opts
-  dt_exec "${cmd[@]}"
+  cmd_exec "${cmd[@]}"
 }
 
 # BINS is an array, by default BINS=()

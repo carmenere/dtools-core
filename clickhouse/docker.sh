@@ -1,9 +1,9 @@
 function ctx_docker_clickhouse() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   ctx_service_clickhouse && \
   ctx_docker_image && \
   ctx_docker_container && \
-  ctx_docker_network; exit_on_err ${fname} $? || return $?
+  ctx_docker_network || return $?
 
   if [ "$(uname -m)" = "arm64" ]; then
     BASE_IMAGE="clickhouse/clickhouse-server:${MAJOR}.4.1.1943-alpine"
@@ -32,4 +32,4 @@ function hooks_pre_docker_run_clickhouse() {
   echo "hooks_pre_docker_run_clickhouse: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT}"
 }
 
-dt_register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"
+register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"

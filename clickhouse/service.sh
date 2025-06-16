@@ -16,16 +16,16 @@ function clickhouse_conf() {
 
 # ctx_service_clickhouse && clickhouse_install
 function clickhouse_install() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    dt_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg"; exit_on_err ${fname} $? || return $?
-    dt_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg"; exit_on_err ${fname} $? || return $?
-    dt_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get update"; exit_on_err ${fname} $? || return $?
-    dt_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client"; exit_on_err ${fname} $? || return $?
+    cmd_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
+    cmd_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
+    cmd_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
+    cmd_exec "${SUDO} apt-get update" || return $?
+    cmd_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    dt_exec "brew install '$(clickhouse_service)'"
+    cmd_exec "brew install '$(clickhouse_service)'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99
@@ -34,7 +34,7 @@ function clickhouse_install() {
 
 function clickhouse_user_xml() {
   local query=$(
-    dt_escape_single_quotes "<?xml version=\"1.0\"?>
+    escape_quote "<?xml version=\"1.0\"?>
 <yandex>
     <profiles>
         <default>
@@ -65,7 +65,7 @@ function clickhouse_gen_user_xml() {
   fi
   local query="$(clickhouse_user_xml)"
   local cmd="echo $'${query}' | sudo tee ${CH_USER_XML}"
-  dt_exec "${cmd}"
+  cmd_exec "${cmd}"
 }
 
 function clickhouse_prepare() {
@@ -87,9 +87,9 @@ function clickhouse_user_xml_dir() {
 }
 
 function ctx_clickhouse_vars() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  CH_USER_XML="$(clickhouse_user_xml_dir)/dt_admin.xml"; exit_on_err ${fname} $? || return $?
-  CH_CONFIG_XML=$(clickhouse_conf); exit_on_err ${fname} $? || return $?
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  CH_USER_XML="$(clickhouse_user_xml_dir)/admin.xml" || return $?
+  CH_CONFIG_XML=$(clickhouse_conf) || return $?
   SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
   SERVICE_START="$(service) start '$(clickhouse_service)'"
   SERVICE_PREPARE=clickhouse_prepare
@@ -116,7 +116,7 @@ function lsof_clickhouse() {
   lsof_tcp
 }
 
-dt_register "ctx_service_clickhouse" "clickhouse" "${service_methods[@]}"
+register "ctx_service_clickhouse" "clickhouse" "$(service_methods)"
 
 function service_prepare_clickhouse() {
   ctx_conn_clickhouse_admin && clickhouse_prepare $1
