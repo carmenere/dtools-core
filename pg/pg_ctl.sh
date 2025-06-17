@@ -1,19 +1,6 @@
-function ctx_pg_ctl() {
-  OS_USER="${PGUSER}"
-  DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
-  INITDB_AUTH_HOST="md5"
-  INITDB_AUTH_LOCAL="peer"
-  INITDB_PWFILE="/tmp/passwd.tmp"
-  PG_CTL_LOGGING_COLLECTOR="on"
-  PG_CTL_CONF="${DATADIR}/postgresql.conf"
-  PG_CTL_LOG="${DATADIR}/pg_ctl.logs"
-  POSTMASTER="${DATADIR}/postmaster.pid"
-  PG_CONF="${DATADIR}/postgresql.conf"
-}
-
 function pg_ctl_initdb() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -f "${PG_CONF}" ]; then info ${fname} "Postgres has already initialized, datadir='${DATADIR}'"; return 0; fi
+  if [ -f "${PG_CONF}" ]; then dt_info ${fname} "Postgres has already initialized, datadir='${DATADIR}'"; return 0; fi
   [ -d ${DATADIR} ] || mkdir -p ${DATADIR}
   chown -R ${OS_USER} ${DATADIR}
   bash -c "echo ${PGPASSWORD} > ${INITDB_PWFILE}"
@@ -48,21 +35,31 @@ function pg_ctl_conn() {
   psql_conn
 }
 
-pg_ctl_methods=()
+function pg_ctl_methods() {
+  local methods=()
+  methods+=(pg_ctl_clean)
+  methods+=(pg_ctl_conn)
+  methods+=(pg_ctl_initdb)
+  methods+=(pg_ctl_lsof)
+  methods+=(pg_ctl_shutdown)
+  methods+=(pg_ctl_start)
+  methods+=(pg_ctl_stop)
+  echo "${methods[@]}"
+}
 
-pg_ctl_methods+=(pg_ctl_initdb)
-pg_ctl_methods+=(pg_ctl_start)
-pg_ctl_methods+=(pg_ctl_shutdown)
-pg_ctl_methods+=(pg_ctl_clean)
-pg_ctl_methods+=(pg_ctl_stop)
-pg_ctl_methods+=(pg_ctl_lsof)
-pg_ctl_methods+=(pg_ctl_conn)
+function ctx_pg_ctl() {
+  ctx_service_pg && ctx_account_admin_pg || return $?
+  OS_USER="${PGUSER}"
+  DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
+  INITDB_AUTH_HOST="md5"
+  INITDB_AUTH_LOCAL="peer"
+  INITDB_PWFILE="/tmp/passwd.tmp"
+  PG_CTL_LOGGING_COLLECTOR="on"
+  PG_CTL_CONF="${DATADIR}/postgresql.conf"
+  PG_CTL_LOG="${DATADIR}/pg_ctl.logs"
+  POSTMASTER="${DATADIR}/postmaster.pid"
+  PG_CONF="${DATADIR}/postgresql.conf"
+  PGPORT=5444
+}
 
-#function ctx_pg_ctl_v17_5444() {
-#  ctx_service_pg && \
-#  ctx_account_admin_pg && \
-#  ctx_pg_ctl || return $?
-#  PGPORT=5444
-#}
-
-register "ctx_pg_ctl_v17_5444" "v17_5444" "${pg_ctl_methods[@]}"
+DT_BINDINGS+=(ctx_pg_ctl:default:pg_ctl_methods)

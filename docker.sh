@@ -3,17 +3,17 @@
 docker_install() {
   SUDO=sudo
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      cmd_exec "${SUDO} apt-get update"
-      cmd_exec "${SUDO} apt-get install -y ca-certificates curl gnupg"
-      cmd_exec "${SUDO} install -m 0755 -d /etc/apt/keyrings"
-      cmd_exec "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | ${SUDO} gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg"
-      cmd_exec "${SUDO} chmod a+r /etc/apt/keyrings/docker.gpg"
-      cmd_exec "echo \
-        "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-        "$(. /etc/os-release && echo "${VERSION_CODENAME}")" stable" | \
-        ${SUDO} tee /etc/apt/sources.list.d/docker.list > /dev/null"
-      cmd_exec "${SUDO} apt-get update"
-      cmd_exec "${SUDO} apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
+    cmd_exec "${SUDO} apt-get update"
+    cmd_exec "${SUDO} apt-get install -y ca-certificates curl gnupg"
+    cmd_exec "${SUDO} install -m 0755 -d /etc/apt/keyrings"
+    cmd_exec "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | ${SUDO} gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg"
+    cmd_exec "${SUDO} chmod a+r /etc/apt/keyrings/docker.gpg"
+    cmd_exec "echo \
+      "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      "$(. /etc/os-release && echo "${VERSION_CODENAME}")" stable" | \
+      ${SUDO} tee /etc/apt/sources.list.d/docker.list > /dev/null"
+    cmd_exec "${SUDO} apt-get update"
+    cmd_exec "${SUDO} apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99
   fi
@@ -41,11 +41,11 @@ docker_default_tag() {
   fi
 }
 
-docker_build_args() { echo "$(inline_vars "$1" --build-arg)"; }
-docker_run_publish() { echo "$(inline_vals "$1" --publish)"; }
-docker_run_envs() { echo "$(inline_vars "$1" --env)"; }
+docker_build_args() { echo "$(inline_vars "${BUILD_ARGS}" --build-arg)"; }
+docker_run_publish() { echo "$(inline_vals "${PUBLISH}" --publish)"; }
+docker_run_envs() { echo "$(inline_vars "${RUN_ENVS}" --env)"; }
 
-docker_build() { cmd_exec docker build $(docker_build_args "${BUILD_ARGS}") -t ${IMAGE} -f "${DOCKERFILE}" "${CTX}"; }
+docker_build() { cmd_exec docker build $(docker_build_args) -t ${IMAGE} -f "${DOCKERFILE}" "${CTX}"; }
 docker_exec() { echo "docker cmd_exec -ti ${CONTAINER}"; }
 docker_exec_sh() { cmd_exec "docker cmd_exec -ti ${CONTAINER} /bin/sh"; }
 docker_logs() { cmd_exec docker logs "${CONTAINER}"; }
@@ -55,8 +55,8 @@ docker_network_rm() { cmd_exec docker network rm ${BRIDGE}; }
 docker_pull() { cmd_exec docker pull ${IMAGE}; }
 docker_rm() { cmd_exec docker rm --force ${CONTAINER}; }
 docker_rmi() { cmd_exec docker rmi ${IMAGE}; }
-docker_run() { cmd_exec docker run ${FLAGS} $(docker_run_envs "${RUN_ENVS}") $(docker_run_publish "${PUBLISH}") \
-  --network ${BRIDGE} --name ${CONTAINER} --restart ${RESTART} ${IMAGE} "${COMMAND}"; }
+docker_run() { cmd_exec docker run ${FLAGS} --name ${CONTAINER} $(docker_run_envs) $(docker_run_publish) \
+    --restart ${RESTART} --network ${BRIDGE} ${IMAGE} "${COMMAND}"; }
 docker_start() { cmd_exec docker start ${CONTAINER}; }
 docker_status() { cmd_exec docker ps -a --filter name="^${CONTAINER}$"; }
 docker_stop() { cmd_exec docker stop ${CONTAINER}; }
@@ -64,8 +64,8 @@ docker_stop() { cmd_exec docker stop ${CONTAINER}; }
 docker_service_check() {
   local cmd="$(docker_exec) ${CHECK_CMD}"
   for i in $(seq 1 30); do
-    info "${BOLD}Waiting ${CONTAINER} runtime${RESET}: attempt ${BOLD}$i${RESET} ... ";
-    if cmd_exec ${cmd}; then info "${BOLD}${CONTAINER}${RESET} is up now"; break; fi
+    dt_info "${BOLD}Waiting ${CONTAINER} runtime${RESET}: attempt ${BOLD}$i${RESET} ... ";
+    if cmd_exec ${cmd}; then dt_info "${BOLD}${CONTAINER}${RESET} is up now"; break; fi
     sleep 1
   done
 }
@@ -76,7 +76,7 @@ docker_network_ls() { cmd_exec docker network ls; }
 docker_is_running() { if ! docker ps 1>/dev/null; then error $0 "${BOLD}Dockerd is not run!${RESET}"; return 99; fi; }
 
 docker_rm_all() {
-  if [ -z "$(cmd_exec "docker ps -lq")" ]; then info "docker_rm_all(): nothing to delete."; return 0; fi
+  if [ -z "$(cmd_exec "docker ps -lq")" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
   cmd_exec docker rm --for; e $(docker ps -aq)
 }
 
@@ -117,7 +117,7 @@ function docker_network_methods() {
   methods+=(docker_network_create)
   methods+=(docker_network_rm)
   methods+=(docker_network_ls)
-  echo "${methods}"
+  echo "${methods[@]}"
 }
 
 #  IMAGE="pg:${DEFAULT_TAG}"
@@ -125,20 +125,20 @@ function docker_network_methods() {
 #  BUILD_VERSION="$(git_build_version)"
 
 ctx_docker_service() {
-  COMMAND=
-  CONTAINER=
-  CTX="."
-  IMAGE=
-  RESTART="always"
-  RM=
-  FLAGS="-d"
-  SH="/bin/sh"
+  var COMMAND
+  var CONTAINER
+  var CTX "."
+  var IMAGE
+  var RESTART "always"
+  var RM
+  var FLAGS "-d"
+  var SH "/bin/sh"
 }
 
 ctx_docker_network() {
-  SUBNET="192.168.111.0/24"
-  BRIDGE="example"
-  DRIVER="bridge"
+  var SUBNET "192.168.111.0/24"
+  var BRIDGE "example"
+  var DRIVER "bridge"
 }
 
-register "ctx_docker_network" "example" "$(docker_network_methods)"
+DT_BINDINGS+=(ctx_docker_network:example:docker_network_methods)

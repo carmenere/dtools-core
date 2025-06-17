@@ -22,4 +22,4 @@ function ctx_docker_rabbitmq() {
   CHECK_CMD="sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
 }
 
-register "ctx_conn_docker_rabbitmq_admin" "rabbitmq" "${docker_methods[@]}"
+DT_BINDINGS+=(ctx_conn_docker_rabbitmq_admin:rabbitmq:docker_methods)

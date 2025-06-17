@@ -5,34 +5,33 @@ pg_connurl() {
 
 ctx_socket_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ "$(get_profile pg_docker)" = "pg_docker" ]; then
-    load_vars ctx_docker_pg "PGHOST PGPORT" || return $?
+  if [ "${PROFILE_PG}" = "docker" ]; then
+    ctx_docker_pg || return $?
   else
-    load_vars ctx_service_pg "PGHOST PGPORT" || return $?
+    ctx_service_pg || return $?
   fi
-  load_vars ctx_service_pg "PSQL" || return $?
-
-  dt_debug ${fname} "PGPORT=${PGPORT}, PGHOST=${PGHOST}"
+  # call to load PSQL when profile docker
+  ctx_service_pg || return $?
 }
 
 ctx_account_admin_pg() {
-  if [ "$(os_name)" = "macos" ]; then
-    PGUSER="${USER}"
+  if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
+    var PGUSER "${USER}"
   else
-    PGUSER="postgres"
+    var PGUSER "postgres"
   fi
-  PGPASSWORD="postgres"
-  PGDATABASE="postgres"
+  var PGPASSWORD "postgres"
+  var PGDATABASE "postgres"
 }
 
 ctx_account_migrator_pg() {
-  PGUSER="example_migrator"
-  PGPASSWORD="1234567890"
-  PGDATABASE="example"
+  var PGUSER "example_migrator"
+  var PGPASSWORD "1234567890"
+  var PGDATABASE "example"
 }
 
 ctx_account_app_pg() {
+  var PGUSER "example_app"
+  var PGPASSWORD "1234567890"
   ctx_account_migrator_pg || return $?
-  PGUSER="example_app"
-  PGPASSWORD="1234567890"
 }

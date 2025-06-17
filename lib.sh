@@ -1,4 +1,4 @@
-# All functions "error", "warning", "info" and "debug" have the same signature:
+# All functions "error", "warning", "dt_info" and "debug" have the same signature:
 #   $1: must contain $0 of caller
 #   $2: must contain err message
 function dt_error() {
@@ -35,6 +35,17 @@ function severity_warning() { DT_SEVERITY=1; }
 function sleep_1() { cmd_exec "sleep 1"; }
 function sleep_5() { cmd_exec "sleep 5"; }
 
+function ser_val() {
+  local val=$1
+  if $(echo "${val}" | grep "'" >/dev/null 2>&1); then
+    val="$(escape_quote "${val}")"
+    val="$'${val}'"
+  elif $(echo "${val}" | grep ' ' >/dev/null 2>&1); then
+    val="\"${val}\""
+  fi
+  echo "${val}"
+}
+
 ## Usage: load_vars ctx_service_pg_tetrix "FOO BAR"
 function load_vars() {
   local ctx=$1 vars=($(echo $2)) fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -48,37 +59,7 @@ function load_vars() {
       val=$(eval echo "\${${var}}")
       val=$(ser_val "${val}")
       dt_debug ${fname} "${var}=${val}"
-      echo "${var}=${val}"
-    done)
-}
-
-## Usage: export_vars ctx_service_pg_tetrix "FOO BAR"
-function export_vars() {
-  local ctx=$1 vars=($(echo $2)) fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx vars" || return $?
-  . <(${ctx} || return $?
-    for var in ${vars[@]}; do
-      if ! declare -p ${var} >/dev/null 2>&1; then
-        dt_error ${fname} "Variable ${BOLD}${var}${RESET} not found in ctx ${BOLD}${ctx}${RESET}"
-        return 99
-      fi
-      val=$(eval echo "\${${var}}")
-      val=$(ser_val "${val}")
-      cmd_exec export ${var}="${val}"
-    done)
-}
-
-## Usage: unset_vars ctx_service_pg_tetrix "FOO BAR"
-function unset_vars() {
-  local ctx=$1 vars=($(echo $2)) fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx vars" || return $?
-  . <(${ctx} || return $?
-    for var in ${vars[@]}; do
-      if ! declare -p ${var} >/dev/null 2>&1; then
-        dt_error ${fname} "Variable ${BOLD}${var}${RESET} not found in ctx ${BOLD}${ctx}${RESET}"
-        return 99
-      fi
-      cmd_exec unset ${var}
+      echo "var ${var} ${val}"
     done)
 }
 
@@ -95,17 +76,6 @@ function err_if_empty() {
   done
 }
 
-function ser_val() {
-  local val=$1
-  if $(echo "${val}" | grep "'" >/dev/null 2>&1); then
-    val="$(escape_quote "${val}")"
-    val="$'${val}'"
-  elif $(echo "${val}" | grep ' ' >/dev/null 2>&1); then
-    val="\"${val}\""
-  fi
-  echo "${val}"
-}
-
 function inline_vals() {
   local pref vals result val fname=$(fname "${FUNCNAME[0]}" "$0")
   vals=($(echo "$1"))
@@ -119,8 +89,7 @@ function inline_vals() {
 }
 
 function inline_vars() {
-  local pref vars result var val fname=$(fname "${FUNCNAME[0]}" "$0")
-  vars=($(echo "$1"))
+  local pref result var val vars=($(echo "$1")) fname=$(fname "${FUNCNAME[0]}" "$0")
   [ -n "$2" ] && pref="$2 "
   result=()
   for var in ${vars[@]}; do
@@ -156,7 +125,7 @@ function cmd_exec () {
   local cmd fname=$(fname "${FUNCNAME[0]}" "$0")
   cmd=$(echo "$@" | sed 's/^[ \t]*//')
   if [ -z "${cmd}" ]; then
-    error ${fname} "The command is empty cmd='${cmd}'."
+    dt_error ${fname} "The command is empty cmd='${cmd}'."
     return 99
   fi
   if [ "${DT_DRYRUN}" = "y" ]; then
@@ -176,18 +145,34 @@ function cmd_exec () {
   fi
 }
 
+function var() {
+  local fname var val fname=$(fname "${FUNCNAME[0]}" "$0")
+  var=$1; err_if_empty ${fname} "var" || return $?
+  if declare -p ${var} >/dev/null 2>&1; then return 0; fi
+  val=$(ser_val "$2")
+  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val '${val}'"
+  eval "${var}=${val}"
+}
+
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 ## will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
-function register() {
-  local fname ctx suffix methods method
-  fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx=$1; err_if_empty ${fname} "ctx" || return $?
-  suffix=$2; err_if_empty ${fname} "suffix" || return $?
-  methods=($(echo "$3"))
+function dt_bind() {
+  local ctx suffix methods method fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx=$(echo "$1" | cut -d':' -f 1)
+  suffix=$(echo "$1" | cut -d':' -f 2)
+  methods=$(echo "$1" | cut -d':' -f 3)
+  err_if_empty ${fname} "ctx suffix methods" || return $?
+  if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
+  methods=($(echo $(${methods})| sort))
   for method in ${methods[@]}; do
-    bound_method=$(echo ${method} | sed -E -e 's/^_(.+)$/\1/')
-    eval "function ${bound_method}_${suffix}() {( ${ctx} && ${method}; )}" || return $?
+    dt_debug ${fname} "Register function: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
+    eval "function ${method}${suffix}() {( ${ctx} && ${method}; )}" || return $?
   done
+}
+
+dt_register() {
+  local binding fname=$(fname "${FUNCNAME[0]}" "$0")
+  for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}"; done
 }
 
 function cmd_echo() {
@@ -228,11 +213,12 @@ function paths() {
 # DT_SEVERITY >= 4 for dumps!
 function defaults() {
   export DT_DRYRUN="n"
-  export DT_PROFILES=(dev)
   export DT_SEVERITY=4
   export DT_ECHO="y"
   export DT_ECHO_STDOUT="n"
   export DT_ECHO_COLOR="${YELLOW}"
+  export DT_BINDINGS=()
+  export PROFILE_CI
 }
 
 function dt_init() {
@@ -243,4 +229,5 @@ function dt_init() {
   . "${DT_TOOLS}/rc.sh"
   . "${DT_STANDS}/rc.sh"
   if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
+  dt_register
 }

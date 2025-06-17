@@ -46,4 +46,4 @@ function lsof_rabbitmq() {
   )
 }
 
-register "ctx_service_rabbitmq" "rabbitmq" "$(service_methods)"
+DT_BINDINGS+=(ctx_service_rabbitmq:rabbitmq:service_methods)

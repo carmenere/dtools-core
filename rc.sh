@@ -8,7 +8,7 @@ function load() {
   . "${self_dir}/pg/rc.sh"
   . "${self_dir}/redis/rc.sh"
   . "${self_dir}/rabbitmq/rc.sh"
-  . "${self_dir}/rust/rc.sh"
+  . "${self_dir}/cargo/rc.sh"
   . "${self_dir}/python/rc.sh"
 }
 

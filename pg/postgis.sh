@@ -20,6 +20,6 @@ function postgis_install() {
       make
       make install
   else
-    error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 }

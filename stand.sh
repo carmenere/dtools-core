@@ -10,46 +10,35 @@ function dt_target() {
 # For example, for 'install_services' it generates
 # function stand_host_install_services() {( stand_host_steps && run_targets "${install_services[@]}" )}
 function register_stand() {
-  local stand func fname=$(fname "${FUNCNAME[0]}" "$0")
-  stand=$1; err_if_empty ${fname} "stand" "${stand}"
-  layout=$2; err_if_empty ${fname} "layout" "${tiers}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  tiers=($(echo $(${layout})))
+  local func stand=$1 up=$2 down=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "stand" || return $?
+  tiers=($(echo "$(${up}) $(${down})"))
   for tier in ${tiers[@]}; do
-    eval "function ${stand}_${tier}() {( stand_${stand} && run_targets "\${${tier}\[\@\]}" )}"
+    eval "function ${stand}_${tier}() {( ${stand} && run_targets "\${${tier}\[\@\]}" )}"
   done
-  eval "function stand_up_${stand}() {( stand_${stand} && run_stand ${layout} up )}"
-  eval "function stand_down_${stand}() {( stand_${stand} && run_stand ${layout} down )}"
+  eval "function stand_up_${stand}() {( ${stand} && run_stand ${stand} ${up} )}"
+  eval "function stand_down_${stand}() {( ${stand} && run_stand ${stand} ${down} )}"
 }
 
-# Example1: dt_stand_up stand_host up
-# Example2: dt_stand_up stand_host down
+# Example1: run_stand my_stand up
+# Example2: run_stand my_stand down
 function run_stand() {
-  local fname stand action steps
-  fname=$(fname "${FUNCNAME[0]}" "$0")
-  stand=$1; err_if_empty ${fname} "stand" "${stand}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  action=$2; err_if_empty ${fname} "action" "${action}"
-  err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
-  steps="${action}_steps"
-  dt_info ${fname} "${action} stand ${BOLD}${stand}${RESET} ... "
-  ${layout}
-  for step in $(eval echo "\${${steps}[@]}"); do
-    dt_info ${fname} "Running step ${BOLD}$step${RESET} ... "
-    for target in $(eval echo "\${${step}[@]}"); do
-      dt_target $target
-      err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+  local fname steps stand=$1 tiers=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "stand tiers" || return $?
+  dt_info ${fname} "Running stand ${BOLD}${stand}${RESET}, tiers=${BOLD}${tiers}${RESET}"
+  tiers=($(${tiers}))
+  for tier in ${tiers[@]}; do
+    dt_info ${fname} "Running tier ${BOLD}${tier}${RESET} ... "
+    for target in $(eval echo "\${${tier}[@]}"); do
+      dt_target ${target}  || return $?
     done
   done
 }
 
 function run_targets() {
-  local fname targets
-  fname=$(fname "${FUNCNAME[0]}" "$0")
+  local target fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "$1" ]; then return 0; fi
-  targets=("$@")
   for target in $@; do
-    dt_target $target
-    err=$?; if [ "${err}" != 0 ]; then dt_error ${fname} "err=${err}"; return ${err}; fi
+    dt_target ${target} || return $?
   done
 }

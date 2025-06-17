@@ -1,13 +1,13 @@
 function ctx_tmux() {
-  TMX_DEFAULT_CMD="/bin/bash"
-  TMX_DEFAULT_TERM="xterm-256color"
-  TMX_HISTORY_LIMIT=1000000
-  TMX_TERM_SIZE="240x32"
+  var TMX_DEFAULT_CMD "/bin/bash"
+  var TMX_DEFAULT_TERM "xterm-256color"
+  var TMX_HISTORY_LIMIT 1000000
+  var TMX_TERM_SIZE "240x32"
   # tmux session name
-  TMX_SESSION=
+  var TMX_SESSION
   # WINDOW_NAME and START_CMD are different for each APP
-  TMX_WINDOW_NAME=
-  TMX_START_CMD=
+  var TMX_WINDOW_NAME
+  var TMX_START_CMD
 }
 
 function tmux_new() {
@@ -53,13 +53,14 @@ function tmux_stop() {
   err_if_empty ${fname} "TMX_START_CMD" || return $?
   if tmux has-session -t ${TMX_SESSION}; then
     cmd_exec "tmux kill-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}"
-    info "stopped"
+    dt_info "stopped"
   else
-    info "Window ${TMX_SESSION}:${TMX_WINDOW_NAME} was not opened."
+    dt_info "Window ${TMX_SESSION}:${TMX_WINDOW_NAME} was not opened."
   fi
 }
 
 function tmux_connect() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "TMX_SESSION" || return $?
   cmd_exec "tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}""
 }
@@ -67,9 +68,11 @@ function tmux_connect() {
 function tmux_kill() { cmd_exec "tmux kill-server || true"; }
 function tmux_sessions() { cmd_exec "tmux ls"; }
 
-tmux_methods=()
-
-tmux_methods+=(tmux_connect)
-tmux_methods+=(tmux_stop)
-tmux_methods+=(tmux_start)
-tmux_methods+=(tmux_restart)
+function tmux_methods() {
+  local methods=()
+  methods+=(tmux_connect)
+  methods+=(tmux_stop)
+  methods+=(tmux_start)
+  methods+=(tmux_restart)
+  echo "${methods[@]}"
+}

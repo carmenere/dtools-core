@@ -1,3 +1,5 @@
+app_envs() { echo "$(inline_vars "${APP_ENVS}")"; }
+
 function app_log_file() {
   if [ -z "${LOG_FILE}" ] && [ -n "${DT_LOGS}" ] && [ -n "${APP}" ]; then
     LOG_FILE="${DT_LOGS}/${APP}.logs"
@@ -7,30 +9,27 @@ function app_log_file() {
 
 function app_start() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "BINARY" || return $?
+  err_if_empty ${fname} "BINARY APP" || return $?
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   app_log_file
-  if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
   local cmd=("$(inline_envs "${_inline_envs[@]}")")
-  cmd+=("${BINARY} ${OPTS} 2>&1")
-  if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
-  cmd_exec "${cmd[@]}"
+  cmd_exec $(app_envs) ${BINARY} ${OPTS} 2\>\&1 \| tee -a ${LOG_FILE}
 }
 
-function app_stop() {
+function stop_app() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "PKILL_PATTERN" || return $?
-  err_if_empty ${fname} "APP" || return $?
-  info "Sending signal 'KILL' to ${BOLD}${APP}${RESET} ..."
-  local cmd="ps -A -o pid,args | grep -v grep | grep '${PKILL_PATTERN}' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
-  cmd_exec "${cmd}"
-  info "${BOLD}done${RESET}"
+  err_if_empty ${fname} "APP PKILL_PATTERN" || return $?
+  dt_info ${fname} "Sending signal 'KILL' to ${BOLD}${APP}${RESET} ..."
+  cmd_exec "ps -A -o pid,args | grep -v grep | grep '${PKILL_PATTERN}' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
+  dt_info ${fname} "${BOLD}done${RESET}"
 }
 
-function app_restart() { app_stop && app_start; }
+function app_restart() { stop_app && app_start; }
 
-app_methods=()
-
-app_methods+=(app_stop)
-app_methods+=(app_start)
-app_methods+=(app_restart)
+function app_methods() {
+  local methods=()
+  methods+=(stop_app)
+  methods+=(app_start)
+  methods+=(app_restart)
+  echo "${methods[@]}"
+}

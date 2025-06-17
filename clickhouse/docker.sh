@@ -32,4 +32,4 @@ function hooks_pre_docker_run_clickhouse() {
   echo "hooks_pre_docker_run_clickhouse: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=${CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT}"
 }
 
-register "ctx_conn_docker_clickhouse_admin" "clickhouse" "${docker_methods[@]}"
+DT_BINDINGS+=(ctx_conn_docker_clickhouse_admin:clickhouse:docker_methods)

@@ -6,15 +6,9 @@ function service() {
   fi
 }
 
-function service_stop() {(
-    cmd_exec "${SUDO} ${SERVICE_STOP}"
-)}
-
-function service_start() {(
-    cmd_exec "${SUDO} ${SERVICE_START}"
-)}
-
-function service_restart() { service_stop && service_start; }
+function service_stop() { cmd_exec "${SUDO} ${SERVICE_STOP}"; }
+function service_start() { cmd_exec "${SUDO} ${SERVICE_START}"; }
+function service_restart() { cmd_exec "${SUDO} ${SERVICE_STOP}" && cmd_exec "${SUDO} ${SERVICE_START}"; }
 function service_prepare() { cmd_exec "${SERVICE_PREPARE}"; }
 function service_install() { cmd_exec "${SERVICE_INSTALL}"; }
 function service_lsof() { cmd_exec "${SERVICE_LSOF}"; }
@@ -30,8 +24,15 @@ function service_methods() {
   echo "${methods[@]}"
 }
 
+ctx_os_service() {
+  var SERVICE_STOP "$(service) stop ${SERVICE}"
+  var SERVICE_START "$(service) start ${SERVICE}"
+}
+
 # MacOS
-function brew_list_services() { brew services list; }
+function brew_list_services() { cmd_exec brew services list; }
+function brew_start() { cmd_exec brew services start $1; }
+function brew_stop() { cmd_exec brew services stop $1; }
 
 # Linux, systemd
 function systemctl_list_services() { systemctl list-units --type service | cat; }

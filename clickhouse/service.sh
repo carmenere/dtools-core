@@ -116,7 +116,7 @@ function lsof_clickhouse() {
   lsof_tcp
 }
 
-register "ctx_service_clickhouse" "clickhouse" "$(service_methods)"
+DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)
 
 function service_prepare_clickhouse() {
   ctx_conn_clickhouse_admin && clickhouse_prepare $1

@@ -20,5 +20,4 @@ function ctx_docker_redis() {
   CHECK_CMD="sh -c 'redis-cli ping 1>/dev/null 2>&1'"
 }
 
-register "ctx_conn_docker_redis_admin" "redis" "${docker_methods[@]}"
-
+DT_BINDINGS+=(ctx_conn_docker_redis_admin:redis:docker_methods)

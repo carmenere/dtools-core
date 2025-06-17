@@ -48,4 +48,4 @@ function lsof_redis() {
   )
 }
 
-register "ctx_service_redis" "redis" "$(service_methods)"
+DT_BINDINGS+=(ctx_service_redis:redis:service_methods)
