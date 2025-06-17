@@ -1,5 +1,5 @@
 # PROFILE_CARGO={ release | dev }, by default "release"
-PROFILE_CARGO="release"
+export PROFILE_CARGO="dev"
 
 cargo_envs() {
   local envs=()

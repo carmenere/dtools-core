@@ -10,8 +10,6 @@ ctx_socket_pg() {
   else
     ctx_service_pg || return $?
   fi
-  # call to load PSQL when profile docker
-  ctx_service_pg || return $?
 }
 
 ctx_account_admin_pg() {

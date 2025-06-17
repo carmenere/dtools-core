@@ -1,3 +1,5 @@
+PROFILE_REDIS="host"
+
 function redis_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "redis"
@@ -25,27 +27,20 @@ function redis_install() {
 }
 
 function ctx_service_redis() {
-  CONFIG_REWRITE="y"
-  ERR_IF_USER_EXISTS="n"
-  REDIS_HOST="localhost"
-  MAJOR=7
-  MINOR=2
-  PATCH=4
-  REDIS_PORT=6379
-  REQUIREPASS="y"
-  SERVICE_STOP="$(service) stop '$(redis_service)'"
-  SERVICE_START="$(service) start '$(redis_service)'"
-  SERVICE_PREPARE=
-  SERVICE_INSTALL=redis_install
-  SERVICE_LSOF=lsof_redis
+  var REDIS_HOST "localhost"
+  var MAJOR 7
+  var MINOR 2
+  var PATCH 4
+  var REDIS_PORT 6379
+  var SERVICE $(redis_service)
+  var SERVICE_INSTALL redis_install
+  var SERVICE_LSOF lsof_redis
+  ctx_os_service || return $?
 }
 
-function lsof_redis() {
-  (
-    HOST=${REDIS_HOST}
-    PORT=${REDIS_PORT}
-    lsof_tcp
-  )
-}
+function lsof_redis() {(
+  HOST=${REDIS_HOST}; PORT=${REDIS_PORT}
+  lsof_tcp
+)}
 
 DT_BINDINGS+=(ctx_service_redis:redis:service_methods)

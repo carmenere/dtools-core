@@ -150,8 +150,40 @@ function var() {
   var=$1; err_if_empty ${fname} "var" || return $?
   if declare -p ${var} >/dev/null 2>&1; then return 0; fi
   val=$(ser_val "$2")
-  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val '${val}'"
+  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${val}"
   eval "${var}=${val}"
+  DT_VARS+=(${var})
+}
+
+function vars() {
+  local fname ctx=$1 val fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${ctx}" ]; then
+    if ! declare -f ${ctx} >/dev/null 2>&1; then
+      dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist."
+      return 99
+    fi
+    (
+      unset_vars 1>/dev/null 2>&1
+      ${ctx} 1>/dev/null 2>&1
+      for var in ${DT_VARS[@]}; do
+        val=$(eval echo "\${${var}}")
+        echo -e "${BOLD}${var}${RESET}='${val}'"
+      done
+    )
+  else
+    for var in ${DT_VARS[@]}; do
+      val=$(eval echo "\${${var}}")
+      echo -e  "${BOLD}${var}${RESET}='${val}'"
+    done
+  fi
+}
+
+function unset_vars() {
+  for var in ${DT_VARS[@]}; do
+    val=$(eval echo "\${${var}}")
+    cmd_exec "unset ${var}"
+  done
+  DT_VARS=()
 }
 
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
@@ -165,14 +197,53 @@ function dt_bind() {
   if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
   methods=($(echo $(${methods})| sort))
   for method in ${methods[@]}; do
-    dt_debug ${fname} "Register function: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
+    DT_REGISTERED_METHODS+=(${method}${suffix})
+    if declare -f "${method}${suffix}" >/dev/null 2>&1; then
+      dt_info ${fname} "Function ${BOLD}${method}${suffix}${RESET} has already registered"
+      continue
+    fi
+    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
     eval "function ${method}${suffix}() {( ${ctx} && ${method}; )}" || return $?
   done
+}
+
+function get_method() {
+  local m method=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${method}" ]; then dt_error ${fname} "Method was not provided"; return 99; fi
+  for m in ${DT_BIND_EXCEPTIONS[@]};  do
+    if [ "$m" = "${method}" ]; then
+      dt_debug ${fname} "HIT: ${BOLD}Method${RESET}=${m}"
+      return 0
+    fi
+  done
+}
+
+dt_unregister() {
+  local method fname=$(fname "${FUNCNAME[0]}" "$0")
+  for method in ${DT_REGISTERED_METHODS[@]}; do
+    if declare -f "${method}" >/dev/null 2>&1; then
+      dt_debug ${fname} "unset -f ${method}"
+      unset -f ${method}
+    fi
+  done
+  export DT_REGISTERED_METHODS=()
 }
 
 dt_register() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")
   for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}"; done
+}
+
+dt_bindings() {
+  local binding fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_BINDINGS=($(for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done | sort))
+  for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done
+}
+
+dt_registered_methods() {
+  local method fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_REGISTERED_METHODS=($(for method in ${DT_REGISTERED_METHODS[@]}; do echo "${method}"; done | sort))
+  for method in ${DT_REGISTERED_METHODS[@]}; do echo "${method}"; done
 }
 
 function cmd_echo() {
@@ -218,13 +289,15 @@ function defaults() {
   export DT_ECHO_STDOUT="n"
   export DT_ECHO_COLOR="${YELLOW}"
   export DT_BINDINGS=()
-  export PROFILE_CI
+  export PROFILE_CI=
+  unset_vars && export DT_VARS
 }
 
 function dt_init() {
-  paths
+  paths || return $?
   . "${DT_CORE}/colors.sh"
-  defaults
+  defaults && \
+  dt_unregister || return $?
   . "${DT_CORE}/rc.sh"
   . "${DT_TOOLS}/rc.sh"
   . "${DT_STANDS}/rc.sh"

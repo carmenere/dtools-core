@@ -76,8 +76,8 @@ docker_network_ls() { cmd_exec docker network ls; }
 docker_is_running() { if ! docker ps 1>/dev/null; then error $0 "${BOLD}Dockerd is not run!${RESET}"; return 99; fi; }
 
 docker_rm_all() {
-  if [ -z "$(cmd_exec "docker ps -lq")" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
-  cmd_exec docker rm --for; e $(docker ps -aq)
+  if [ -z "$(cmd_exec docker ps -lq)" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
+  cmd_exec docker rm --force $(docker ps -aq)
 }
 
 docker_prune() {
@@ -125,13 +125,14 @@ function docker_network_methods() {
 #  BUILD_VERSION="$(git_build_version)"
 
 ctx_docker_service() {
+  var BASE_IMAGE
   var COMMAND
   var CONTAINER
   var CTX "."
-  var IMAGE
+  var FLAGS "-d"
+  var IMAGE ${BASE_IMAGE}
   var RESTART "always"
   var RM
-  var FLAGS "-d"
   var SH "/bin/sh"
 }
 

@@ -1,37 +1,20 @@
-function redis_user_admin() {
-  REDIS_USER="default"
-  REDIS_PASSWORD=''
+ctx_socket_redis() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ "${PROFILE_REDIS}" = "docker" ]; then
+    ctx_docker_redis || return $?
+  else
+    ctx_service_redis || return $?
+  fi
 }
 
-function redis_db_0() {
+function ctx_account_admin_redis() {
+  REDIS_USER="default"
+  REDIS_PASSWORD="1234567890"
   REDIS_DB=0
 }
 
-function redis_user_app() {
-  REDIS_USER="user"
-  REDIS_PASSWORD="12345"
-}
-
-function ctx_conn_redis_admin() {
-  ctx_service_redis && \
-  redis_db_0 && \
-  redis_user_admin
-}
-
-function ctx_conn_redis_app() {
-  ctx_service_redis && \
-  redis_db_0 && \
-  redis_user_app
-}
-
-function ctx_conn_docker_redis_admin() {
-  ctx_docker_redis && \
-  redis_db_0 && \
-  redis_user_admin
-}
-
-function ctx_conn_docker_redis_app() {
-  ctx_docker_redis && \
-  redis_db_0 && \
-  redis_user_app
+function ctx_account_app_redis() {
+  REDIS_USER="example_app"
+  REDIS_PASSWORD="1234567890"
+  REDIS_DB=0
 }

@@ -12,7 +12,6 @@ function app_start() {
   err_if_empty ${fname} "BINARY APP" || return $?
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   app_log_file
-  local cmd=("$(inline_envs "${_inline_envs[@]}")")
   cmd_exec $(app_envs) ${BINARY} ${OPTS} 2\>\&1 \| tee -a ${LOG_FILE}
 }
 
@@ -24,12 +23,9 @@ function stop_app() {
   dt_info ${fname} "${BOLD}done${RESET}"
 }
 
-function app_restart() { stop_app && app_start; }
-
 function app_methods() {
   local methods=()
   methods+=(stop_app)
   methods+=(app_start)
-  methods+=(app_restart)
   echo "${methods[@]}"
 }

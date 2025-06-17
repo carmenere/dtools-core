@@ -1,11 +1,9 @@
-function rabbitmq_conn() {
-  local cmd=("rabbitmqadmin")
-  if [ -n "${RABBIT_HOST}" ]; then cmd+=(--host "${RABBIT_HOST}"); fi
-  if [ -n "${RABBIT_PORT_MGM}" ]; then cmd+=(--port "${RABBIT_PORT_MGM}"); fi
-  if [ -n "${RABBIT_USER}" ]; then cmd+=(--username "${RABBIT_USER}"); fi
-  if [ -n "${RABBIT_PASSWORD}" ]; then cmd+=(--password "${RABBIT_PASSWORD}"); fi
-  cmd_exec "${cmd[@]}"
-}
+rabbitmq_host() { if [ -n "${RABBIT_HOST}" ]; then echo "--host ${RABBIT_HOST}"; fi; }
+rabbitmq_port() { if [ -n "${RABBIT_PORT_MGM}" ]; then echo "--port ${RABBIT_PORT_MGM}"; fi; }
+rabbitmq_user() { if [ -n "${RABBIT_USER}" ]; then echo "--username ${RABBIT_USER}"; fi; }
+rabbitmq_password() { if [ -n "${RABBIT_PASSWORD}" ]; then echo "--password ${RABBIT_PASSWORD}"; fi}
+
+rabbitmq_conn() { cmd_exec rabbitmqadmin $(rabbitmq_host) $(rabbitmq_port) $(rabbitmq_user) $(rabbitmq_password); }
 
 # We do not need function "rabbitmqadmin_delete_exchanges", because application creates exchanges itself.
 function rabbitmqadmin_delete_exchanges() {

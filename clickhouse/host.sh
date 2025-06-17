@@ -1,4 +1,7 @@
-function clickhouse_service() {
+# PROFILE_CLICKHOUSE={ host | docker }, by default "host"
+export PROFILE_CLICKHOUSE="host"
+
+clickhouse_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "clickhouse@${MAJOR}.${MINOR}"
   else
@@ -6,7 +9,7 @@ function clickhouse_service() {
   fi
 }
 
-function clickhouse_conf() {
+clickhouse_conf() {
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/etc/clickhouse-server/config.xml"
   else
@@ -15,7 +18,7 @@ function clickhouse_conf() {
 }
 
 # ctx_service_clickhouse && clickhouse_install
-function clickhouse_install() {
+clickhouse_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     cmd_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
@@ -32,7 +35,7 @@ function clickhouse_install() {
   fi
 }
 
-function clickhouse_user_xml() {
+clickhouse_user_xml() {
   local query=$(
     escape_quote "<?xml version=\"1.0\"?>
 <yandex>
@@ -55,7 +58,7 @@ function clickhouse_user_xml() {
   echo -n "${query}"
 }
 
-function clickhouse_gen_user_xml() {
+clickhouse_gen_user_xml() {
   if [ "$(os_name)" = "macos" ]; then
     # sudo -E: indicates to the security policy that the user wishes to preserve their existing environment variables.
     # The security policy may return an error if the user does not have permission to preserve the environment.
@@ -68,7 +71,7 @@ function clickhouse_gen_user_xml() {
   cmd_exec "${cmd}"
 }
 
-function clickhouse_prepare() {
+clickhouse_prepare() {
   if [ -f "${CH_USER_XML}" ]; then
     local user_xml_hash=$(${SUDO} sha256sum "${CH_USER_XML}" | cut -d' ' -f 1)
   fi
@@ -78,7 +81,7 @@ function clickhouse_prepare() {
   service_stop
 }
 
-function clickhouse_user_xml_dir() {
+clickhouse_user_xml_dir() {
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/etc/clickhouse-server/users.d"
   else
@@ -86,29 +89,24 @@ function clickhouse_user_xml_dir() {
   fi
 }
 
-function ctx_clickhouse_vars() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  CH_USER_XML="$(clickhouse_user_xml_dir)/admin.xml" || return $?
-  CH_CONFIG_XML=$(clickhouse_conf) || return $?
-  SERVICE_STOP="$(service) stop '$(clickhouse_service)'"
-  SERVICE_START="$(service) start '$(clickhouse_service)'"
-  SERVICE_PREPARE=clickhouse_prepare
-  SERVICE_INSTALL=clickhouse_install
-  SERVICE_LSOF=lsof_clickhouse
-}
-
-function ctx_service_clickhouse() {
-  CLICKHOUSE_HOST="localhost"
+ctx_service_clickhouse() {
+  var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
-  CLICKHOUSE_PORT=9000
+  var CLICKHOUSE_PORT 9000
   # for applications
-  CLICKHOUSE_HTTP_PORT=8123
-  MAJOR=23
-  MINOR=5
-  ctx_clickhouse_vars
+  var CLICKHOUSE_HTTP_PORT 8123
+  var MAJOR 23
+  var MINOR 5
+  var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $?
+  var CH_CONFIG_XML $(clickhouse_conf) || return $?
+  var SERVICE $(clickhouse_service)
+  var SERVICE_PREPARE clickhouse_prepare
+  var SERVICE_INSTALL clickhouse_install
+  var SERVICE_LSOF lsof_clickhouse
+  ctx_os_service || return $?
 }
 
-function lsof_clickhouse() {
+lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}
   PORT=${CLICKHOUSE_PORT}
   lsof_tcp
@@ -118,6 +116,4 @@ function lsof_clickhouse() {
 
 DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)
 
-function service_prepare_clickhouse() {
-  ctx_conn_clickhouse_admin && clickhouse_prepare $1
-}
+service_prepare_clickhouse() { ctx_socket_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }

@@ -1,41 +1,26 @@
-function clickhouse_user_admin() {
-  CLICKHOUSE_PASSWORD="1234567890"
-  CLICKHOUSE_USER="admin"
+clickhouse_connurl() {
+  local vars=(CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWORD CLICKHOUSE_PORT PGUSER)
+  echo "${vars}"
 }
 
-function clickhouse_db_default() {
-  CLICKHOUSE_DB="default"
+ctx_socket_clickhouse() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then
+    ctx_docker_clickhouse || return $?
+  else
+    ctx_service_clickhouse || return $?
+  fi
 }
 
-function clickhouse_db_example() {
-  CLICKHOUSE_DB="example"
+ctx_account_admin_clickhouse() {
+  var CLICKHOUSE_USER "dt_admin"
+  var CLICKHOUSE_PASSWORD "1234567890"
+  var CLICKHOUSE_DB "default"
 }
 
-function clickhouse_user_app() {
-  CLICKHOUSE_PASSWORD="12345"
-  CLICKHOUSE_USER="example"
+ctx_account_app_clickhouse() {
+  var CLICKHOUSE_USER "example_app"
+  var CLICKHOUSE_PASSWORD "1234567890"
+  var CLICKHOUSE_DB "example"
 }
 
-function ctx_conn_clickhouse_admin() {
-  ctx_service_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
-}
-
-function ctx_conn_clickhouse_app() {
-  ctx_service_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
-}
-
-function ctx_conn_docker_clickhouse_admin() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
-}
-
-function ctx_conn_docker_clickhouse_app() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
-}

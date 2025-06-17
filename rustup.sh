@@ -31,11 +31,12 @@ rustup_install() {
 rustup_component_add() { cmd_exec rustup component add ${RUSTUP_COMPONENTS[@]}; }
 rustup_component_list() { cmd_exec rustup component list; }
 rustup_default() { cmd_exec rustup default ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}; }
-rustup_init() { rustup_install && rustup_nightly_install && rustup_component_add; }
 rustup_nightly_install() { cmd_exec rustup toolchain install ${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}; }
 rustup_target_list() { cmd_exec rustup target list; }
 rustup_toolchain_install() { cmd_exec rustup toolchain install ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}; }
 rustup_toolchain_list() { cmd_exec rustup toolchain list; }
+
+rustup_init() { rustup_install && rustup_nightly_install && rustup_component_add; }
 
 function rustup_methods() {
   local methods=()
