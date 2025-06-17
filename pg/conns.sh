@@ -4,11 +4,10 @@ pg_connurl() {
 }
 
 ctx_socket_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "${PROFILE_PG}" = "docker" ]; then
-    ctx_docker_pg || return $?
+    ctx_docker_pg
   else
-    ctx_service_pg || return $?
+    ctx_service_pg
   fi
 }
 

@@ -1,7 +1,6 @@
 function ctx_docker_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   var BASE_IMAGE "clickhouse/clickhouse-server:23.2.5.46-alpine"
-  var CHECK_CMD "sh -c \$'clickhouse-client --query \'exit\''"
   var CLICKHOUSE_PORT 9001
   var CLICKHOUSE_HTTP_PORT 8124
   var CONTAINER "clickhouse-server"

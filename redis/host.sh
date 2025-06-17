@@ -26,6 +26,11 @@ function redis_install() {
   fi
 }
 
+function lsof_redis() {
+  HOST=${REDIS_HOST}; PORT=${REDIS_PORT}
+  lsof_tcp
+}
+
 function ctx_service_redis() {
   var REDIS_HOST "localhost"
   var MAJOR 7
@@ -33,14 +38,10 @@ function ctx_service_redis() {
   var PATCH 4
   var REDIS_PORT 6379
   var SERVICE $(redis_service)
+  var SERVICE_CHECK "sh -c 'redis-cli ping 1>/dev/null 2>&1'"
   var SERVICE_INSTALL redis_install
   var SERVICE_LSOF lsof_redis
   ctx_os_service || return $?
 }
-
-function lsof_redis() {(
-  HOST=${REDIS_HOST}; PORT=${REDIS_PORT}
-  lsof_tcp
-)}
 
 DT_BINDINGS+=(ctx_service_redis:redis:service_methods)

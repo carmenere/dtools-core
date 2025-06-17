@@ -53,9 +53,9 @@ function tmux_stop() {
   err_if_empty ${fname} "TMX_START_CMD" || return $?
   if tmux has-session -t ${TMX_SESSION}; then
     cmd_exec "tmux kill-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}"
-    dt_info "stopped"
+    dt_info ${fname} "stopped"
   else
-    dt_info "Window ${TMX_SESSION}:${TMX_WINDOW_NAME} was not opened."
+    dt_info ${fname} "Window ${TMX_SESSION}:${TMX_WINDOW_NAME} was not opened."
   fi
 }
 

@@ -136,3 +136,9 @@ function ctx_service_pg() {
 }
 
 DT_BINDINGS+=(ctx_service_pg:pg:service_methods)
+
+service_check_pg() {
+  ctx_service_pg || return $?
+  SERVICE_CHECK="$(cmd_echo psql_conn_admin) -c 'select true;'"
+  service_check
+}

@@ -1,9 +1,8 @@
 ctx_socket_redis() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "${PROFILE_REDIS}" = "docker" ]; then
-    ctx_docker_redis || return $?
+    ctx_docker_redis
   else
-    ctx_service_redis || return $?
+    ctx_service_redis
   fi
 }
 

@@ -46,8 +46,8 @@ docker_run_publish() { echo "$(inline_vals "${PUBLISH}" --publish)"; }
 docker_run_envs() { echo "$(inline_vars "${RUN_ENVS}" --env)"; }
 
 docker_build() { cmd_exec docker build $(docker_build_args) -t ${IMAGE} -f "${DOCKERFILE}" "${CTX}"; }
-docker_exec() { echo "docker cmd_exec -ti ${CONTAINER}"; }
-docker_exec_sh() { cmd_exec "docker cmd_exec -ti ${CONTAINER} /bin/sh"; }
+docker_exec() { echo "docker exec -ti ${CONTAINER}"; }
+docker_exec_sh() { exec "docker exec -ti ${CONTAINER} /bin/sh"; }
 docker_logs() { cmd_exec docker logs "${CONTAINER}"; }
 docker_logs_save_to_logfile() { cmd_exec docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1'; }
 docker_network_create() { cmd_exec docker network create --driver=${DRIVER} --subnet=${SUBNET} ${BRIDGE}; }
@@ -62,10 +62,14 @@ docker_status() { cmd_exec docker ps -a --filter name="^${CONTAINER}$"; }
 docker_stop() { cmd_exec docker stop ${CONTAINER}; }
 
 docker_service_check() {
-  local cmd="$(docker_exec) ${CHECK_CMD}"
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${SERVICE_CHECK}" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
   for i in $(seq 1 30); do
-    dt_info "${BOLD}Waiting ${CONTAINER} runtime${RESET}: attempt ${BOLD}$i${RESET} ... ";
-    if cmd_exec ${cmd}; then dt_info "${BOLD}${CONTAINER}${RESET} is up now"; break; fi
+    dt_info ${fname} "Waiting ${BOLD}${CONTAINER}${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
+    if cmd_exec "$(docker_exec) ${SERVICE_CHECK}"; then
+      dt_info ${fname} "Container ${BOLD}${CONTAINER}${RESET} is up now"
+      break
+    fi
     sleep 1
   done
 }
@@ -76,7 +80,8 @@ docker_network_ls() { cmd_exec docker network ls; }
 docker_is_running() { if ! docker ps 1>/dev/null; then error $0 "${BOLD}Dockerd is not run!${RESET}"; return 99; fi; }
 
 docker_rm_all() {
-  if [ -z "$(cmd_exec docker ps -lq)" ]; then dt_info "docker_rm_all(): nothing to delete."; return 0; fi
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "$(cmd_exec docker ps -lq)" ]; then dt_info ${fname} "docker_rm_all(): nothing to delete."; return 0; fi
   cmd_exec docker rm --force $(docker ps -aq)
 }
 

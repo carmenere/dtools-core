@@ -12,7 +12,7 @@ clickhouse_host() { if [ -n "${CLICKHOUSE_HOST}" ]; then echo "--host ${CLICKHOU
 clickhouse_port() { if [ -n "${CLICKHOUSE_PORT}" ]; then echo "--port ${CLICKHOUSE_PORT}"; fi; }
 clickhouse_db() { if [ -n "${CLICKHOUSE_DB}" ]; then echo "--database ${CLICKHOUSE_DB}"; fi; }
 clickhouse_user() { if [ -n "${CLICKHOUSE_USER}" ]; then echo "--user ${CLICKHOUSE_USER}"; fi; }
-clickhouse_password() { if [ -n "${CLICKHOUSE_PASSWORD}" ]; then echo "--password ${CLICKHOUSE_PASSWORD}"; fi}
+clickhouse_password() { if [ -n "${CLICKHOUSE_PASSWORD}" ]; then echo "--password ${CLICKHOUSE_PASSWORD}"; fi; }
 clickhouse_conn() { cmd_exec clickhouse-client $(clickhouse_host) $(clickhouse_port) $(clickhouse_db) \
     $(clickhouse_user) $(clickhouse_password); }
 
@@ -44,5 +44,12 @@ _clickhouse_clean() {
 clickhouse_conn_admin() {( ctx_socket_clickhouse && ctx_account_admin_clickhouse && clickhouse_conn; )}
 clickhouse_conn_app() {( ctx_socket_clickhouse && ctx_account_app_clickhouse && clickhouse_conn; )}
 
-clickhouse_init() {( ctx_socket_clickhouse && _clickhouse_init ctx_account_admin_clickhouse ctx_account_app_clickhouse; )}
-clickhouse_clean() {( ctx_socket_clickhouse && _clickhouse_clean ctx_account_admin_clickhouse ctx_account_app_clickhouse; )}
+clickhouse_init() {(
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
+  ctx_socket_clickhouse && _clickhouse_init ctx_account_admin_clickhouse ctx_account_app_clickhouse
+)}
+
+clickhouse_clean() {(
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
+  ctx_socket_clickhouse && _clickhouse_clean ctx_account_admin_clickhouse ctx_account_app_clickhouse
+)}

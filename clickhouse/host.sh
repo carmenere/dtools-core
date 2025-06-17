@@ -89,6 +89,16 @@ clickhouse_user_xml_dir() {
   fi
 }
 
+service_prepare_clickhouse() { ctx_socket_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }
+
+lsof_clickhouse() {
+  HOST=${CLICKHOUSE_HOST}
+  PORT=${CLICKHOUSE_PORT}
+  lsof_tcp
+  PORT=${CLICKHOUSE_HTTP_PORT};
+  lsof_tcp
+}
+
 ctx_service_clickhouse() {
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
@@ -100,20 +110,17 @@ ctx_service_clickhouse() {
   var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $?
   var CH_CONFIG_XML $(clickhouse_conf) || return $?
   var SERVICE $(clickhouse_service)
+  var SERVICE_CHECK "sh -c $'clickhouse-client --query \'exit\''"
   var SERVICE_PREPARE clickhouse_prepare
   var SERVICE_INSTALL clickhouse_install
   var SERVICE_LSOF lsof_clickhouse
   ctx_os_service || return $?
 }
 
-lsof_clickhouse() {
-  HOST=${CLICKHOUSE_HOST}
-  PORT=${CLICKHOUSE_PORT}
-  lsof_tcp
-  PORT=${CLICKHOUSE_HTTP_PORT};
-  lsof_tcp
-}
-
 DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)
 
-service_prepare_clickhouse() { ctx_socket_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }
+service_check_clickhouse() {
+  ctx_service_clickhouse || return $?
+  SERVICE_CHECK="$(cmd_echo clickhouse_conn_admin) --query 'exit'"
+  service_check
+}

@@ -4,11 +4,10 @@ clickhouse_connurl() {
 }
 
 ctx_socket_clickhouse() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then
-    ctx_docker_clickhouse || return $?
+    ctx_docker_clickhouse
   else
-    ctx_service_clickhouse || return $?
+    ctx_service_clickhouse
   fi
 }
 

@@ -34,6 +34,7 @@ function redis_flushall() {
 }
 
 function redis_cli_init() {(
+  if [ "${PROFILE_REDIS}" = "docker" ]; then docker_service_check_redis; else service_check_redis; fi || return $?
   admin=ctx_account_admin_redis
   app=ctx_account_app_redis
   ctx_socket_redis || return $?
@@ -45,6 +46,7 @@ function redis_cli_init() {(
 )}
 
 function redis_cli_clean() {(
+  if [ "${PROFILE_REDIS}" = "docker" ]; then docker_service_check_redis; else service_check_redis; fi || return $?
   admin=ctx_account_admin_redis
   app=ctx_account_app_redis
   ctx_socket_redis || return $?

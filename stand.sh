@@ -1,7 +1,7 @@
 function dt_target() {
   # $1: name of target. Each target is a callable.
   if [ -z "$1" ]; then return 0; fi
-    dt_info "dt_target" "Running target ${BOLD}$1${RESET} ... "
+    dt_info dt_target "Running target ${BOLD}$1${RESET} ... "
     $1
 }
 

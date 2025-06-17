@@ -59,8 +59,14 @@ function psql_conn_local_admin() {(
   cmd_exec "${cmd}"
 )}
 
-function psql_init() {( ctx_socket_pg && _psql_init ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg; )}
-function psql_clean() {( ctx_socket_pg && _psql_clean ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg; )}
+function psql_init() {(
+  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg; else service_check_pg; fi && \
+  ctx_socket_pg && _psql_init ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg
+)}
+function psql_clean() {(
+  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg; else service_check_pg; fi && \
+  ctx_socket_pg && _psql_clean ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg
+)}
 
 function psql_conn_admin() {( ctx_socket_pg && ctx_account_admin_pg && psql_conn; )}
 function psql_conn_app() {( ctx_socket_pg && ctx_account_app_pg && psql_conn; )}

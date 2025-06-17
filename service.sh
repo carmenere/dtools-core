@@ -6,21 +6,33 @@ function service() {
   fi
 }
 
-function service_stop() { cmd_exec "${SUDO} ${SERVICE_STOP}"; }
-function service_start() { cmd_exec "${SUDO} ${SERVICE_START}"; }
-function service_restart() { cmd_exec "${SUDO} ${SERVICE_STOP}" && cmd_exec "${SUDO} ${SERVICE_START}"; }
-function service_prepare() { cmd_exec "${SERVICE_PREPARE}"; }
+service_check() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${SERVICE_CHECK}" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
+  dt_debug service_check_clickhouse "SERVICE_CHECK=${SERVICE_CHECK}"
+  for i in $(seq 1 30); do
+    dt_info ${fname} "Waiting ${BOLD}${SERVICE}${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
+    if cmd_exec "${SERVICE_CHECK}"; then dt_info ${fname} "Service ${BOLD}${SERVICE}${RESET} is up now"; break; fi
+    sleep 1
+  done
+}
+
 function service_install() { cmd_exec "${SERVICE_INSTALL}"; }
 function service_lsof() { cmd_exec "${SERVICE_LSOF}"; }
+function service_prepare() { cmd_exec "${SERVICE_PREPARE}"; }
+function service_restart() { cmd_exec "${SUDO} ${SERVICE_STOP}" && cmd_exec "${SUDO} ${SERVICE_START}"; }
+function service_start() { cmd_exec "${SUDO} ${SERVICE_START}"; }
+function service_stop() { cmd_exec "${SUDO} ${SERVICE_STOP}"; }
 
 function service_methods() {
   local methods=()
-  methods+=(service_start)
-  methods+=(service_stop)
-  methods+=(service_restart)
-  methods+=(service_prepare)
+  methods+=(service_check)
   methods+=(service_install)
   methods+=(service_lsof)
+  methods+=(service_prepare)
+  methods+=(service_restart)
+  methods+=(service_start)
+  methods+=(service_stop)
   echo "${methods[@]}"
 }
 
