@@ -8,16 +8,16 @@ function dt_target() {
 # Consider example: register_stand stand_host
 # It will generate all necessary functions of stand_host.
 # For example, for 'install_services' it generates
-# function stand_host_install_services() {( stand_host_steps && run_targets "${install_services[@]}" )}
+# function stand_host_install_services() { stand_host_steps && run_targets "${install_services[@]}" }
 function register_stand() {
   local func stand=$1 up=$2 down=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "stand" || return $?
   tiers=($(echo "$(${up}) $(${down})"))
   for tier in ${tiers[@]}; do
-    eval "function ${stand}_${tier}() {( ${stand} && run_targets "\${${tier}\[\@\]}" )}"
+    eval "function ${stand}_${tier}() { ${stand} && run_targets "\${${tier}\[\@\]}"; }"
   done
-  eval "function stand_up_${stand}() {( ${stand} && run_stand ${stand} ${up} )}"
-  eval "function stand_down_${stand}() {( ${stand} && run_stand ${stand} ${down} )}"
+  eval "function stand_up_${stand}() { ${stand} && run_stand ${stand} ${up}; }"
+  eval "function stand_down_${stand}() { ${stand} && run_stand ${stand} ${down}; }"
 }
 
 # Example1: run_stand my_stand up

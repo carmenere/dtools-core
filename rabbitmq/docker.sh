@@ -1,10 +1,13 @@
 function ctx_docker_rmq() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   var BASE_IMAGE "$(docker_arm64v8)rabbitmq:3.8.3-rc.1-management-alpine"
   var CONTAINER "rabbitmq"
   var RABBIT_PORT 5670
   var RABBIT_PORT_MGM 15670
-  var PUBLISH "${RABBIT_PORT}:5672/tcp ${RABBIT_PORT_MGM}:15672/tcp"
-  ctx_docker_network && ctx_docker_service && ctx_service_rmq || return $?
+  var PUBLISH "$(RABBIT_PORT):5672/tcp $(RABBIT_PORT_MGM):15672/tcp"
+  ctx_docker_network && ctx_docker_service && ctx_service_rmq && \
+  ctx_epilog ${fname}
 }
 
 DT_BINDINGS+=(ctx_docker_rmq:rmq:docker_methods)

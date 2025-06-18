@@ -23,26 +23,29 @@ function rmq_install() {
 }
 
 function lsof_rmq() {
-  HOST=${RABBIT_HOST}; PORT=${RABBIT_PORT}
+  HOST=$(RABBIT_HOST); PORT=$(RABBIT_PORT)
   lsof_tcp
-  PORT=${RABBIT_PORT_MGM}
+  PORT=$(RABBIT_PORT_MGM)
   lsof_tcp
 }
 
 function ctx_service_rmq() {
-  var EXCHANGES 'ems'
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  var EXCHANGES "ems"
   var MAJOR 3
   var MINOR 8
   var PATCH 3
-  var QUEUES "'notification' 'ems.error' 'ems.result' 'ems.task'"
+  var QUEUES 'notification ems.error ems.result ems.task'
   var RABBIT_HOST "localhost"
   var RABBIT_PORT 5672
   var RABBIT_PORT_MGM 15672
   var SERVICE_CHECK "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
   var SERVICE $(rmq_service)
-  var SERVICE_INSTALL rmq_install
-  var SERVICE_LSOF lsof_rmq
-  ctx_os_service || return $?
+  var SERVICE_INSTALL "rmq_install"
+  var SERVICE_LSOF "lsof_rmq"
+  ctx_os_service && \
+  ctx_epilog ${fname}
 }
 
 DT_BINDINGS+=(ctx_service_rmq:rmq:service_methods)

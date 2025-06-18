@@ -24,16 +24,16 @@ rust_target_triple() {
 }
 
 rustup_install() {
-  toolchain="${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}"
+  toolchain="$(RUSTUP_TOOLCHAIN)-$(RUSTUP_TARGET_TRIPLE)"
 	cmd_exec "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${toolchain}"
 }
 
-rustup_component_add() { cmd_exec rustup component add ${RUSTUP_COMPONENTS[@]}; }
+rustup_component_add() { cmd_exec rustup component add $(RUSTUP_COMPONENTS); }
 rustup_component_list() { cmd_exec rustup component list; }
-rustup_default() { cmd_exec rustup default ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}; }
-rustup_nightly_install() { cmd_exec rustup toolchain install ${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}; }
+rustup_default() { cmd_exec rustup default $(RUSTUP_TOOLCHAIN)-$(RUSTUP_TARGET_TRIPLE); }
+rustup_nightly_install() { cmd_exec rustup toolchain install $(NIGHTLY_VERSION)-$(RUSTUP_TARGET_TRIPLE); }
 rustup_target_list() { cmd_exec rustup target list; }
-rustup_toolchain_install() { cmd_exec rustup toolchain install ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}; }
+rustup_toolchain_install() { cmd_exec rustup toolchain install $(RUSTUP_TOOLCHAIN)-$(RUSTUP_TARGET_TRIPLE); }
 rustup_toolchain_list() { cmd_exec rustup toolchain list; }
 
 rustup_init() { rustup_install && rustup_nightly_install && rustup_component_add; }
@@ -50,10 +50,13 @@ function rustup_methods() {
 }
 
 ctx_rustup() {
-  RUSTUP_TOOLCHAIN="1.86.0"
-  RUSTUP_TARGET_TRIPLE=$(rust_target_triple)
-  RUSTUP_COMPONENTS=(clippy rustfmt)
-  NIGHTLY_VERSION="nightly-2025-05-01"
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  var RUSTUP_TOOLCHAIN "1.86.0"
+  var RUSTUP_TARGET_TRIPLE $(rust_target_triple)
+  var RUSTUP_COMPONENTS "clippy rustfmt"
+  var NIGHTLY_VERSION "nightly-2025-05-01"
+  ctx_epilog ${fname}
 }
 
 DT_BINDINGS+=(ctx_rustup:1.86.0:rustup_methods)

@@ -10,9 +10,9 @@ function ctx_docker_pg() {
 }
 
 docker_run_pg() {
-  var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER"
   switch_ctx ctx_docker_pg || return $?
-  load_vars ctx_conn_admin_pg PGPASSWORD PGDATABASE PGUSER
+  load_vars ctx_conn_admin_pg PGPASSWORD PGDATABASE PGUSER || return $?
+  var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER"
   var PUBLISH "$(PGPORT):5432/tcp"
   var POSTGRES_PASSWORD "$(PGPASSWORD)"
   var POSTGRES_DB "$(PGDATABASE)"

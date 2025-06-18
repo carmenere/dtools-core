@@ -27,11 +27,13 @@ function redis_install() {
 }
 
 function lsof_redis() {
-  HOST=${REDIS_HOST}; PORT=${REDIS_PORT}
+  HOST=$(REDIS_HOST); PORT=$(REDIS_PORT)
   lsof_tcp
 }
 
 function ctx_service_redis() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   var REDIS_HOST "localhost"
   var MAJOR 7
   var MINOR 2
@@ -41,7 +43,8 @@ function ctx_service_redis() {
   var SERVICE_CHECK "sh -c 'redis-cli ping 1>/dev/null 2>&1'"
   var SERVICE_INSTALL redis_install
   var SERVICE_LSOF lsof_redis
-  ctx_os_service || return $?
+  ctx_os_service && \
+  ctx_epilog ${fname}
 }
 
 DT_BINDINGS+=(ctx_service_redis:redis:service_methods)

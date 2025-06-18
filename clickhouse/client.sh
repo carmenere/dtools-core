@@ -2,17 +2,17 @@ clickhouse_exec() {
   local fname conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "query_ctx conn_ctx query" || return $?
   dt_debug ${fname} "query_ctx=${query_ctx}"
-  query=$(${query_ctx} && ${query}) || return $?
+  switch_ctx ${query_ctx} && query=$(${query}) || return $?
   dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  conn=$(${conn_ctx} && cmd_echo clickhouse_conn) || return $?
+  switch_ctx ${conn_ctx} && conn=$(cmd_echo clickhouse_conn) || return $?
   cmd_exec "${conn} --multiquery $'${query}'"
 }
 
-clickhouse_host() { if [ -n "${CLICKHOUSE_HOST}" ]; then echo "--host ${CLICKHOUSE_HOST}"; fi; }
-clickhouse_port() { if [ -n "${CLICKHOUSE_PORT}" ]; then echo "--port ${CLICKHOUSE_PORT}"; fi; }
-clickhouse_db() { if [ -n "${CLICKHOUSE_DB}" ]; then echo "--database ${CLICKHOUSE_DB}"; fi; }
-clickhouse_user() { if [ -n "${CLICKHOUSE_USER}" ]; then echo "--user ${CLICKHOUSE_USER}"; fi; }
-clickhouse_password() { if [ -n "${CLICKHOUSE_PASSWORD}" ]; then echo "--password ${CLICKHOUSE_PASSWORD}"; fi; }
+clickhouse_host() { if [ -n "$(CLICKHOUSE_HOST)" ]; then echo "--host $(CLICKHOUSE_HOST)"; fi; }
+clickhouse_port() { if [ -n "$(CLICKHOUSE_PORT)" ]; then echo "--port $(CLICKHOUSE_PORT)"; fi; }
+clickhouse_db() { if [ -n "$(CLICKHOUSE_DB)" ]; then echo "--database $(CLICKHOUSE_DB)"; fi; }
+clickhouse_user() { if [ -n "$(CLICKHOUSE_USER)" ]; then echo "--user $(CLICKHOUSE_USER)"; fi; }
+clickhouse_password() { if [ -n "$(CLICKHOUSE_PASSWORD)" ]; then echo "--password $(CLICKHOUSE_PASSWORD)"; fi; }
 clickhouse_conn() { cmd_exec clickhouse-client $(clickhouse_host) $(clickhouse_port) $(clickhouse_db) \
     $(clickhouse_user) $(clickhouse_password); }
 
@@ -40,16 +40,3 @@ _clickhouse_clean() {
   clickhouse_drop_db $app $admin && \
   clickhouse_drop_user $app $admin
 }
-
-clickhouse_conn_admin() {( ctx_conn_clickhouse && ctx_conn_admin_clickhouse && clickhouse_conn; )}
-clickhouse_conn_app() {( ctx_conn_clickhouse && ctx_conn_app_clickhouse && clickhouse_conn; )}
-
-clickhouse_init() {(
-  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
-  ctx_conn_clickhouse && _clickhouse_init ctx_conn_admin_clickhouse ctx_conn_app_clickhouse
-)}
-
-clickhouse_clean() {(
-  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
-  ctx_conn_clickhouse && _clickhouse_clean ctx_conn_admin_clickhouse ctx_conn_app_clickhouse
-)}

@@ -55,13 +55,40 @@ docker_network_rm() { cmd_exec docker network rm $(BRIDGE); }
 docker_pull() { cmd_exec docker pull $(IMAGE); }
 docker_rm() { cmd_exec docker rm --force $(CONTAINER); }
 docker_rmi() { cmd_exec docker rmi $(IMAGE); }
-docker_run() { cmd_exec docker run $(FLAGS) --name $(CONTAINER) $(docker_run_envs) $(docker_run_publish) \
-    --restart $(RESTART) --network $(BRIDGE) $(IMAGE) "$(COMMAND)"; }
 docker_start() { cmd_exec docker start $(CONTAINER); }
 docker_status() { cmd_exec docker ps -a --filter name="^$(CONTAINER)$"; }
 docker_stop() { cmd_exec docker stop $(CONTAINER); }
 
-docker_service_check() {
+function docker_network_create() {
+  local id fname=$(fname "${FUNCNAME[0]}" "$0")
+  id="$(cmd_exec "docker network ls -q --filter name="^$(BRIDGE)$"")" || return $?
+  if [ -n "${id}" ]; then
+    dt_info ${fname} "Bridge ${BOLD}$(BRIDGE)${RESET} with id='${id}' exists, skip create."
+    return 0
+  fi
+  if [ -z "$(BRIDGE)" ]; then dt_error ${fname} "Parameter BRIDGE is empty. Cannot create bridge."; return 99; fi
+  cmd_exec docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE)
+}
+
+docker_run() {
+  local id fname=$(fname "${FUNCNAME[0]}" "$0")
+  docker_network_create || return $?
+  id="$(cmd_exec "docker ps -aq --filter name="^$(CONTAINER)$" --filter status=running")" || return $?
+  if [ -n "${id}" ]; then
+    dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} with id='${id}' is running, skip run."
+    return 0
+  fi
+  id="$(cmd_exec "docker ps -aq --filter name="^$(CONTAINER)$" --filter status=exited --filter status=created")" || return $?
+  if [ -n "${id}" ]; then
+    dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} with id='${id}' was created but is stopped now, so start it."
+    cmd_exec docker start $(CONTAINER) || return $?
+    return 0
+  fi
+  cmd_exec docker run $(FLAGS) --name $(CONTAINER) $(docker_run_envs) $(docker_run_publish) --restart $(RESTART) \
+      --network $(BRIDGE) $(IMAGE) "$(COMMAND)"
+}
+
+docker_check() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "$(SERVICE_CHECK)" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
   for i in $(seq 1 30); do
@@ -81,7 +108,7 @@ docker_is_running() { if ! docker ps 1>/dev/null; then error $0 "${BOLD}Dockerd 
 
 docker_rm_all() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -z "$(cmd_exec docker ps -lq)" ]; then dt_info ${fname} "docker_rm_all(): nothing to delete."; return 0; fi
+  if [ -z "$(cmd_exec docker ps -lq)" ]; then dt_info ${fname} "docker_rm_all: nothing to delete."; return 0; fi
   cmd_exec docker rm --force $(docker ps -aq)
 }
 
@@ -103,7 +130,7 @@ docker_purge() {
 function docker_methods() {
   local methods=()
   methods+=(docker_build)
-  methods+=(docker_service_check)
+  methods+=(docker_check)
   methods+=(docker_exec)
   methods+=(docker_exec_sh)
   methods+=(docker_logs)

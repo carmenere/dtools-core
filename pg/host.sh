@@ -86,7 +86,6 @@ function pg_hba_add_policy() {
 
 function pg_conf_set_port() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "PGPORT" || return $?
   old_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
   cmd_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" || return $?
   new_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
@@ -130,16 +129,16 @@ function ctx_service_pg() {
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"
     var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)"
   fi
-  var SERVICE_PREPARE pg_prepare
-  var SERVICE_INSTALL pg_install
-  var SERVICE_LSOF lsof_pg
+  var SERVICE_PREPARE "pg_prepare"
+  var SERVICE_INSTALL "pg_install"
+  var SERVICE_LSOF "lsof_pg"
   ctx_os_service && \
   ctx_epilog ${fname}
 }
 
 service_check_pg() {
   switch_ctx ctx_service_pg || return $?
-  SERVICE_CHECK="$(cmd_echo psql_conn_admin) -c 'select true;'"
+  rvar SERVICE_CHECK "$(cmd_echo psql_conn_admin) -c 'select true;'"
   service_check
 }
 

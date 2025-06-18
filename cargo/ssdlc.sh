@@ -13,7 +13,7 @@ function ctx_cargo_ssdlc() {
   var AUDIT_REPORT "${DT_REPORTS}/audit-report.json"
   var DENY_REPORT "${DT_REPORTS}/deny-report.json"
   var SONAR_REPORT "${DT_REPORTS}/sonar-report.json"
-  var MESSAGE_FORMAT json
+  var MESSAGE_FORMAT "json"
 }
 
 function cargo_ssdlc() {

@@ -47,11 +47,11 @@ function ser_val() {
 }
 
 function err_if_empty() {
-  local var val fname=$1 vars=($(echo $2))
+  local var vars val fname=$1 vars=($(echo $2))
   if [ -z "${fname}" ]; then dt_error "err_if_empty" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
   if [ -z "${vars}" ]; then dt_error "err_if_empty" "Parameter ${BOLD}vars${RESET} must be provided"; return 55; fi
   for var in ${vars[@]}; do
-    local val="$(eval echo "\$${var}")"
+    val="$(eval echo "\$${var}")"
     if [ -z "${val}" ]; then
       dt_error ${fname} "Parameter ${BOLD}${var}${RESET} is empty"
       return 77
@@ -159,7 +159,7 @@ ctx_epilog(){
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
   if [ "${DT_CTX}" = "${ctx}" ]; then
-    export cache__${ctx}
+    export cache__${ctx}=1
     dt_debug ${fname} "Adding ctx=${BOLD}${ctx}${RESET} to cache, DT_CTX=${DT_CTX}"
     DT_CTX=
   fi
@@ -195,30 +195,43 @@ function get_var() {
 function var() {
   local val ovar var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "var" || return $?
-  dt_debug ${fname} "var=${var}"
   ovar=${var}
   if [ -z "${DT_CTX}" ]; then
     dt_error ${fname} "Global variable ${BOLD}DT_CTX${RESET} is not set"
     return 99
   fi
   var=$(var_pref ${DT_CTX})${var} || return $?
-  if declare -p ${var} >/dev/null 2>&1; then return 0; fi
+  dt_debug ${fname} "ovar=${ovar}, var=${BOLD}${var}${RESET}, val ${BOLD}${val}${RESET}"
+  if declare -p ${var} >/dev/null 2>&1 && declare -f ${ovar} >/dev/null 2>&1; then return 0; fi
   val=$(ser_val "$2")
   dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}"
   eval "export ${var}=${val}"
   DT_VARS+=(${var})
-  eval "${ovar}() { get_var ${ovar} \$1}"
+  eval "${ovar}() { get_var ${ovar} \$1; }"
 }
 
-function drop_ctx() {
-  local pref ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx" || return $?
-  dt_debug ${fname} "${ctx}"
-  pref=$(var_pref ${ctx})
-  . <(env | while read var; do
-    awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
-  done)
-  unset "cache__${ctx}"
+# resets var in some ctx
+function rvar() {
+  local val ovar var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "var" || return $?
+  ovar=${var}
+  if [ -z "${DT_CTX}" ]; then
+    dt_error ${fname} "Global variable ${BOLD}DT_CTX${RESET} is not set"
+    return 99
+  fi
+  var=$(var_pref ${DT_CTX})${var} || return $?
+  val=$(ser_val "$2")
+  dt_debug ${fname} "${BOLD}Resetting${RESET} var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}"
+  eval "export ${var}=${val}"
+  DT_VARS+=(${var})
+  eval "${ovar}() { get_var ${ovar} \$1 }"
+}
+
+function drop_vars_by_pref() {
+  local var pref=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "pref" || return $?
+  dt_debug ${fname} "pref=${pref}"
+  env | awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
 }
 
 function drop_all_ctxes() {
@@ -239,19 +252,21 @@ function load_vars() {
     dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist"
     return 99
   fi
+  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, will init source_ctx=${BOLD}${ctx}${RESET}"
   dt_ctx=${DT_CTX}; DT_CTX=
   ${ctx}
   DT_CTX=${dt_ctx}
-  for var in $@; do
+  dt_debug ${fname} "${BOLD}done${RESET}"
+  for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
-      dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered yet"
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered yet, source_ctx=${BOLD}${ctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
     if ! declare -p $(var_pref ${ctx})${var} >/dev/null 2>&1; then
-      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in ctx=${BOLD}${ctx}${RESET}"
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source_ctx=${BOLD}${ctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
-    var ${var} $(${var} ${ctx})
+    var ${var} "$(${var} ${ctx})"
   done
 }
 
@@ -267,23 +282,23 @@ function dt_bind() {
   if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
   methods=($(echo $(${methods})| sort))
   excluded=($(echo ${excluded}))
-  dt_debug ${fname} "excluded=${excluded[@]}"
+  if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
   for method in ${methods[@]}; do
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
-    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
+    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { ${ctx} && ${method}; }"
     eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
   done
 }
 
 dt_register() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_BINDINGS=($(for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done | sort))
   for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}"; done
 }
 
 dt_bindings() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")
-  DT_BINDINGS=($(for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done | sort))
   for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done
 }
 
@@ -291,6 +306,12 @@ dt_methods() {
   local method fname=$(fname "${FUNCNAME[0]}" "$0")
   DT_METHODS=($(for method in ${DT_METHODS[@]}; do echo "${method}"; done | sort))
   for method in ${DT_METHODS[@]}; do echo "${method}"; done
+}
+
+dt_vars() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_VARS=($(for var in ${DT_VARS[@]}; do echo "${var}"; done | sort))
+  for var in ${DT_VARS[@]}; do val="$(eval echo "\$${var}")"; echo "${var}=${val}"; done
 }
 
 function cmd_echo() {
@@ -307,7 +328,7 @@ function cmd_echo() {
 }
 
 function dt_paths() {
-  if [ -z "${DTOOLS}" ]; then DTOOLS=$(realpath $(dirname "$(realpath $self)")/..); fi
+  export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
   # Paths that depend on DTOOLS
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
@@ -326,7 +347,6 @@ function dt_paths() {
 
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
-  drop_all_ctxes || return $?
   export DT_BINDINGS=()
   export DT_CTX=
   export DT_CTXES=()
@@ -335,7 +355,8 @@ function dt_defaults() {
   export DT_ECHO_COLOR="${YELLOW}"
   export DT_ECHO_STDOUT="n"
   export DT_METHODS=()
-  export DT_SEVERITY=4
+  if [ -z "${DT_SEVERITY}" ]; then DT_SEVERITY=4; fi
+  export DT_SEVERITY
   export DT_VARS=()
   export PROFILE_CI=
 }
