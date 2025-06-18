@@ -41,15 +41,15 @@ _clickhouse_clean() {
   clickhouse_drop_user $app $admin
 }
 
-clickhouse_conn_admin() {( ctx_socket_clickhouse && ctx_account_admin_clickhouse && clickhouse_conn; )}
-clickhouse_conn_app() {( ctx_socket_clickhouse && ctx_account_app_clickhouse && clickhouse_conn; )}
+clickhouse_conn_admin() {( ctx_conn_clickhouse && ctx_conn_admin_clickhouse && clickhouse_conn; )}
+clickhouse_conn_app() {( ctx_conn_clickhouse && ctx_conn_app_clickhouse && clickhouse_conn; )}
 
 clickhouse_init() {(
   if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
-  ctx_socket_clickhouse && _clickhouse_init ctx_account_admin_clickhouse ctx_account_app_clickhouse
+  ctx_conn_clickhouse && _clickhouse_init ctx_conn_admin_clickhouse ctx_conn_app_clickhouse
 )}
 
 clickhouse_clean() {(
   if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_service_check_clickhouse; else service_check_clickhouse; fi && \
-  ctx_socket_clickhouse && _clickhouse_clean ctx_account_admin_clickhouse ctx_account_app_clickhouse
+  ctx_conn_clickhouse && _clickhouse_clean ctx_conn_admin_clickhouse ctx_conn_app_clickhouse
 )}

@@ -1,16 +1,17 @@
 function psql_conn() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "PSQL" || return $?
-  cmd_exec $(inline_vars "$(pg_connurl)") "${PSQL}"
+  cmd_exec $(inline_vars "$(pg_connurl)") "$(PSQL)"
 }
 
 function psql_exec() {
   local fname conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "query_ctx conn_ctx query" || return $?
   dt_debug ${fname} "query_ctx=${query_ctx}"
-  query=$(${query_ctx} && ${query}) || return $?
+  switch_ctx ${query_ctx}
+  query=$(${query}) || return $?
   dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  conn=$(${conn_ctx} && cmd_echo psql_conn) || return $?
+  switch_ctx ${conn_ctx}
+  conn=$(cmd_echo psql_conn) || return $?
   cmd_exec "echo $'${query}' '\gexec' | ${conn}"
 }
 
@@ -50,24 +51,25 @@ function _psql_clean() {
   psql_drop_user $migrator $admin
 }
 
-function psql_conn_local_admin() {(
+function psql_conn_local_admin() {
   local cmd=$(
-    ctx_account_admin_pg || return $?
+    ctx_conn_admin_pg || return $?
     unset PGHOST
     sudo -u ${PGUSER} psql -d ${PGDATABASE}
   )
   cmd_exec "${cmd}"
-)}
+}
 
-function psql_init() {(
-  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg; else service_check_pg; fi && \
-  ctx_socket_pg && _psql_init ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg
-)}
-function psql_clean() {(
-  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg; else service_check_pg; fi && \
-  ctx_socket_pg && _psql_clean ctx_account_admin_pg ctx_account_migrator_pg ctx_account_app_pg
-)}
+function psql_init() {
+  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg || return $?; else service_check_pg || return $?; fi
+  _psql_init ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
+}
 
-function psql_conn_admin() {( ctx_socket_pg && ctx_account_admin_pg && psql_conn; )}
-function psql_conn_app() {( ctx_socket_pg && ctx_account_app_pg && psql_conn; )}
-function psql_conn_migrator() {( ctx_socket_pg && ctx_account_migrator_pg && psql_conn; )}
+function psql_clean() {
+  if [ "${PROFILE_PG}" = "docker" ]; then docker_service_check_pg || return $?; else service_check_pg || return $?; fi
+  _psql_clean ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
+}
+
+function psql_conn_admin() { switch_ctx ctx_conn_admin_pg && psql_conn; }
+function psql_conn_app() { switch_ctx ctx_conn_app_pg && psql_conn; }
+function psql_conn_migrator() { switch_ctx ctx_conn_migrator_pg && psql_conn; }

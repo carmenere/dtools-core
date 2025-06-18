@@ -35,9 +35,9 @@ function redis_flushall() {
 
 function redis_cli_init() {(
   if [ "${PROFILE_REDIS}" = "docker" ]; then docker_service_check_redis; else service_check_redis; fi || return $?
-  admin=ctx_account_admin_redis
-  app=ctx_account_app_redis
-  ctx_socket_redis || return $?
+  admin=ctx_conn_admin_redis
+  app=ctx_conn_app_redis
+  ctx_conn_redis || return $?
   if ! redis_check_user ${app} ${admin}; then
     redis_create_user ${app} ${admin} && \
     redis_set_requirepass ${admin} ${admin} && \
@@ -47,9 +47,9 @@ function redis_cli_init() {(
 
 function redis_cli_clean() {(
   if [ "${PROFILE_REDIS}" = "docker" ]; then docker_service_check_redis; else service_check_redis; fi || return $?
-  admin=ctx_account_admin_redis
-  app=ctx_account_app_redis
-  ctx_socket_redis || return $?
+  admin=ctx_conn_admin_redis
+  app=ctx_conn_app_redis
+  ctx_conn_redis || return $?
   if redis_check_user ${app} ${admin}; then
     redis_drop_user ${app} ${admin} && \
     redis_flushall ${admin} && \
@@ -57,14 +57,14 @@ function redis_cli_clean() {(
   fi
 )}
 
-function redis_cli_conn_admin() {( ctx_socket_redis && ctx_account_admin_redis && redis_conn; )}
-function redis_cli_conn_app() {( ctx_socket_redis && ctx_account_app_redis && redis_conn; )}
+function redis_cli_conn_admin() {( ctx_conn_redis && ctx_conn_admin_redis && redis_conn; )}
+function redis_cli_conn_app() {( ctx_conn_redis && ctx_conn_app_redis && redis_conn; )}
 
 #function docker_exec_init_redis() {
 #  docker_service_check_redis
 #  local exec="$(ctx_docker_redis && docker_exec)"
-#  local set_requirepass="$(ctx_account_app_redis && redis_set_requirepass)"
+#  local set_requirepass="$(ctx_conn_app_redis && redis_set_requirepass)"
 #  if [ -n "${set_requirepass}" ]; then cmd_exec "${exec} ${set_requirepass}"; fi
-#  local create_user="$(ctx_account_app_redis && redis_create_user)"
+#  local create_user="$(ctx_conn_app_redis && redis_create_user)"
 #  cmd_exec "${exec} ${create_user}"
 #}

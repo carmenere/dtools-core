@@ -41,33 +41,33 @@ docker_default_tag() {
   fi
 }
 
-docker_build_args() { echo "$(inline_vars "${BUILD_ARGS}" --build-arg)"; }
-docker_run_publish() { echo "$(inline_vals "${PUBLISH}" --publish)"; }
-docker_run_envs() { echo "$(inline_vars "${RUN_ENVS}" --env)"; }
+docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
+docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
+docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
 
-docker_build() { cmd_exec docker build $(docker_build_args) -t ${IMAGE} -f "${DOCKERFILE}" "${CTX}"; }
-docker_exec() { echo "docker exec -ti ${CONTAINER}"; }
-docker_exec_sh() { exec "docker exec -ti ${CONTAINER} /bin/sh"; }
-docker_logs() { cmd_exec docker logs "${CONTAINER}"; }
-docker_logs_save_to_logfile() { cmd_exec docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1'; }
-docker_network_create() { cmd_exec docker network create --driver=${DRIVER} --subnet=${SUBNET} ${BRIDGE}; }
-docker_network_rm() { cmd_exec docker network rm ${BRIDGE}; }
-docker_pull() { cmd_exec docker pull ${IMAGE}; }
-docker_rm() { cmd_exec docker rm --force ${CONTAINER}; }
-docker_rmi() { cmd_exec docker rmi ${IMAGE}; }
-docker_run() { cmd_exec docker run ${FLAGS} --name ${CONTAINER} $(docker_run_envs) $(docker_run_publish) \
-    --restart ${RESTART} --network ${BRIDGE} ${IMAGE} "${COMMAND}"; }
-docker_start() { cmd_exec docker start ${CONTAINER}; }
-docker_status() { cmd_exec docker ps -a --filter name="^${CONTAINER}$"; }
-docker_stop() { cmd_exec docker stop ${CONTAINER}; }
+docker_build() { cmd_exec docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
+docker_exec() { echo "docker exec -ti $(CONTAINER)"; }
+docker_exec_sh() { exec "docker exec -ti $(CONTAINER) /bin/sh"; }
+docker_logs() { cmd_exec docker logs "$(CONTAINER)"; }
+docker_logs_save_to_logfile() { cmd_exec docker logs "$(CONTAINER)" '>' "${DT_LOGS}/container-$(CONTAINER).log" '2>&1'; }
+docker_network_create() { cmd_exec docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
+docker_network_rm() { cmd_exec docker network rm $(BRIDGE); }
+docker_pull() { cmd_exec docker pull $(IMAGE); }
+docker_rm() { cmd_exec docker rm --force $(CONTAINER); }
+docker_rmi() { cmd_exec docker rmi $(IMAGE); }
+docker_run() { cmd_exec docker run $(FLAGS) --name $(CONTAINER) $(docker_run_envs) $(docker_run_publish) \
+    --restart $(RESTART) --network $(BRIDGE) $(IMAGE) "$(COMMAND)"; }
+docker_start() { cmd_exec docker start $(CONTAINER); }
+docker_status() { cmd_exec docker ps -a --filter name="^$(CONTAINER)$"; }
+docker_stop() { cmd_exec docker stop $(CONTAINER); }
 
 docker_service_check() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -z "${SERVICE_CHECK}" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
+  if [ -z "$(SERVICE_CHECK)" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
   for i in $(seq 1 30); do
-    dt_info ${fname} "Waiting ${BOLD}${CONTAINER}${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
-    if cmd_exec "$(docker_exec) ${SERVICE_CHECK}"; then
-      dt_info ${fname} "Container ${BOLD}${CONTAINER}${RESET} is up now"
+    dt_info ${fname} "Waiting ${BOLD}$(CONTAINER)${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
+    if cmd_exec "$(docker_exec) $(SERVICE_CHECK)"; then
+      dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} is up now"
       break
     fi
     sleep 1
@@ -135,7 +135,7 @@ ctx_docker_service() {
   var CONTAINER
   var CTX "."
   var FLAGS "-d"
-  var IMAGE ${BASE_IMAGE}
+  var IMAGE $(BASE_IMAGE)
   var RESTART "always"
   var RM
   var SH "/bin/sh"

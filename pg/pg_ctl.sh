@@ -48,7 +48,7 @@ function pg_ctl_methods() {
 }
 
 function ctx_pg_ctl() {
-  ctx_service_pg && ctx_account_admin_pg || return $?
+  ctx_service_pg && ctx_conn_admin_pg || return $?
   OS_USER="${PGUSER}"
   DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
   INITDB_AUTH_HOST="md5"

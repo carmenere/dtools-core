@@ -76,7 +76,7 @@ function inline_vars() {
   [ -n "$2" ] && pref="$2 "
   result=()
   for var in ${vars[@]}; do
-    val="$(eval echo \$${var})"
+    val=$(${var})
     dt_debug ${fname} "var=${var}; val=${val}"
     if [ -z "${val}" ]; then continue; fi
     val=$(ser_val "${val}")
@@ -177,7 +177,7 @@ function get_var() {
   local val var=$1 ctx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "${ctx}" ]; then
     if [ -z "${DT_CTX}" ]; then
-      dt_error ${fname} "Global variable ${BOLD}CTX${RESET} is not set"
+      dt_error ${fname} "Global variable ${BOLD}DT_CTX${RESET} is not set"
       return 99
     fi
     ctx=${DT_CTX}
@@ -197,6 +197,10 @@ function var() {
   err_if_empty ${fname} "var" || return $?
   dt_debug ${fname} "var=${var}"
   ovar=${var}
+  if [ -z "${DT_CTX}" ]; then
+    dt_error ${fname} "Global variable ${BOLD}DT_CTX${RESET} is not set"
+    return 99
+  fi
   var=$(var_pref ${DT_CTX})${var} || return $?
   if declare -p ${var} >/dev/null 2>&1; then return 0; fi
   val=$(ser_val "$2")
@@ -225,7 +229,29 @@ function drop_all_ctxes() {
   done
   for var in ${DT_VARS[@]}; do
     unset ${var}
-    dsfds
+  done
+}
+
+function load_vars() {
+  local var dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift
+  if ! declare -f ${ctx} >/dev/null 2>&1; then
+    dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist"
+    return 99
+  fi
+  dt_ctx=${DT_CTX}; DT_CTX=
+  ${ctx}
+  DT_CTX=${dt_ctx}
+  for var in $@; do
+    if ! declare -f ${var} >/dev/null 2>&1; then
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered yet"
+      return 99
+    fi
+    if ! declare -p $(var_pref ${ctx})${var} >/dev/null 2>&1; then
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in ctx=${BOLD}${ctx}${RESET}"
+      return 99
+    fi
+    var ${var} $(${var} ${ctx})
   done
 }
 
@@ -246,7 +272,7 @@ function dt_bind() {
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
     dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
-    eval "function ${method}${suffix}() {( ${ctx} && ${method}; )}" || return $?
+    eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
   done
 }
 

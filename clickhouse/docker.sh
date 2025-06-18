@@ -9,7 +9,7 @@ function ctx_docker_clickhouse() {
 
 function docker_run_clickhouse() {
   var RUN_ENVS "CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT"
-  ctx_account_admin_clickhouse && ctx_docker_clickhouse || return $?
+  ctx_conn_admin_clickhouse && ctx_docker_clickhouse || return $?
   CLICKHOUSE_DB=${CLICKHOUSE_DB}
   CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
   CLICKHOUSE_USER=${CLICKHOUSE_USER}

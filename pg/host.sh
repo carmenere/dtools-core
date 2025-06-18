@@ -60,15 +60,15 @@ function pg_service() {
 
 function pg_add_path() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  npath="${PATH}"
-  echo "${npath}" | grep -E -s "^$(bin_dir)" 1>/dev/null 2>&1
+  path="${PATH}"
+  echo "${path}" | grep -E -s "^$(bin_dir)" 1>/dev/null 2>&1
   if [ $? != 0 ] && [ -n "$(bin_dir)" ]; then
-    # Cut all duplicates of $(bin_dir) from npath
-    npath="$(echo "${npath}" | sed -E -e ":label; s|(.*):$(bin_dir)(.*)|\1\2|g; t label;")"
+    # Cut all duplicates of $(bin_dir) from path
+    path="$(echo "${path}" | sed -E -e ":label; s|(.*):$(bin_dir)(.*)|\1\2|g; t label;")"
     # Prepend $(bin_dir)
-    dt_debug ${fname} "$(bin_dir):${npath}"
+    dt_debug ${fname} "$(bin_dir):${path}"
   else
-    dt_debug ${fname} "${npath}"
+    dt_debug ${fname} "${path}"
   fi
 }
 
@@ -113,8 +113,7 @@ function lsof_pg() {
 
 function ctx_service_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
-  dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   var MAJOR 17
   var MINOR 5
   var PGHOST "localhost"
@@ -134,11 +133,12 @@ function ctx_service_pg() {
   var SERVICE_PREPARE pg_prepare
   var SERVICE_INSTALL pg_install
   var SERVICE_LSOF lsof_pg
-  ctx_os_service && ctx_epilog ${fname}
+  ctx_os_service && \
+  ctx_epilog ${fname}
 }
 
 service_check_pg() {
-  ctx_service_pg || return $?
+  switch_ctx ctx_service_pg || return $?
   SERVICE_CHECK="$(cmd_echo psql_conn_admin) -c 'select true;'"
   service_check
 }

@@ -89,7 +89,7 @@ clickhouse_user_xml_dir() {
   fi
 }
 
-service_prepare_clickhouse() { ctx_socket_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }
+service_prepare_clickhouse() { ctx_conn_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }
 
 lsof_clickhouse() {
   HOST=${CLICKHOUSE_HOST}

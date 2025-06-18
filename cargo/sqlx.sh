@@ -45,7 +45,7 @@ function sqlx_methods() {
 
 # Example:
 function ctx_sqlx() {
-  ctx_account_migrator_pg && ctx_socket_pg || return $?
+  ctx_conn_migrator_pg && ctx_conn_pg || return $?
   var SCHEMAS "${DT_PROJECT}/migrations/schemas"
   var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas"
   var DATABASE_URL $(database_url)

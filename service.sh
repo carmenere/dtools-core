@@ -40,9 +40,12 @@ ctx_os_service() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if is_cached ${fname}; then return 0; else ctx_prolog ${fname}; fi
   var SERVICE
+  var SERVICE_CHECK
+  var SERVICE_INSTALL
+  var SERVICE_LSOF
   var SERVICE_STOP "$(service) stop $(SERVICE)"
   var SERVICE_START "$(service) start $(SERVICE)"
-  var SERVICE_PREPARE "$(service) start $(SERVICE)"
+  var SERVICE_PREPARE
   ctx_epilog ${fname}
 }
 

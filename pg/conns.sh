@@ -3,15 +3,20 @@ pg_connurl() {
   echo "${vars}"
 }
 
-ctx_socket_pg() {
+ctx_conn_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   if [ "${PROFILE_PG}" = "docker" ]; then
-    ctx_docker_pg
+    load_vars ctx_docker_pg PGHOST PGPORT PSQL
   else
-    ctx_service_pg
+    load_vars ctx_service_pg PGHOST PGPORT PSQL
   fi
+  ctx_epilog ${fname}
 }
 
-ctx_account_admin_pg() {
+ctx_conn_admin_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
     var PGUSER "${USER}"
   else
@@ -19,16 +24,25 @@ ctx_account_admin_pg() {
   fi
   var PGPASSWORD "postgres"
   var PGDATABASE "postgres"
+  ctx_conn_pg && \
+  ctx_epilog ${fname}
 }
 
-ctx_account_migrator_pg() {
+ctx_conn_migrator_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   var PGUSER "example_migrator"
   var PGPASSWORD "1234567890"
   var PGDATABASE "example"
+  ctx_conn_pg && \
+  ctx_epilog ${fname}
 }
 
-ctx_account_app_pg() {
+ctx_conn_app_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   var PGUSER "example_app"
   var PGPASSWORD "1234567890"
-  ctx_account_migrator_pg || return $?
+  ctx_conn_migrator_pg && \
+  ctx_epilog ${fname}
 }

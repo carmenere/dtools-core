@@ -59,7 +59,7 @@ rmq_clean() {
 
 rmq_init_host() {
   service_check_rmq && \
-  ctx_account_app_rmq && ctx_socket_rmq || return $?
+  ctx_conn_app_rmq && ctx_conn_rmq || return $?
   if ! rabbitmqctl_check_user; then
     rabbitmqctl_create_user && \
     rabbitmqctl_set_user_tags && \
@@ -70,9 +70,9 @@ rmq_init_host() {
 rmq_clean_host() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   service_check_rmq || return $?
-  local admin=ctx_account_admin_rmq
-  local app=ctx_account_app_rmq
-  $app && ctx_socket_rmq || return $?
+  local admin=ctx_conn_admin_rmq
+  local app=ctx_conn_app_rmq
+  $app && ctx_conn_rmq || return $?
   if rabbitmqctl_check_user; then
     rabbitmqctl_drop_user && \
     rabbitmqadmin_delete_exchanges $app $admin && \
@@ -83,7 +83,7 @@ rmq_clean_host() {
 rmq_init_docker() {
   local SUDO fname=$(fname "${FUNCNAME[0]}" "$0")
   docker_service_check_rmq && \
-  ctx_account_app_rmq || return $?
+  ctx_conn_app_rmq || return $?
   SUDO=
   local check_user=$(escape_quote "$(cmd_echo rabbitmqctl_check_user)")
   local create_user=$(escape_quote "$(cmd_echo rabbitmqctl_create_user)")
