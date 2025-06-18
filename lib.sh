@@ -46,23 +46,6 @@ function ser_val() {
   echo "${val}"
 }
 
-## Usage: load_vars ctx_service_pg_tetrix "FOO BAR"
-function load_vars() {
-  local ctx=$1 vars=($(echo $2)) fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx vars" || return $?
-  . <(${ctx} || return $?
-    for var in ${vars[@]}; do
-      if ! declare -p ${var} >/dev/null 2>&1; then
-        dt_error ${fname} "Variable ${BOLD}${var}${RESET} not found in ctx ${BOLD}${ctx}${RESET}"
-        return 99
-      fi
-      val=$(eval echo "\${${var}}")
-      val=$(ser_val "${val}")
-      dt_debug ${fname} "${var}=${val}"
-      echo "var ${var} ${val}"
-    done)
-}
-
 function err_if_empty() {
   local var val fname=$1 vars=($(echo $2))
   if [ -z "${fname}" ]; then dt_error "err_if_empty" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
@@ -106,21 +89,6 @@ function escape_quote() {
   echo "$1" | sed -e "s/'/\\\\'/g"
 }
 
-function dt_rc_load() {
-  description=$1
-  dir=$2
-  if [ -z "${description}" ]; then return 99; fi
-  if [ -z "${dir}" ]; then return 99; fi
-  echo -e "Loading ${BOLD}$description${RESET} ... "
-  for file in "$dir"/*.sh; do
-    if [ "$(basename "$file")" != "rc.sh"  ]; then
-      echo -e -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
-      . "$file" || return 55
-      echo "done.";
-    fi
-  done
-}
-
 function cmd_exec () {
   local cmd fname=$(fname "${FUNCNAME[0]}" "$0")
   cmd=$(echo "$@" | sed 's/^[ \t]*//')
@@ -145,88 +113,141 @@ function cmd_exec () {
   fi
 }
 
-function var() {
-  local fname var val fname=$(fname "${FUNCNAME[0]}" "$0")
-  var=$1; err_if_empty ${fname} "var" || return $?
-  if declare -p ${var} >/dev/null 2>&1; then return 0; fi
-  val=$(ser_val "$2")
-  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${val}"
-  eval "${var}=${val}"
-  DT_VARS+=(${var})
+function is_contained() {
+  local item=$1 registry=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "item registry" || return $?
+  registry=($(echo $(eval echo \$${registry})))
+  for ritem in ${registry[@]};  do
+    if [ "${ritem}" = "${item}" ]; then
+      dt_debug ${fname} "HIT: ${BOLD}Item${RESET}=${item}"
+      return 0
+    fi
+  done
+  return 88
 }
 
-function vars() {
-  local fname ctx=$1 val fname=$(fname "${FUNCNAME[0]}" "$0")
+function var_pref() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${ctx}" ]; then
-    if ! declare -f ${ctx} >/dev/null 2>&1; then
-      dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist."
-      return 99
-    fi
-    (
-      unset_vars 1>/dev/null 2>&1
-      ${ctx} 1>/dev/null 2>&1
-      for var in ${DT_VARS[@]}; do
-        val=$(eval echo "\${${var}}")
-        echo -e "${BOLD}${var}${RESET}='${val}'"
-      done
-    )
-  else
-    for var in ${DT_VARS[@]}; do
-      val=$(eval echo "\${${var}}")
-      echo -e  "${BOLD}${var}${RESET}='${val}'"
-    done
+    echo "${ctx}__"
   fi
 }
 
-function unset_vars() {
-  for var in ${DT_VARS[@]}; do
-    val=$(eval echo "\${${var}}")
-    cmd_exec "unset ${var}"
+function is_cached() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx" || return $?
+  if declare -p cache__${ctx} >/dev/null 2>&1 && [ "${DT_CTX}" = "${ctx}" ]; then
+    dt_debug ${fname} "Context ${BOLD}${ctx}${RESET} has already initialized."
+    DT_CTX=
+    return 0
+  else
+    return $?
+  fi
+}
+
+ctx_prolog(){
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx" || return $?
+  if [ -z "${DT_CTX}" ]; then DT_CTX=${ctx}; fi
+  if ! is_contained ${ctx} DT_CTXES; then DT_CTXES+=(${ctx}); fi
+  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, current ctx is ${BOLD}${ctx}${RESET}"
+}
+
+
+# Consistent behaviour in zsh and bash: ${array[@]:offset:length}
+ctx_epilog(){
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx" || return $?
+  if [ "${DT_CTX}" = "${ctx}" ]; then
+    export cache__${ctx}
+    dt_debug ${fname} "Adding ctx=${BOLD}${ctx}${RESET} to cache, DT_CTX=${DT_CTX}"
+    DT_CTX=
+  fi
+}
+
+function switch_ctx() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx" || return $?
+  DT_CTX=
+  ${ctx} || return $?
+  DT_CTX=${ctx}
+}
+
+function get_var() {
+  local val var=$1 ctx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${ctx}" ]; then
+    if [ -z "${DT_CTX}" ]; then
+      dt_error ${fname} "Global variable ${BOLD}CTX${RESET} is not set"
+      return 99
+    fi
+    ctx=${DT_CTX}
+  fi
+  var=$(var_pref ${ctx})${var} || return $?
+  if declare -p ${var} >/dev/null 2>&1; then
+    val=$(eval echo \$${var})
+    echo "${val}"
+  else
+    dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist"
+  fi
+}
+
+# sets var in some ctx
+function var() {
+  local val ovar var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "var" || return $?
+  dt_debug ${fname} "var=${var}"
+  ovar=${var}
+  var=$(var_pref ${DT_CTX})${var} || return $?
+  if declare -p ${var} >/dev/null 2>&1; then return 0; fi
+  val=$(ser_val "$2")
+  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}"
+  eval "export ${var}=${val}"
+  DT_VARS+=(${var})
+  eval "${ovar}() { get_var ${ovar} \$1}"
+}
+
+function drop_ctx() {
+  local pref ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx" || return $?
+  dt_debug ${fname} "${ctx}"
+  pref=$(var_pref ${ctx})
+  . <(env | while read var; do
+    awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
+  done)
+  unset "cache__${ctx}"
+}
+
+function drop_all_ctxes() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "*"
+  for ctx in ${DT_CTXES[@]}; do
+    unset "cache__${ctx}"
   done
-  DT_VARS=()
+  for var in ${DT_VARS[@]}; do
+    unset ${var}
+    dsfds
+  done
 }
 
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 ## will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
 function dt_bind() {
-  local ctx suffix methods method fname=$(fname "${FUNCNAME[0]}" "$0")
+  local ctx suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
   ctx=$(echo "$1" | cut -d':' -f 1)
   suffix=$(echo "$1" | cut -d':' -f 2)
   methods=$(echo "$1" | cut -d':' -f 3)
+  excluded=$(echo "$1" | cut -d':' -f 4)
   err_if_empty ${fname} "ctx suffix methods" || return $?
   if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
   methods=($(echo $(${methods})| sort))
+  excluded=($(echo ${excluded}))
+  dt_debug ${fname} "excluded=${excluded[@]}"
   for method in ${methods[@]}; do
-    DT_REGISTERED_METHODS+=(${method}${suffix})
-    if declare -f "${method}${suffix}" >/dev/null 2>&1; then
-      dt_info ${fname} "Function ${BOLD}${method}${suffix}${RESET} has already registered"
-      continue
-    fi
+    if is_contained ${method}${suffix} excluded; then continue; fi
+    if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
     dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() {( ${ctx} && ${method}; )}"
     eval "function ${method}${suffix}() {( ${ctx} && ${method}; )}" || return $?
   done
-}
-
-function get_method() {
-  local m method=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -z "${method}" ]; then dt_error ${fname} "Method was not provided"; return 99; fi
-  for m in ${DT_BIND_EXCEPTIONS[@]};  do
-    if [ "$m" = "${method}" ]; then
-      dt_debug ${fname} "HIT: ${BOLD}Method${RESET}=${m}"
-      return 0
-    fi
-  done
-}
-
-dt_unregister() {
-  local method fname=$(fname "${FUNCNAME[0]}" "$0")
-  for method in ${DT_REGISTERED_METHODS[@]}; do
-    if declare -f "${method}" >/dev/null 2>&1; then
-      dt_debug ${fname} "unset -f ${method}"
-      unset -f ${method}
-    fi
-  done
-  export DT_REGISTERED_METHODS=()
 }
 
 dt_register() {
@@ -240,10 +261,10 @@ dt_bindings() {
   for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done
 }
 
-dt_registered_methods() {
+dt_methods() {
   local method fname=$(fname "${FUNCNAME[0]}" "$0")
-  DT_REGISTERED_METHODS=($(for method in ${DT_REGISTERED_METHODS[@]}; do echo "${method}"; done | sort))
-  for method in ${DT_REGISTERED_METHODS[@]}; do echo "${method}"; done
+  DT_METHODS=($(for method in ${DT_METHODS[@]}; do echo "${method}"; done | sort))
+  for method in ${DT_METHODS[@]}; do echo "${method}"; done
 }
 
 function cmd_echo() {
@@ -259,8 +280,8 @@ function cmd_echo() {
   DT_ECHO=${saved_ECHO}
 }
 
-function paths() {
-  if [ -z "${DTOOLS}" ]; then DTOOLS="$(pwd)"; fi
+function dt_paths() {
+  if [ -z "${DTOOLS}" ]; then DTOOLS=$(realpath $(dirname "$(realpath $self)")/..); fi
   # Paths that depend on DTOOLS
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
@@ -272,35 +293,23 @@ function paths() {
   export DT_LOGS="${DT_ARTEFACTS}/logs"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
-  # Cache for ctxes
-  export CTXES=${DT_LOGS}/ctxes
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
-  # Delete all ctxes every time ". ./dtools/rc.sh" is called
-  rm -rf ${CTXES} && mkdir -p ${CTXES}
 }
 
 # DT_SEVERITY >= 4 for dumps!
-function defaults() {
-  export DT_DRYRUN="n"
-  export DT_SEVERITY=4
-  export DT_ECHO="y"
-  export DT_ECHO_STDOUT="n"
-  export DT_ECHO_COLOR="${YELLOW}"
+function dt_defaults() {
+  drop_all_ctxes || return $?
   export DT_BINDINGS=()
+  export DT_CTX=
+  export DT_CTXES=()
+  export DT_DRYRUN="n"
+  export DT_ECHO="y"
+  export DT_ECHO_COLOR="${YELLOW}"
+  export DT_ECHO_STDOUT="n"
+  export DT_METHODS=()
+  export DT_SEVERITY=4
+  export DT_VARS=()
   export PROFILE_CI=
-  unset_vars && export DT_VARS
-}
-
-function dt_init() {
-  paths || return $?
-  . "${DT_CORE}/colors.sh"
-  defaults && \
-  dt_unregister || return $?
-  . "${DT_CORE}/rc.sh"
-  . "${DT_TOOLS}/rc.sh"
-  . "${DT_STANDS}/rc.sh"
-  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
-  dt_register
 }

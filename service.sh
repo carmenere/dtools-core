@@ -37,8 +37,13 @@ function service_methods() {
 }
 
 ctx_os_service() {
-  var SERVICE_STOP "$(service) stop ${SERVICE}"
-  var SERVICE_START "$(service) start ${SERVICE}"
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if is_cached ${fname}; then return 0; else ctx_prolog ${fname}; fi
+  var SERVICE
+  var SERVICE_STOP "$(service) stop $(SERVICE)"
+  var SERVICE_START "$(service) start $(SERVICE)"
+  var SERVICE_PREPARE "$(service) start $(SERVICE)"
+  ctx_epilog ${fname}
 }
 
 # MacOS

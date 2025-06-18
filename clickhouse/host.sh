@@ -117,10 +117,10 @@ ctx_service_clickhouse() {
   ctx_os_service || return $?
 }
 
-DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)
-
 service_check_clickhouse() {
   ctx_service_clickhouse || return $?
   SERVICE_CHECK="$(cmd_echo clickhouse_conn_admin) --query 'exit'"
   service_check
 }
+
+DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods:"service_check_clickhouse")

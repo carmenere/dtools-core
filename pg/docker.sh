@@ -6,9 +6,7 @@ function ctx_docker_pg() {
   ctx_docker_network && ctx_docker_service && ctx_service_pg || return $?
 }
 
-DT_BINDINGS+=(ctx_docker_pg:pg:docker_methods)
-
-docker_run_pg() {(
+docker_run_pg() {
   var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER"
   ctx_account_admin_pg && ctx_docker_pg || return $?
   var POSTGRES_PASSWORD "${PGPASSWORD}"
@@ -16,5 +14,6 @@ docker_run_pg() {(
   var POSTGRES_USER "${PGUSER}"
   var PUBLISH "${PGPORT}:5432/tcp"
   docker_run
-)}
+}
 
+DT_BINDINGS+=(ctx_docker_pg:pg:docker_methods:"docker_run_pg")
