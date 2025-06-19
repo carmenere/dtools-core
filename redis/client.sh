@@ -2,10 +2,10 @@ function redis_exec() {
   local fname conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "query_ctx conn_ctx query" || return $?
   dt_debug ${fname} "query_ctx=${query_ctx}"
-  switch_ctx ${query_ctx} && query=$(${query}) || return $?
+  open_ctx ${query_ctx} && query=$(${query}) || return $?
   dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  switch_ctx ${conn_ctx} && conn="$(cmd_echo redis_conn)" || return $?
-  cmd_exec "${conn} ${query}"
+  open_ctx ${conn_ctx} && conn="$(cmd_echo redis_conn)" || return $?
+  cmd_exec "${conn} ${query}" && close_ctx
 }
 
 function redis_conn() {
@@ -25,10 +25,10 @@ function redis_drop_user() { redis_exec $1 $2 redis_ql_drop_user; }
 
 function redis_config_rewrite() {
   local conn_ctx=$1
-  switch_ctx ${conn_ctx} && cmd_exec "$(cmd_echo redis_conn) CONFIG REWRITE"
+  open_ctx ${conn_ctx} && cmd_exec "$(cmd_echo redis_conn) CONFIG REWRITE" && close_ctx
 }
 
 function redis_flushall() {
   local conn_ctx=$1
-  switch_ctx ${conn_ctx} && cmd_exec "$(cmd_echo redis_conn) FLUSHALL"
+  open_ctx ${conn_ctx} && cmd_exec "$(cmd_echo redis_conn) FLUSHALL" && close_ctx
 }

@@ -8,11 +8,10 @@ function pg_sql_alter_role_password() {
 # In postgres the $$ ... $$ means dollar-quoted string.
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
 function pg_sql_create_user() {
-  local query=$(
-    escape_quote "
+  local query=$(escape_dollar $(escape_quote "
     SELECT \$\$CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)'\$\$
     WHERE NOT EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ") || return $?
+  ")) || return $?
   echo "${query}"
 }
 

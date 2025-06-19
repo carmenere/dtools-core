@@ -1,50 +1,50 @@
-function psql_conn() {
+function _psql_conn_cmd() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  cmd_exec $(inline_vars "$(pg_connurl)") "$(PSQL)"
+  echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"
 }
 
-function psql_exec() {
-  local fname conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "query_ctx conn_ctx query" || return $?
-  dt_debug ${fname} "query_ctx=${query_ctx}"
-  switch_ctx ${query_ctx} && query=$(${query}) || return $?
-  dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  switch_ctx ${conn_ctx} && conn=$(cmd_echo psql_conn) || return $?
-  cmd_exec "echo $'${query}' '\gexec' | ${conn}"
+function _psql_conn() {
+  local ser conn_ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift 1
+  ser=$(select_cmd_ser ${PROFILE_PG}) && \
+  dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}, args=$@" && \
+  open_ctx ${conn_ctx} && \
+  cmd_exec $(${ser} $(_psql_conn_cmd $@)) && \
+  close_ctx
 }
 
-function psql_alter_role_password() { psql_exec $1 $2 pg_sql_alter_role_password; }
-function psql_create_db() { psql_exec $1 $2 pg_sql_create_db; }
-function psql_create_user() { psql_exec $1 $2 pg_sql_create_user; }
-function psql_drop_db() { psql_exec $1 $2 pg_sql_drop_db; }
-function psql_drop_user() { psql_exec $1 $2 pg_sql_drop_user; }
-function psql_grant_user_app() { psql_exec $1 $2 pg_sql_grant_user_app; }
-function psql_grant_user_migrator() { psql_exec $1 $2 pg_sql_grant_user_migrator; }
-function psql_revoke_user_app() { psql_exec $1 $2 pg_sql_revoke_user_app; }
-function psql_revoke_user_migrator() { psql_exec $1 $2 pg_sql_revoke_user_migrator; }
+function _psql_gexec() {
+  local ser conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "query_ctx conn_ctx query" && \
+  dt_debug ${fname} "query_ctx=${query_ctx}" && \
+  open_ctx ${query_ctx} && query=$(${query}) && \
+  ser=$(select_cmd_ser ${PROFILE_PG}) && \
+  dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}" && \
+  open_ctx ${conn_ctx} && conn=$(_psql_conn_cmd) && \
+  echo "$(${ser} "echo $'${query}' '\gexec' | ${conn}")" && \
+  close_ctx
+}
 
 function _psql_init() {
-  local admin migrator app
-  admin=$1
-  migrator=$2
-  app=$3
-  psql_alter_role_password $admin $admin && \
-  psql_create_db $migrator $admin && \
-  psql_create_user $migrator $admin && \
-  psql_grant_user_migrator $migrator $admin && \
-  psql_create_user $app $admin && \
-  # Connect to db behalf 'migrator'!
-  psql_grant_user_app $app $migrator
+  local ser admin=$1 migrator=$2 app=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  ${migrator} && ${admin} && ${app} && \
+  dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
+  cmd_exec "$(_psql_gexec ${admin} ${admin} pg_sql_alter_role_password)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_create_db)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_create_user)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_grant_user_migrator)" && \
+  cmd_exec "$(_psql_gexec ${app} ${admin} pg_sql_create_user)" && \
+  cmd_exec "$(_psql_gexec ${app} ${migrator} pg_sql_grant_user_app)"
 }
 
 function _psql_clean() {
-  local admin migrator app
-  admin=$1
-  migrator=$2
-  app=$3
-  psql_revoke_user_app $app $admin && \
-  psql_revoke_user_migrator $migrator $admin && \
-  psql_drop_db $migrator $admin && \
-  psql_drop_user $app $admin && \
-  psql_drop_user $migrator $admin
+  local ser admin=$1 migrator=$2 app=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  ${migrator} && ${admin} && ${app} && \
+  dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
+  cmd_exec "$(_psql_gexec ${app} ${admin} pg_sql_revoke_user_app)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_revoke_user_migrator)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_drop_db)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_grant_user_migrator)" && \
+  cmd_exec "$(_psql_gexec ${app} ${admin} pg_sql_drop_user)" && \
+  cmd_exec "$(_psql_gexec ${migrator} ${admin} pg_sql_drop_user)"
 }

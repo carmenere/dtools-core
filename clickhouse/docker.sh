@@ -12,7 +12,7 @@ function ctx_docker_clickhouse() {
 }
 
 function docker_run_clickhouse() {
-  switch_ctx ctx_docker_clickhouse || return $?
+  open_ctx ctx_docker_clickhouse || return $?
   load_vars ctx_conn_admin_clickhouse CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER || return $?
   var RUN_ENVS "CLICKHOUSE_DB CLICKHOUSE_PASSWORD CLICKHOUSE_USER CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT"
   var CLICKHOUSE_DB $(CLICKHOUSE_DB)
@@ -20,7 +20,8 @@ function docker_run_clickhouse() {
   var CLICKHOUSE_USER $(CLICKHOUSE_USER)
   var CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT 1
   var PUBLISH "$(CLICKHOUSE_PORT):9000/tcp $(CLICKHOUSE_HTTP_PORT):8123/tcp"
-  docker_run
+  docker_run && \
+  close_ctx
 }
 
 DT_BINDINGS+=(ctx_docker_clickhouse:clickhouse:docker_methods:"docker_run_clickhouse")

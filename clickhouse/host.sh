@@ -120,9 +120,9 @@ ctx_service_clickhouse() {
 }
 
 service_check_clickhouse() {
-  switch_ctx ctx_service_clickhouse || return $?
+  open_ctx ctx_service_clickhouse || return $?
   rvar SERVICE_CHECK "$(cmd_echo clickhouse_conn_admin) --query 'exit'"
-  service_check
+  service_check && close_ctx
 }
 
 DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods:"service_check_clickhouse")

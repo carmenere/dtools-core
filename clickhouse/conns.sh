@@ -34,8 +34,8 @@ ctx_conn_app_clickhouse() {
   ctx_epilog ${fname}
 }
 
-clickhouse_conn_admin() { switch_ctx ctx_conn_admin_clickhouse && clickhouse_conn; }
-clickhouse_conn_app() { switch_ctx ctx_conn_app_clickhouse && clickhouse_conn; }
+clickhouse_conn_admin() { open_ctx ctx_conn_admin_clickhouse && clickhouse_conn && close_ctx; }
+clickhouse_conn_app() { open_ctx ctx_conn_app_clickhouse && clickhouse_conn && close_ctx; }
 
 clickhouse_init() {
   if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then docker_check_clickhouse || return $?; else service_check_clickhouse || return $?; fi && \

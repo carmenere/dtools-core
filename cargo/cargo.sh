@@ -103,7 +103,7 @@ ctx_cargo() {
   var MANIFEST_DIR
   var MESSAGE_FORMAT
   var PACKAGE
-  var PROFILE $(PROFILE_CARGO)
+  var PROFILE ${PROFILE_CARGO}
   var RUSTFLAGS
   # Depends on PROFILE
   var BUILD_MODE $(cg_build_mode)

@@ -45,9 +45,11 @@ docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
 docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
 docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
 
+docker_ser_cmd() { echo "docker exec -i $(CONTAINER) sh << EOF\n$@\nEOF"; }
+
 docker_build() { cmd_exec docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
-docker_exec() { echo "docker exec -ti $(CONTAINER)"; }
-docker_exec_sh() { exec "docker exec -ti $(CONTAINER) /bin/sh"; }
+docker_exec() { echo "docker exec -i $(CONTAINER)"; }
+docker_exec_sh() { cmd_exec "docker exec -ti $(CONTAINER) /bin/sh"; }
 docker_logs() { cmd_exec docker logs "$(CONTAINER)"; }
 docker_logs_save_to_logfile() { cmd_exec docker logs "$(CONTAINER)" '>' "${DT_LOGS}/container-$(CONTAINER).log" '2>&1'; }
 docker_network_create() { cmd_exec docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
@@ -93,7 +95,7 @@ docker_check() {
   if [ -z "$(SERVICE_CHECK)" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
   for i in $(seq 1 30); do
     dt_info ${fname} "Waiting ${BOLD}$(CONTAINER)${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
-    if cmd_exec "$(docker_exec) $(SERVICE_CHECK)"; then
+    if cmd_exec "$(docker_ser_cmd $(SERVICE_CHECK))"; then
       dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} is up now"
       break
     fi

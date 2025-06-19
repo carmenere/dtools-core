@@ -129,6 +129,7 @@ function ctx_service_pg() {
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"
     var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)"
   fi
+  var SERVICE_CHECK "psql_conn_admin -c \"'select true;'\""
   var SERVICE_PREPARE "pg_prepare"
   var SERVICE_INSTALL "pg_install"
   var SERVICE_LSOF "lsof_pg"
@@ -136,10 +137,4 @@ function ctx_service_pg() {
   ctx_epilog ${fname}
 }
 
-service_check_pg() {
-  switch_ctx ctx_service_pg || return $?
-  rvar SERVICE_CHECK "$(cmd_echo psql_conn_admin) -c 'select true;'"
-  service_check
-}
-
-DT_BINDINGS+=(ctx_service_pg:pg:service_methods:"service_check_pg")
+DT_BINDINGS+=(ctx_service_pg:pg:service_methods)

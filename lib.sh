@@ -86,12 +86,15 @@ function inline_vars() {
 }
 
 function escape_quote() {
-  echo "$1" | sed -e "s/'/\\\\'/g"
+  echo "$@" | sed -e "s/'/\\\\'/g"
+}
+
+function escape_dollar() {
+  echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"
 }
 
 function cmd_exec () {
-  local cmd fname=$(fname "${FUNCNAME[0]}" "$0")
-  cmd=$(echo "$@" | sed 's/^[ \t]*//')
+  local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "${cmd}" ]; then
     dt_error ${fname} "The command is empty cmd='${cmd}'."
     return 99
@@ -109,7 +112,7 @@ function cmd_exec () {
       >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][DT_ECHO][cmd_exec]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
-    eval "${cmd}" || return $?
+    eval "$(echo -e "${cmd}")" || return $?
   fi
 }
 
@@ -159,18 +162,23 @@ ctx_epilog(){
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
   if [ "${DT_CTX}" = "${ctx}" ]; then
-    export cache__${ctx}=1
+    eval "cache__${ctx}=1"
+    DT_VARS+=(cache__${ctx})
     dt_debug ${fname} "Adding ctx=${BOLD}${ctx}${RESET} to cache, DT_CTX=${DT_CTX}"
     DT_CTX=
   fi
 }
 
-function switch_ctx() {
+function open_ctx() {
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
-  DT_CTX=
+  close_ctx
   ${ctx} || return $?
   DT_CTX=${ctx}
+}
+
+function close_ctx() {
+  DT_CTX=
 }
 
 function get_var() {
@@ -201,11 +209,10 @@ function var() {
     return 99
   fi
   var=$(var_pref ${DT_CTX})${var} || return $?
-  dt_debug ${fname} "ovar=${ovar}, var=${BOLD}${var}${RESET}, val ${BOLD}${val}${RESET}"
-  if declare -p ${var} >/dev/null 2>&1 && declare -f ${ovar} >/dev/null 2>&1; then return 0; fi
+  if declare -p ${var} >/dev/null 2>&1; then return 0; fi
   val=$(ser_val "$2")
   dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}"
-  eval "export ${var}=${val}"
+  eval "${var}=${val}"
   DT_VARS+=(${var})
   eval "${ovar}() { get_var ${ovar} \$1; }"
 }
@@ -222,7 +229,7 @@ function rvar() {
   var=$(var_pref ${DT_CTX})${var} || return $?
   val=$(ser_val "$2")
   dt_debug ${fname} "${BOLD}Resetting${RESET} var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}"
-  eval "export ${var}=${val}"
+  eval "${var}=${val}"
   DT_VARS+=(${var})
   eval "${ovar}() { get_var ${ovar} \$1 }"
 }
@@ -245,6 +252,16 @@ function drop_all_ctxes() {
   done
 }
 
+function ctx_init() {
+  local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if declare -p cached__${ctx} >/dev/null 2>&1; then return 0; fi
+  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, will init source_ctx=${BOLD}${ctx}${RESET}"
+  dt_ctx=${DT_CTX}; DT_CTX=
+  ${ctx}
+  DT_CTX=${dt_ctx}
+  dt_debug ${fname} "${BOLD}done${RESET}"
+}
+
 function load_vars() {
   local var dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift
@@ -252,11 +269,7 @@ function load_vars() {
     dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist"
     return 99
   fi
-  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, will init source_ctx=${BOLD}${ctx}${RESET}"
-  dt_ctx=${DT_CTX}; DT_CTX=
-  ${ctx}
-  DT_CTX=${dt_ctx}
-  dt_debug ${fname} "${BOLD}done${RESET}"
+  ctx_init ${ctx} || return $?
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered yet, source_ctx=${BOLD}${ctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
@@ -286,8 +299,8 @@ function dt_bind() {
   for method in ${methods[@]}; do
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
-    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { ${ctx} && ${method}; }"
-    eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
+    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { open_ctx ${ctx} && ${method} && close_ctx; }"
+    eval "function ${method}${suffix}() { open_ctx ${ctx} && ${method} && DT_CTX=; }" || return $?
   done
 }
 
@@ -347,16 +360,16 @@ function dt_paths() {
 
 # DT_SEVERITY >= 4 for dumps!
 function dt_defaults() {
-  export DT_BINDINGS=()
+  DT_BINDINGS=()
   export DT_CTX=
-  export DT_CTXES=()
+  DT_CTXES=()
   export DT_DRYRUN="n"
   export DT_ECHO="y"
   export DT_ECHO_COLOR="${YELLOW}"
   export DT_ECHO_STDOUT="n"
-  export DT_METHODS=()
+  DT_METHODS=()
   if [ -z "${DT_SEVERITY}" ]; then DT_SEVERITY=4; fi
   export DT_SEVERITY
-  export DT_VARS=()
+  DT_VARS=()
   export PROFILE_CI=
 }

@@ -2,10 +2,11 @@ clickhouse_exec() {
   local fname conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "query_ctx conn_ctx query" || return $?
   dt_debug ${fname} "query_ctx=${query_ctx}"
-  switch_ctx ${query_ctx} && query=$(${query}) || return $?
+  open_ctx ${query_ctx} && query=$(${query}) || return $?
   dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  switch_ctx ${conn_ctx} && conn=$(cmd_echo clickhouse_conn) || return $?
+  open_ctx ${conn_ctx} && conn=$(cmd_echo clickhouse_conn) || return $?
   cmd_exec "${conn} --multiquery $'${query}'"
+  close_ctx
 }
 
 clickhouse_host() { if [ -n "$(CLICKHOUSE_HOST)" ]; then echo "--host $(CLICKHOUSE_HOST)"; fi; }

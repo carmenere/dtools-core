@@ -1,6 +1,6 @@
 app_envs() { echo "$(inline_vars "$(APP_ENVS)")"; }
 
-function start_app() {
+function app_start() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   non_empty=(APP BINARY LOG_FILE)
   for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; fi; done
@@ -8,7 +8,7 @@ function start_app() {
   cmd_exec $(app_envs) $(BINARY) $(OPTS) 2\>\&1 \| tee -a $(LOG_FILE)
 }
 
-function stop_app() {
+function app_stop() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   non_empty=(APP PKILL_PATTERN)
   for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; fi; done
@@ -19,8 +19,8 @@ function stop_app() {
 
 function app_methods() {
   local methods=()
-  methods+=(stop_app)
-  methods+=(start_app)
+  methods+=(app_stop)
+  methods+=(app_start)
   echo "${methods[@]}"
 }
 
