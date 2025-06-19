@@ -18,12 +18,14 @@ function register_stand() {
   done
   eval "function stand_up_${stand}() { ${stand} && run_stand ${stand} ${up}; }"
   eval "function stand_down_${stand}() { ${stand} && run_stand ${stand} ${down}; }"
+  eval "function stand_up_run_plan_${stand}() { ${stand} && run_plan ${stand} ${up}; }"
+  eval "function stand_down_run_plan_${stand}() { ${stand} && run_plan ${stand} ${down}; }"
 }
 
 # Example1: run_stand my_stand up
 # Example2: run_stand my_stand down
 function run_stand() {
-  local fname steps stand=$1 tiers=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local stand=$1 tiers=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "stand tiers" || return $?
   dt_info ${fname} "Running stand ${BOLD}${stand}${RESET}, tiers=${BOLD}${tiers}${RESET}"
   tiers=($(${tiers}))
@@ -31,6 +33,19 @@ function run_stand() {
     dt_info ${fname} "Running tier ${BOLD}${tier}${RESET} ... "
     for target in $(eval echo "\${${tier}[@]}"); do
       dt_target ${target}  || return $?
+    done
+  done
+}
+
+function run_plan() {
+  local stand=$1 tiers=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "stand tiers" || return $?
+  dt_info ${fname} "Run plan for stand ${BOLD}${stand}${RESET}"
+  tiers=($(${tiers}))
+  for tier in ${tiers[@]}; do
+    dt_info ${fname} "tier: ${BOLD}${tier}${RESET}"
+    for target in $(eval echo "\${${tier}[@]}"); do
+      dt_info ${fname} "   target: ${BOLD}${target}${RESET}"
     done
   done
 }

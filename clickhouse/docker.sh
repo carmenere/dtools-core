@@ -2,11 +2,13 @@ function ctx_docker_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  var BASE_IMAGE "clickhouse/clickhouse-server:23.2.5.46-alpine"
-  var CLICKHOUSE_PORT 9001
+  var BASE_IMAGE "clickhouse/clickhouse-server:25.5-alpine"
+  var CLICKHOUSE_PORT 9000
   var CLICKHOUSE_HTTP_PORT 8124
+  var PUB_CLICKHOUSE_PORT 9300
+  var PUB_CLICKHOUSE_HTTP_PORT 8300
   var CONTAINER "clickhouse-server"
-  var SERVICE_CHECK "sh -c $'clickhouse-client --query \'exit\''"
+  var SERVICE_CHECK "clickhouse-client --query \'exit\'"
   ctx_docker_network && ctx_docker_service && ctx_service_clickhouse && \
   ctx_epilog ${fname}
 }
@@ -19,7 +21,7 @@ function docker_run_clickhouse() {
   var CLICKHOUSE_PASSWORD $(CLICKHOUSE_PASSWORD)
   var CLICKHOUSE_USER $(CLICKHOUSE_USER)
   var CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT 1
-  var PUBLISH "$(CLICKHOUSE_PORT):9000/tcp $(CLICKHOUSE_HTTP_PORT):8123/tcp"
+  var PUBLISH "$(PUB_CLICKHOUSE_PORT):$(CLICKHOUSE_PORT)/tcp $(PUB_CLICKHOUSE_HTTP_PORT):$(CLICKHOUSE_HTTP_PORT)/tcp"
   docker_run && \
   close_ctx
 }

@@ -48,6 +48,25 @@ ctx_os_service() {
   ctx_epilog ${fname}
 }
 
+select_service() {
+  local profile=$1 suffix=$2
+  if [ "${profile}" = "docker" ]; then echo "ctx_docker_${suffix}"; else echo "ctx_service_${suffix}"; fi
+}
+
+select_cmd_ser() {
+  local profile=$1
+  if [ "${profile}" = "docker" ]; then echo "docker_ser_cmd"; else echo "dummy_ser_cmd"; fi
+}
+
+select_checker() {
+  local profile=$1 suffix=$2
+  if [ "${profile}" = "docker" ]; then echo "docker_check_${suffix}"; else echo "service_check_${suffix}"; fi
+}
+
+dummy_ser_cmd() {
+  echo "$@"
+}
+
 # MacOS
 function brew_list_services() { cmd_exec brew services list; }
 function brew_start() { cmd_exec brew services start $1; }
@@ -71,32 +90,3 @@ function systemctl_list_units_socket() { systemctl list-units --type socket | ca
 function systemctl_list_units_swap() { systemctl list-units --type swap | cat; }
 function systemctl_list_units_target() { systemctl list-units --type target | cat; }
 function systemctl_list_units_timer() { systemctl list-units --type timer | cat; }
-
-select_service() {
-  local profile=$1 suffix=$2
-  if [ "${profile}" = "docker" ]; then echo "ctx_docker_${suffix}"; else echo "ctx_service_${suffix}"; fi
-}
-
-select_cmd_ser() {
-  local profile=$1
-  if [ "${profile}" = "docker" ]; then echo "docker_ser_cmd"; else echo "dummy_ser_cmd"; fi
-}
-
-select_checker() {
-  local profile=$1 suffix=$2
-  if [ "${profile}" = "docker" ]; then echo "docker_check_${suffix}"; else echo "service_check_${suffix}"; fi
-}
-
-dummy_ser_cmd() {
-  echo "$@"
-}
-
-#ser_cmd() {
-#  local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")
-#  err_if_empty ${fname} "profile suffix cmd" || return $?
-#  if []
-#  if [ "${profile}" = "docker" ]; then
-#    cmd="$(docker_exec_${suffix} ${cmd})"
-#  fi
-#  echo "${cmd}"
-#}

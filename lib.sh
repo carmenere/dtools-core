@@ -139,23 +139,29 @@ function var_pref() {
 function is_cached() {
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
-  if declare -p cache__${ctx} >/dev/null 2>&1 && [ "${DT_CTX}" = "${ctx}" ]; then
-    dt_debug ${fname} "Context ${BOLD}${ctx}${RESET} has already initialized."
+  dt_debug ${fname} "${BOLD}${ctx}${RESET} is cached?"
+  if [ "${DT_CTX}" = "${ctx}" ] && declare -p cache__${ctx} >/dev/null 2>&1; then
+    dt_debug ${fname} "${BOLD}${ctx}${RESET} is cached"
     DT_CTX=
     return 0
   else
-    return $?
+    dt_debug ${fname} "${BOLD}${ctx}${RESET} is NOT cached"
+    return 99
   fi
 }
 
 ctx_prolog(){
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
-  if [ -z "${DT_CTX}" ]; then DT_CTX=${ctx}; fi
+  if [ -z "${DT_CTX}" ]; then
+    dt_debug ${fname} "DT_CTX is empty"
+    DT_CTX=${ctx}
+    dt_debug ${fname} "Start from DT_CTX=${BOLD}${DT_CTX}${RESET}"
+  else
+    dt_debug ${fname} "Started from DT_CTX=${BOLD}${DT_CTX}${RESET}, current is ${BOLD}${ctx}${RESET}"
+  fi
   if ! is_contained ${ctx} DT_CTXES; then DT_CTXES+=(${ctx}); fi
-  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, current ctx is ${BOLD}${ctx}${RESET}"
 }
-
 
 # Consistent behaviour in zsh and bash: ${array[@]:offset:length}
 ctx_epilog(){
@@ -169,16 +175,33 @@ ctx_epilog(){
   fi
 }
 
+function reopen_ctx() {
+  close_ctx && open_ctx $1
+}
+
 function open_ctx() {
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx" || return $?
-  close_ctx
-  ${ctx} || return $?
-  DT_CTX=${ctx}
+  err_if_empty ${fname} "ctx" && \
+  dt_debug ${fname} "${CYAN}${BOLD}DT_CTX=${DT_CTX}, DT_CTX_STACK=${CYAN}${BOLD}${DT_CTX_STACK[@]}${RESET}" && \
+  DT_CTX= && \
+  ${ctx} && \
+  DT_CTX_STACK+=(${ctx}) && \
+  DT_CTX=${ctx} && \
+  dt_debug ${fname} "Switched to ${CYAN}${BOLD}${DT_CTX}${RESET}, DT_CTX_STACK=${CYAN}${BOLD}${DT_CTX_STACK[@]}${RESET}"
 }
 
 function close_ctx() {
-  DT_CTX=
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  unset 'DT_CTX_STACK[-1]' || return $?
+  local dt_ctx_stack="${DT_CTX_STACK[@]}"
+  DT_CTX="${DT_CTX_STACK[-1]}"
+  if [ -n "${DT_CTX}" ]; then
+    dt_debug ${fname} "Switched back to ${CYAN}${BOLD}${DT_CTX}${RESET}, DT_CTX_STACK=${CYAN}${BOLD}${DT_CTX_STACK[@]}${RESET}"
+  else
+    DT_CTX=
+    dt_debug ${fname} "${CYAN}${BOLD}DT_CTX_STACK${RESET} is empty, nothing to close"
+  fi
+
 }
 
 function get_var() {
@@ -252,16 +275,6 @@ function drop_all_ctxes() {
   done
 }
 
-function ctx_init() {
-  local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if declare -p cached__${ctx} >/dev/null 2>&1; then return 0; fi
-  dt_debug ${fname} "DT_CTX=${BOLD}${DT_CTX}${RESET}, will init source_ctx=${BOLD}${ctx}${RESET}"
-  dt_ctx=${DT_CTX}; DT_CTX=
-  ${ctx}
-  DT_CTX=${dt_ctx}
-  dt_debug ${fname} "${BOLD}done${RESET}"
-}
-
 function load_vars() {
   local var dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift
@@ -269,7 +282,11 @@ function load_vars() {
     dt_error ${fname} "Context ${BOLD}${ctx}${RESET} doesn't exist"
     return 99
   fi
-  ctx_init ${ctx} || return $?
+  dt_debug ${fname} "Will init ctx=${BOLD}${ctx}${RESET}"
+  dt_ctx=${DT_CTX}; DT_CTX=
+  ${ctx}
+  DT_CTX=${dt_ctx}
+  dt_debug ${fname} "${BOLD}done${RESET}"
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered yet, source_ctx=${BOLD}${ctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
@@ -300,7 +317,7 @@ function dt_bind() {
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
     dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { open_ctx ${ctx} && ${method} && close_ctx; }"
-    eval "function ${method}${suffix}() { open_ctx ${ctx} && ${method} && DT_CTX=; }" || return $?
+    eval "function ${method}${suffix}() { open_ctx ${ctx} && ${method} && close_ctx; }" || return $?
   done
 }
 
@@ -363,6 +380,7 @@ function dt_defaults() {
   DT_BINDINGS=()
   export DT_CTX=
   DT_CTXES=()
+  DT_CTX_STACK=()
   export DT_DRYRUN="n"
   export DT_ECHO="y"
   export DT_ECHO_COLOR="${YELLOW}"

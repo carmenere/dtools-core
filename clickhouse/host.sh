@@ -112,6 +112,7 @@ ctx_service_clickhouse() {
   var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $?
   var CH_CONFIG_XML $(clickhouse_conf) || return $?
   var SERVICE $(clickhouse_service)
+  var SERVICE_CHECK "clickhouse_conn_admin --query \"'exit'\""
   var SERVICE_PREPARE clickhouse_prepare
   var SERVICE_INSTALL clickhouse_install
   var SERVICE_LSOF lsof_clickhouse
@@ -119,10 +120,4 @@ ctx_service_clickhouse() {
   ctx_epilog ${fname}
 }
 
-service_check_clickhouse() {
-  open_ctx ctx_service_clickhouse || return $?
-  rvar SERVICE_CHECK "$(cmd_echo clickhouse_conn_admin) --query 'exit'"
-  service_check && close_ctx
-}
-
-DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods:"service_check_clickhouse")
+DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)

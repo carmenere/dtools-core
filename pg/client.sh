@@ -7,6 +7,7 @@ function _psql_conn() {
   local ser conn_ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift 1
   ser=$(select_cmd_ser ${PROFILE_PG}) && \
+  err_if_empty ${fname} "conn_ctx ser" && \
   dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}, args=$@" && \
   open_ctx ${conn_ctx} && \
   cmd_exec $(${ser} $(_psql_conn_cmd $@)) && \
@@ -19,14 +20,16 @@ function _psql_gexec() {
   dt_debug ${fname} "query_ctx=${query_ctx}" && \
   open_ctx ${query_ctx} && query=$(${query}) && \
   ser=$(select_cmd_ser ${PROFILE_PG}) && \
+  err_if_empty ${fname} "ser" && \
   dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}" && \
-  open_ctx ${conn_ctx} && conn=$(_psql_conn_cmd) && \
+  reopen_ctx ${conn_ctx} && conn=$(_psql_conn_cmd) && \
   echo "$(${ser} "echo $'${query}' '\gexec' | ${conn}")" && \
   close_ctx
 }
 
 function _psql_init() {
   local ser admin=$1 migrator=$2 app=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "migrator admin app" && \
   ${migrator} && ${admin} && ${app} && \
   dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
   cmd_exec "$(_psql_gexec ${admin} ${admin} pg_sql_alter_role_password)" && \
@@ -39,6 +42,7 @@ function _psql_init() {
 
 function _psql_clean() {
   local ser admin=$1 migrator=$2 app=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "migrator admin app" && \
   ${migrator} && ${admin} && ${app} && \
   dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
   cmd_exec "$(_psql_gexec ${app} ${admin} pg_sql_revoke_user_app)" && \
