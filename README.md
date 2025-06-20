@@ -5,7 +5,7 @@ The project **dtools-core** contains various primitives for writing scripts for 
 
 # Getting started
 ## Prepare
-1. Create directory `dtools` inside root directory of a project:
+1. Create directory `dtools` inside root directory of a project (e.g. `project_root_dir` dir):
 ```bash
 mkdir dtools
 ```
@@ -17,33 +17,20 @@ cd dtools
 ```bash
 git submodule add git@github.com:carmenere/dtools.git core
 ```
-4. Create file `rc.sh`:
-```bash
-touch rc.sh
-```
-5. Add to `rc.sh`:
-```bash
-DT_DTOOLS=$(dirname "$(realpath $0)")
-
-echo "Loading lib ... "
-. "${DT_DTOOLS}/core/lib.sh"
-
-dt_init
-```
-6. Create directories:
+4. Create directories:
 ```bash
 mkdir locals
-mkdir scripts
+mkdir stands
 mkdir tools
 ```
-7. Add `**/locals/` to file `.gitignore`.
-8. Create `rc.sh` in each directory:
+5. Add `**/locals/` to file `.gitignore`.
+6. Create `rc.sh` in each directory:
 ```bash
 touch locals/rc.sh
-touch scripts/rc.sh
+touch stands/rc.sh
 touch tools/rc.sh
 ```
-9. Add the following code to **each** `rc.sh` file you have just created:
+7. Add the following code to **each** `rc.sh` file you have just created:
 ```bash
 function load() {
   if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
@@ -54,12 +41,11 @@ function load() {
 
 load $0
 ```
-
 The placeholder `%DIRNAME%` corresponds to the appropriate directory:
 - `locals`
-- `scripts`
+- `stands`
 - `tools`
-10. If **dir** contains **subdirs**, you must put `rc.sh` file in **each** subdir and inside `load` function under `dt_rc_load` call `%subdir%/rc.sh` file:
+8. If **dir** contains **subdirs**, you must put `rc.sh` file in **each** subdir and inside `load` function under `dt_rc_load` call `%subdir%/rc.sh` file:
 ```bash
 function load() {
   ... # omitted
@@ -68,6 +54,16 @@ function load() {
 }
 ```
 where `%SUBDIR%` is a **placeholder for subdir**.<br>
+9. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
+<br>
+
+10. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
+```shell
+function reinit_dtools() {
+. ./dtools/core/rc.sh
+}
+```
+And now you can run `reinit_dtools` in the directory where `dtools` is.<br>
 
 <br>
 
@@ -84,13 +80,13 @@ project_root_dir
 │   ├── locals/   # Must be added to .gitignore (**/locals/). It is for overwriting project defaults in local devel environment.
 │   │   ├── ...
 │   │   └── rc.sh
-│   ├── scripts/
+│   ├── stands/
 │   │   ├── ...
 │   │   └── rc.sh
-│   ├── tools/
-│   │   ├── ...
-│   │   └── rc.sh
-│   └── rc.sh   # Loads "${DT_DTOOLS}/core/lib.sh" and calls "dt_init" function.
+│   └── tools/
+│       ├── ...
+│       └── rc.sh
+
 ├── ...
 ```
 

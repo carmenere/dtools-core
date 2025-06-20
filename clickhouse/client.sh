@@ -1,109 +1,57 @@
-function clickhouse_conn() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local cmd=("clickhouse-client")
-  if [ -n "${CLICKHOUSE_HOST}" ]; then cmd+=(--host "${CLICKHOUSE_HOST}"); fi
-  if [ -n "${CLICKHOUSE_PORT}" ]; then cmd+=(--port "${CLICKHOUSE_PORT}"); fi
-  if [ -n "${CLICKHOUSE_DB}" ]; then cmd+=(--database "${CLICKHOUSE_DB}"); fi
-  if [ -n "${CLICKHOUSE_USER}" ]; then cmd+=(--user "${CLICKHOUSE_USER}"); fi
-  if [ -n "${CLICKHOUSE_PASSWORD}" ]; then cmd+=(--password "${CLICKHOUSE_PASSWORD}"); fi
-  dt_exec "${cmd[@]}"
+select_service_clickhouse() {
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_service_clickhouse"; fi
 }
 
-function clickhouse_client_create_db() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && clickhouse_sql_create_db)"
-  local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
-  local cmd="${conn} --multiquery $'${query}'"
-  dt_exec "${cmd}"
+# CLICKHOUSE_PORT for clickhouse-client
+# CLICKHOUSE_HTTP_PORT for applications
+clickhouse_connurl() {
+  local vars=(CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWORD CLICKHOUSE_PORT CLICKHOUSE_USER)
+  echo "${vars[@]}"
 }
 
-function clickhouse_client_drop_db() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && clickhouse_sql_drop_db)"
-  local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
-  local cmd="${conn} --multiquery $'${query}'"
-  dt_exec "${cmd}"
+clickhouse_host() { if [ -n "$(CLICKHOUSE_HOST)" ]; then echo "--host $(CLICKHOUSE_HOST)"; fi; }
+clickhouse_port() { if [ -n "$(CLICKHOUSE_PORT)" ]; then echo "--port $(CLICKHOUSE_PORT)"; fi; }
+clickhouse_db() { if [ -n "$(CLICKHOUSE_DB)" ]; then echo "--database $(CLICKHOUSE_DB)"; fi; }
+clickhouse_user() { if [ -n "$(CLICKHOUSE_USER)" ]; then echo "--user $(CLICKHOUSE_USER)"; fi; }
+clickhouse_password() { if [ -n "$(CLICKHOUSE_PASSWORD)" ]; then echo "--password $(CLICKHOUSE_PASSWORD)"; fi; }
+
+function _clickhouse_conn_cmd() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  echo "clickhouse-client $(clickhouse_host) $(clickhouse_port) $(clickhouse_db) $(clickhouse_user) $(clickhouse_password) $@"
 }
 
-function clickhouse_client_create_user() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && clickhouse_sql_create_user)"
-  local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
-  local cmd="${conn} --multiquery $'${query}'"
-  dt_exec "${cmd}"
+function _clickhouse_conn() {
+  local conn_ctx="$1" exec="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
+  shift 2 && \
+  err_if_empty ${fname} "exec conn_ctx" && \
+  ${conn_ctx} && \
+  ${exec} $(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd $@)
 }
 
-function clickhouse_client_drop_user() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && clickhouse_sql_drop_user)"
-  local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
-  local cmd="${conn} --multiquery $'${query}'"
-  dt_exec "${cmd}"
+function _clickhouse_cmd() {
+  local conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
+  err_if_empty ${fname} "query_ctx conn_ctx query" && \
+  query=$(switch_ctx ${query_ctx} && ${query}) && \
+  conn=$(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd) && \
+  echo "${conn} --multiquery $'${query}'"
 }
 
-function clickhouse_client_grant_user() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && clickhouse_sql_grant_user)"
-  local conn="$(${conn_ctx} && dt_echo clickhouse_conn)"
-  local cmd="${conn} --multiquery $'${query}'"
-  dt_exec "${cmd}"
+function _clickhouse_init() {
+  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
+  err_if_empty ${fname} "admin app exec" && \
+  ${admin} && ${app} && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
 }
 
-function clickhouse_conn_admin() { ( ctx_conn_clickhouse_admin && clickhouse_conn ) }
-function clickhouse_conn_app() { ( ctx_conn_clickhouse_app && clickhouse_conn ) }
-function clickhouse_conn_docker_admin() { ( ctx_conn_docker_clickhouse_admin && clickhouse_conn ) }
-function clickhouse_conn_docker_app() { ( ctx_conn_docker_clickhouse_app && clickhouse_conn ) }
-
-function _clickhouse_client_init() {
-  (
-    local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; exit_on_err ${fname} $? || return $?
-    app=$2; dt_err_if_empty ${fname} "app"; exit_on_err ${fname} $? || return $?
-    clickhouse_client_create_db $app $admin && \
-    clickhouse_client_create_user $app $admin && \
-    clickhouse_client_grant_user $app $admin
-  )
+function _clickhouse_clean() {
+  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
+  err_if_empty ${fname} "admin app exec" && \
+  ${admin} && ${app} && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
 }
-
-function _clickhouse_client_clean() {
-  (
-    local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; exit_on_err ${fname} $? || return $?
-    app=$2; dt_err_if_empty ${fname} "app"; exit_on_err ${fname} $? || return $?
-    clickhouse_client_drop_db $app $admin && \
-    clickhouse_client_drop_user $app $admin
-  )
-}
-
-function clickhouse_client_conn_admin() {( ctx_conn_clickhouse_admin && clickhouse_client_conn )}
-function clickhouse_client_conn_app() {( ctx_conn_clickhouse_app && clickhouse_client_conn )}
-
-function clickhouse_client_init() {(
-  _clickhouse_client_init ctx_conn_clickhouse_admin ctx_conn_clickhouse_app
-)}
-function clickhouse_client_clean() {(
-  _clickhouse_client_clean ctx_conn_clickhouse_admin ctx_conn_clickhouse_app
-)}
-
-function clickhouse_client_conn_docker_admin() {( ctx_conn_docker_clickhouse_admin && clickhouse_client_conn )}
-function clickhouse_client_conn_docker_app() {( ctx_conn_docker_clickhouse_app && clickhouse_client_conn )}
-
-function clickhouse_client_init_docker() {(
-  docker_service_check_clickhouse && \
-  _clickhouse_client_init ctx_conn_docker_clickhouse_admin ctx_conn_docker_clickhouse_app
-)}
-
-# it's like docker_rm_clickhouse && docker_run_clickhouse
-function clickhouse_client_clean_docker() {(
-  _clickhouse_client_clean ctx_conn_docker_clickhouse_admin ctx_conn_docker_clickhouse_app
-)}

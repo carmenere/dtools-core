@@ -1,41 +1,34 @@
-function clickhouse_user_admin() {
-  CLICKHOUSE_PASSWORD="1234567890"
-  CLICKHOUSE_USER="dt_admin"
+ctx_conn_admin_clickhouse() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  var CLICKHOUSE_USER "dt_admin"
+  var CLICKHOUSE_PASSWORD "1234567890"
+  var CLICKHOUSE_DB "default"
+  $(select_service_clickhouse) && \
+  ctx_epilog ${fname}
 }
 
-function clickhouse_db_default() {
-  CLICKHOUSE_DB="default"
+ctx_conn_app_clickhouse() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  var CLICKHOUSE_USER "example_app"
+  var CLICKHOUSE_PASSWORD "1234567890"
+  var CLICKHOUSE_DB "example"
+  $(select_service_clickhouse) && \
+  ctx_epilog ${fname}
 }
 
-function clickhouse_db_example() {
-  CLICKHOUSE_DB="example"
+function clickhouse_init() {
+  switch_ctx $(select_service_clickhouse) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_CLICKHOUSE}")) && \
+  _clickhouse_init "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse" $(select_exec "${PROFILE_CLICKHOUSE}")
 }
 
-function clickhouse_user_app() {
-  CLICKHOUSE_PASSWORD="12345"
-  CLICKHOUSE_USER="example"
+function clickhouse_clean() {
+  switch_ctx $(select_service_clickhouse) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_CLICKHOUSE}")) && \
+  _clickhouse_clean "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse" $(select_exec "${PROFILE_CLICKHOUSE}")
 }
 
-function ctx_conn_clickhouse_admin() {
-  ctx_service_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
-}
-
-function ctx_conn_clickhouse_app() {
-  ctx_service_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
-}
-
-function ctx_conn_docker_clickhouse_admin() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
-}
-
-function ctx_conn_docker_clickhouse_app() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
-}
+function clickhouse_conn_admin() { _clickhouse_conn ctx_conn_admin_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }
+function clickhouse_conn_app() { _clickhouse_conn ctx_conn_app_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }

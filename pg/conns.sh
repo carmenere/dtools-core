@@ -1,67 +1,49 @@
-function pg_db_postgres() {
-  PGDATABASE="postgres"
-}
-
-function pg_db_example() {
-  PGDATABASE="example"
-}
-
-function pg_user_admin() {
-  PGPASSWORD="postgres"
-  if [ "$(os_name)" = "macos" ]; then
-    PGUSER="${USER}"
+ctx_conn_admin_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
+    var PGUSER "${USER}"
   else
-    PGUSER=postgres
+    var PGUSER "postgres"
   fi
+  var PGPASSWORD "postgres"
+  var PGDATABASE "postgres"
+  $(select_service_pg) && \
+  ctx_epilog ${fname}
 }
 
-function pg_user_docker_admin() {
-  PGPASSWORD="postgres"
-  PGUSER=postgres
+ctx_conn_migrator_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  var PGUSER "example_migrator"
+  var PGPASSWORD "1234567890"
+  var PGDATABASE "example"
+  $(select_service_pg) && \
+  ctx_epilog ${fname}
 }
 
-function pg_user_app() {
-  PGPASSWORD="12345"
-  PGUSER="example_app"
+ctx_conn_app_pg() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  var PGUSER "example_app"
+  var PGPASSWORD "1234567890"
+  var PGDATABASE "example"
+  $(select_service_pg) && \
+  ctx_epilog ${fname}
 }
 
-function pg_user_migrator() {
-  PGPASSWORD="12345"
-  PGUSER="example_migrator"
+function psql_init() {
+  switch_ctx $(select_service_pg) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_PG}")) && \
+  _psql_init "ctx_conn_admin_pg" "ctx_conn_migrator_pg" "ctx_conn_app_pg" $(select_exec "${PROFILE_PG}")
 }
 
-function ctx_conn_pg_admin() {
-  ctx_service_pg && \
-  pg_db_postgres && \
-  pg_user_admin
+function psql_clean() {
+  switch_ctx $(select_service_pg) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_PG}")) && \
+  _psql_clean "ctx_conn_admin_pg" "ctx_conn_migrator_pg" "ctx_conn_app_pg" $(select_exec "${PROFILE_PG}")
 }
 
-function ctx_conn_pg_migrator() {
-  ctx_service_pg && \
-  pg_db_example && \
-  pg_user_migrator
-}
-
-function ctx_conn_pg_app() {
-  ctx_service_pg && \
-  pg_db_example && \
-  pg_user_app
-}
-
-function ctx_conn_docker_pg_admin() {
-  ctx_docker_pg && \
-  pg_db_postgres && \
-  pg_user_docker_admin
-}
-
-function ctx_conn_docker_pg_migrator() {
-  ctx_docker_pg && \
-  pg_db_example && \
-  pg_user_migrator
-}
-
-function ctx_conn_docker_pg_app() {
-  ctx_docker_pg && \
-  pg_db_example && \
-  pg_user_app
-}
+function psql_conn_admin() { _psql_conn ctx_conn_admin_pg $(select_exec "${PROFILE_PG}") "$@"; }
+function psql_conn_app() { _psql_conn ctx_conn_app_pg $(select_exec "${PROFILE_PG}") "$@"; }
+function psql_conn_migrator() { _psql_conn ctx_conn_migrator_pg $(select_exec "${PROFILE_PG}") "$@"; }
