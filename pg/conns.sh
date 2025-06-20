@@ -44,6 +44,15 @@ function psql_clean() {
   _psql_clean "ctx_conn_admin_pg" "ctx_conn_migrator_pg" "ctx_conn_app_pg" $(select_exec "${PROFILE_PG}")
 }
 
-function psql_conn_admin() { _psql_conn ctx_conn_admin_pg $(select_exec "${PROFILE_PG}") "$@"; }
-function psql_conn_app() { _psql_conn ctx_conn_app_pg $(select_exec "${PROFILE_PG}") "$@"; }
-function psql_conn_migrator() { _psql_conn ctx_conn_migrator_pg $(select_exec "${PROFILE_PG}") "$@"; }
+function psql_conn_admin() {
+  switch_ctx $(select_service_pg) && \
+  _psql_conn ctx_conn_admin_pg $(select_exec "${PROFILE_PG}_conn_sh") "$@"
+}
+function psql_conn_app() {
+  switch_ctx $(select_service_pg) && \
+  _psql_conn ctx_conn_app_pg $(select_exec "${PROFILE_PG}_conn_sh") "$@"
+}
+function psql_conn_migrator() {
+  switch_ctx $(select_service_pg) && \
+  _psql_conn ctx_conn_migrator_pg $(select_exec "${PROFILE_PG}_conn_sh") "$@"
+}

@@ -30,5 +30,13 @@ function clickhouse_clean() {
   _clickhouse_clean "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse" $(select_exec "${PROFILE_CLICKHOUSE}")
 }
 
-function clickhouse_conn_admin() { _clickhouse_conn ctx_conn_admin_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }
-function clickhouse_conn_app() { _clickhouse_conn ctx_conn_app_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }
+function clickhouse_conn_admin() {
+  switch_ctx $(select_service_clickhouse) && \
+  _clickhouse_conn ctx_conn_admin_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}_conn_sh") "$@"
+}
+
+function clickhouse_conn_app() {
+  switch_ctx $(select_service_clickhouse) && \
+  _clickhouse_conn ctx_conn_app_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}_conn_sh") "$@"
+}
+

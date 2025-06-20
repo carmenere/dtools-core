@@ -47,6 +47,7 @@ docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
 
 docker_build() { exec_cmd docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
 docker_exec() { echo "docker exec -i $(CONTAINER)"; }
+docker_exec_sh_echo() { echo "docker exec -ti $(CONTAINER) /bin/sh"; }
 docker_exec_sh() { exec_cmd "docker exec -ti $(CONTAINER) /bin/sh"; }
 docker_logs() { exec_cmd docker logs "$(CONTAINER)"; }
 docker_logs_save_to_logfile() { exec_cmd docker logs "$(CONTAINER)" '>' "${DT_LOGS}/container-$(CONTAINER).log" '2>&1'; }
@@ -141,6 +142,7 @@ function docker_methods() {
   methods+=(docker_start)
   methods+=(docker_status)
   methods+=(docker_stop)
+  methods+=(docker_exec_sh_echo)
   echo "${methods[@]}"
 }
 

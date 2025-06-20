@@ -34,6 +34,16 @@ docker_exec_cmd() {
   exec_cmd "$(${mref}) sh << EOF\n$@\nEOF"
 }
 
+docker_conn_sh() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${DT_CTX}" ]; then
+    dt_error ${fname} "Context ${BOLD}DT_CTX${RESET} is empty"
+    return 99
+  fi
+  mref=$(get_method ${DT_CTX} docker_exec_sh_echo)
+  exec_cmd "$(${mref}) -c '$@'"
+}
+
 cmd_echo() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local saved_DRYRUN saved_ECHO
