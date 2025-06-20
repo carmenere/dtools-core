@@ -5,7 +5,7 @@ function pg_ctl_initdb() {
   chown -R $(OS_USER) $(DATADIR)
   bash -c "echo ${PGPASSWORD} > $(INITDB_PWFILE)"
 
-  cmd_exec "${PG_BINDIR}/initdb --pgdata=$(DATADIR) --username="$(PGUSER)" --auth-local="$(INITDB_AUTH_LOCAL)" --auth-host="$(INITDB_AUTH_HOST)" --pwfile="$(INITDB_PWFILE)""
+  exec_cmd "${PG_BINDIR}/initdb --pgdata=$(DATADIR) --username="$(PGUSER)" --auth-local="$(INITDB_AUTH_LOCAL)" --auth-host="$(INITDB_AUTH_HOST)" --pwfile="$(INITDB_PWFILE)""
 
   rm "$(INITDB_PWFILE)"
 }
@@ -13,7 +13,7 @@ function pg_ctl_initdb() {
 function pg_ctl_start() {
   pg_ctl_initdb
   local cmd=$(echo "${PG_BINDIR}/pg_ctl -D $(DATADIR) -l $(PG_CTL_LOG) -o \"-k $(DATADIR) -c logging_collector=$(PG_CTL_LOGGING_COLLECTOR) -c config_file=$(PG_CTL_CONF) -p $(PGPORT) -h $(PGHOST)\" start")
-  cmd_exec "${cmd[@]}"
+  exec_cmd "${cmd[@]}"
 }
 
 function pg_ctl_stop() {
@@ -49,7 +49,7 @@ function pg_ctl_methods() {
 
 function ctx_pg_ctl() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   load_vars ctx_service_pg PGUSER || return $?
   var PGPORT 5444
   var PGHOST "localhost"

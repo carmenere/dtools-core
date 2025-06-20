@@ -48,19 +48,19 @@ cg_targets() {
   echo "$(cg_package) $(inline_vals "$(BINS)" --bin)"
 }
 
-cargo_build() { cmd_exec $(cg_envs) cargo build $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest); }
-cargo_clean() { cmd_exec $(cg_envs) cargo clean $(cg_profile) $(cg_manifest); }
-cargo_clippy() { cmd_exec $(cg_envs) cargo clippy $(cg_targets) $(cg_features) $(cg_profile) $(cg_msg_format) $(cg_manifest) \
+cargo_build() { exec_cmd $(cg_envs) cargo build $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest); }
+cargo_clean() { exec_cmd $(cg_envs) cargo clean $(cg_profile) $(cg_manifest); }
+cargo_clippy() { exec_cmd $(cg_envs) cargo clippy $(cg_targets) $(cg_features) $(cg_profile) $(cg_msg_format) $(cg_manifest) \
     -- $(CLIPPY_LINTS) $(clippy_report); }
-cargo_clippy_fix() { cmd_exec $(cg_envs) cargo clippy $(cg_targets) $(cg_features) $(cg_profile) --fix --allow-staged \
+cargo_clippy_fix() { exec_cmd $(cg_envs) cargo clippy $(cg_targets) $(cg_features) $(cg_profile) --fix --allow-staged \
     $(cg_msg_format) $(cg_manifest) -- $(CLIPPY_LINTS) $(clippy_report); }
-cargo_doc() { cmd_exec $(cg_envs) cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
+cargo_doc() { exec_cmd $(cg_envs) cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
     --no-deps --document-private-items; }
-cargo_doc_open() { cmd_exec $(cg_envs) cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
+cargo_doc_open() { exec_cmd $(cg_envs) cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
     --no-deps --document-private-items --open; }
-cargo_fmt() { cmd_exec $(cg_envs) cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest) -- --check; }
-cargo_fmt_fix() { cmd_exec $(cg_envs) cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest); }
-cargo_test() { cmd_exec $(cg_envs) cargo test $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) ; }
+cargo_fmt() { exec_cmd $(cg_envs) cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest) -- --check; }
+cargo_fmt_fix() { exec_cmd $(cg_envs) cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest); }
+cargo_test() { exec_cmd $(cg_envs) cargo test $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) ; }
 
 cargo_methods() {
   local methods=()
@@ -76,9 +76,9 @@ cargo_methods() {
   echo "${methods[@]}"
 }
 
-cargo_uninstall() { cmd_exec cargo uninstall $(CRATE_NAME); }
-cargo_install() { cmd_exec cargo install $(FLAGS) --version $(CRATE_VERSION) $(CRATE_NAME); }
-cargo_cache_clean() { cmd_exec cargo cache -r all; }
+cargo_uninstall() { exec_cmd cargo uninstall $(CRATE_NAME); }
+cargo_install() { exec_cmd cargo install $(FLAGS) --version $(CRATE_VERSION) $(CRATE_NAME); }
+cargo_cache_clean() { exec_cmd cargo cache -r all; }
 
 cargo_install_methods() {
   local methods=()
@@ -89,7 +89,7 @@ cargo_install_methods() {
 
 ctx_cargo() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var BINS
   var BUILD_AS "package"
   var BUILD_ENVS

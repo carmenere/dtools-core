@@ -13,10 +13,10 @@ function rmq_service() {
 function rmq_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      cmd_exec "${SUDO} apt install gnupg erlang -y" || return $?
-      cmd_exec "${SUDO} apt install rabbitmq-server -y" || return $?
+      exec_cmd "${SUDO} apt install gnupg erlang -y" || return $?
+      exec_cmd "${SUDO} apt install rabbitmq-server -y" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    cmd_exec "brew install $(rmq_service)"
+    exec_cmd "brew install $(rmq_service)"
   else
     echo "Unsupported OS: '$(os_kernel)'"
   fi
@@ -31,7 +31,7 @@ function lsof_rmq() {
 
 function ctx_service_rmq() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var EXCHANGES "ems"
   var MAJOR 3
   var MINOR 8

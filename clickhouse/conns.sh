@@ -5,7 +5,7 @@ clickhouse_connurl() {
 
 ctx_conn_admin_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_USER "dt_admin"
   var CLICKHOUSE_PASSWORD "1234567890"
   var CLICKHOUSE_DB "default"
@@ -15,7 +15,7 @@ ctx_conn_admin_clickhouse() {
 
 ctx_conn_app_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_USER "example_app"
   var CLICKHOUSE_PASSWORD "1234567890"
   var CLICKHOUSE_DB "example"

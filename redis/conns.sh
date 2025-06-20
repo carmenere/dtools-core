@@ -1,6 +1,6 @@
 ctx_conn_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   if [ "${PROFILE_REDIS}" = "docker" ]; then
     load_vars ctx_docker_redis REDIS_HOST REDIS_PORT || return $?
   else
@@ -11,7 +11,7 @@ ctx_conn_redis() {
 
 function ctx_conn_admin_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var REDIS_USER "default"
   var REDIS_PASSWORD "1234567890"
   var REDIS_DB 0
@@ -21,7 +21,7 @@ function ctx_conn_admin_redis() {
 
 function ctx_conn_app_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var REDIS_USER "example_app"
   var REDIS_PASSWORD "1234567890"
   var REDIS_DB 0
@@ -58,7 +58,7 @@ function redis_cli_conn_app() { ctx_conn_app_redis && redis_conn; }
 #  docker_check_redis
 #  local exec="$(ctx_docker_redis && docker_exec)"
 #  local set_requirepass="$(ctx_conn_app_redis && redis_set_requirepass)"
-#  if [ -n "${set_requirepass}" ]; then cmd_exec "${exec} ${set_requirepass}"; fi
+#  if [ -n "${set_requirepass}" ]; then exec_cmd "${exec} ${set_requirepass}"; fi
 #  local create_user="$(ctx_conn_app_redis && redis_create_user)"
-#  cmd_exec "${exec} ${create_user}"
+#  exec_cmd "${exec} ${create_user}"
 #}

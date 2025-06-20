@@ -1,19 +1,23 @@
 # PROFILE_PG={ host | docker }, by default "host"
-export PROFILE_PG="host"
+PROFILE_PG="host"
+
+select_service_pg() {
+  if [ "${PROFILE_PG}" = "docker" ]; then echo "ctx_docker_pg"; else echo "ctx_service_pg"; fi
+}
 
 # ctx_service_pg && pg_install
 function pg_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    cmd_exec "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
-    cmd_exec "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
-    cmd_exec "${SUDO} apt-get update" || return $?
-    cmd_exec "${SUDO} apt-get -y install \
+    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
+    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
+    exec_cmd "${SUDO} apt-get update" || return $?
+    exec_cmd "${SUDO} apt-get -y install \
       postgresql-$(MAJOR) \
       postgresql-server-dev-$(MAJOR) \
       libpq-dev" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    cmd_exec "brew install $(SERVICE)"
+    exec_cmd "brew install $(SERVICE)"
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
@@ -75,7 +79,7 @@ function pg_add_path() {
 function pg_hba_add_policy() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   old_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) || return $?
-  cmd_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' $(PG_HBA_CONF)" || return $?
+  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' $(PG_HBA_CONF)" || return $?
   new_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) || return $?
   if [ "${old_hash}" != "${new_hash}" ]; then
     dt_info ${fname} "$(PG_HBA_CONF) is ${BOLD}is changed${RESET}"; return 77
@@ -87,7 +91,7 @@ function pg_hba_add_policy() {
 function pg_conf_set_port() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   old_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
-  cmd_exec "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" || return $?
+  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" || return $?
   new_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
   if [ "${old_hash}" != "${new_hash}" ]; then
     dt_info ${fname} "$(POSTGRESQL_CONF) is ${BOLD}is changed${RESET}"; return 77
@@ -112,7 +116,7 @@ function lsof_pg() {
 
 function ctx_service_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var MAJOR 17
   var MINOR 5
   var PGHOST "localhost"

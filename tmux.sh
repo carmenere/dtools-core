@@ -17,24 +17,24 @@ function tmux_close() {
 }
 
 function tmux_select_window() {
-  cmd_exec "tmux select-window -t $(TMX_SESSION):$(TMX_WINDOW_NAME)"
+  exec_cmd "tmux select-window -t $(TMX_SESSION):$(TMX_WINDOW_NAME)"
 }
 
 function tmux_new_window() {
-  cmd_exec "tmux new-window -t $(TMX_SESSION) -n $(TMX_WINDOW_NAME)"
+  exec_cmd "tmux new-window -t $(TMX_SESSION) -n $(TMX_WINDOW_NAME)"
 }
 
 function tmux_start() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   tmux_new || return $?
   tmux_select_window || tmux_new_window
-  cmd_exec "tmux send-keys -t $(TMX_SESSION):$(TMX_WINDOW_NAME) \"$(TMX_START_CMD)\" ENTER"
+  exec_cmd "tmux send-keys -t $(TMX_SESSION):$(TMX_WINDOW_NAME) \"$(TMX_START_CMD)\" ENTER"
 }
 
 function tmux_stop() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if tmux has-session -t $(TMX_SESSION); then
-    cmd_exec "tmux kill-window -t $(TMX_SESSION):$(TMX_WINDOW_NAME)"
+    exec_cmd "tmux kill-window -t $(TMX_SESSION):$(TMX_WINDOW_NAME)"
     dt_info ${fname} "stopped"
   else
     dt_info ${fname} "Window $(TMX_SESSION):$(TMX_WINDOW_NAME) was not opened."
@@ -43,11 +43,11 @@ function tmux_stop() {
 
 function tmux_connect() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  cmd_exec "tmux a -t "$(TMX_SESSION):$(TMX_WINDOW_NAME)""
+  exec_cmd "tmux a -t "$(TMX_SESSION):$(TMX_WINDOW_NAME)""
 }
 
-function tmux_kill() { cmd_exec "tmux kill-server || true"; }
-function tmux_sessions() { cmd_exec "tmux ls"; }
+function tmux_kill() { exec_cmd "tmux kill-server || true"; }
+function tmux_sessions() { exec_cmd "tmux ls"; }
 
 function tmux_methods() {
   local methods=()
@@ -60,7 +60,7 @@ function tmux_methods() {
 
 function ctx_tmux() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var TMX_DEFAULT_CMD "/bin/bash"
   var TMX_DEFAULT_TERM "xterm-256color"
   var TMX_HISTORY_LIMIT 1000000

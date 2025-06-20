@@ -51,25 +51,25 @@ function ctx_python() {
 
 function python_build() {
   export
-  cmd_exec "make -f ${PYMAKE} python3"
+  exec_cmd "make -f ${PYMAKE} python3"
 }
 
 function python_venv_init() {
-    cmd_exec "make -f ${PYMAKE} venv-init"
+    exec_cmd "make -f ${PYMAKE} venv-init"
 }
 
 function python_pip_init() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  cmd_exec "make -f ${PYMAKE} pip-init"
+  exec_cmd "make -f ${PYMAKE} pip-init"
 }
 
 function python_venv_clean() {
-  cmd_exec "make -f ${PYMAKE} venv-clean"
+  exec_cmd "make -f ${PYMAKE} venv-clean"
 }
 
 function python_pip_clean() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  cmd_exec "make -f ${PYMAKE} pip-clean"
+  exec_cmd "make -f ${PYMAKE} pip-clean"
 }
 
 function python_prepare() {

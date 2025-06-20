@@ -12,14 +12,14 @@ function redis_service() {
 function redis_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    cmd_exec "${SUDO} apt install lsb-release curl gpg"
-    cmd_exec "curl -fsSL https://packages.redis.io/gpg | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg" || return $?
-    cmd_exec "echo 'deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(os_codename) main' | ${SUDO} tee /etc/apt/sources.list.d/redis.list" || return $?
-    cmd_exec "${SUDO} apt-get update" || return $?
-    cmd_exec "${SUDO} apt-get -y install redis" || return $?
+    exec_cmd "${SUDO} apt install lsb-release curl gpg"
+    exec_cmd "curl -fsSL https://packages.redis.io/gpg | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg" || return $?
+    exec_cmd "echo 'deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(os_codename) main' | ${SUDO} tee /etc/apt/sources.list.d/redis.list" || return $?
+    exec_cmd "${SUDO} apt-get update" || return $?
+    exec_cmd "${SUDO} apt-get -y install redis" || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    cmd_exec "brew install $(redis_service)"
+    exec_cmd "brew install $(redis_service)"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99
@@ -33,7 +33,7 @@ function lsof_redis() {
 
 function ctx_service_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var REDIS_HOST "localhost"
   var MAJOR 7
   var MINOR 2

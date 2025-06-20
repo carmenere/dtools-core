@@ -21,14 +21,14 @@ clickhouse_conf() {
 clickhouse_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    cmd_exec "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
-    cmd_exec "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
-    cmd_exec "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
-    cmd_exec "${SUDO} apt-get update" || return $?
-    cmd_exec "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
+    exec_cmd "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
+    exec_cmd "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
+    exec_cmd "echo 'deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main' | ${SUDO} tee /etc/apt/sources.list.d/clickhouse.list" || return $?
+    exec_cmd "${SUDO} apt-get update" || return $?
+    exec_cmd "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    cmd_exec "brew install '$(clickhouse_service)'"
+    exec_cmd "brew install '$(clickhouse_service)'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99
@@ -68,7 +68,7 @@ clickhouse_gen_user_xml() {
   fi
   local query="$(clickhouse_user_xml)"
   local cmd="echo $'${query}' | sudo tee $(CH_USER_XML)"
-  cmd_exec "${cmd}"
+  exec_cmd "${cmd}"
 }
 
 clickhouse_prepare() {
@@ -101,7 +101,7 @@ lsof_clickhouse() {
 
 ctx_service_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
   var CLICKHOUSE_PORT 9000

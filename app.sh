@@ -5,7 +5,7 @@ function app_start() {
   non_empty=(APP BINARY LOG_FILE)
   for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; fi; done
   if [ -n "$(LOG_FILE)" ] && [ ! -d "$(dirname $(LOG_FILE))" ]; then mkdir -p $(dirname "$(LOG_FILE)"); fi
-  cmd_exec $(app_envs) $(BINARY) $(OPTS) 2\>\&1 \| tee -a $(LOG_FILE)
+  exec_cmd $(app_envs) $(BINARY) $(OPTS) 2\>\&1 \| tee -a $(LOG_FILE)
 }
 
 function app_stop() {
@@ -13,7 +13,7 @@ function app_stop() {
   non_empty=(APP PKILL_PATTERN)
   for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; fi; done
   dt_info ${fname} "Sending signal 'KILL' to ${BOLD}$(APP)${RESET} ..."
-  cmd_exec "ps -A -o pid,args | grep -v grep | grep '$(PKILL_PATTERN)' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
+  exec_cmd "ps -A -o pid,args | grep -v grep | grep '$(PKILL_PATTERN)' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
   dt_info ${fname} "${BOLD}done${RESET}"
 }
 
@@ -26,7 +26,7 @@ function app_methods() {
 
 function ctx_app() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var APP
   var APP_ENVS
   var BINARY

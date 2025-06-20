@@ -1,6 +1,6 @@
 function ctx_docker_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var BASE_IMAGE "$(docker_arm64v8)redis:7.2.4-alpine3.19"
   var CONTAINER "redis"
   var REDIS_PORT 6644

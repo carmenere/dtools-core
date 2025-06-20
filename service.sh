@@ -11,17 +11,17 @@ service_check() {
   if [ -z "$(SERVICE_CHECK)" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
   for i in $(seq 1 30); do
     dt_info ${fname} "Waiting ${BOLD}$(SERVICE)${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
-    if cmd_exec "$(SERVICE_CHECK)"; then dt_info ${fname} "Service ${BOLD}$(SERVICE)${RESET} is up now"; break; fi
+    if exec_cmd "$(SERVICE_CHECK)"; then dt_info ${fname} "Service ${BOLD}$(SERVICE)${RESET} is up now"; break; fi
     sleep 1
   done
 }
 
-function service_install() { cmd_exec "$(SERVICE_INSTALL)"; }
-function service_lsof() { cmd_exec "$(SERVICE_LSOF)"; }
-function service_prepare() { cmd_exec "$(SERVICE_PREPARE)"; }
-function service_restart() { cmd_exec "${SUDO} $(SERVICE_STOP)" && cmd_exec "${SUDO} $(SERVICE_START)"; }
-function service_start() { cmd_exec "${SUDO} $(SERVICE_START)"; }
-function service_stop() { cmd_exec "${SUDO} $(SERVICE_STOP)"; }
+function service_install() { exec_cmd "$(SERVICE_INSTALL)"; }
+function service_lsof() { exec_cmd "$(SERVICE_LSOF)"; }
+function service_prepare() { exec_cmd "$(SERVICE_PREPARE)"; }
+function service_restart() { exec_cmd "${SUDO} $(SERVICE_STOP)" && exec_cmd "${SUDO} $(SERVICE_START)"; }
+function service_start() { exec_cmd "${SUDO} $(SERVICE_START)"; }
+function service_stop() { exec_cmd "${SUDO} $(SERVICE_STOP)"; }
 
 function service_methods() {
   local methods=()
@@ -48,29 +48,10 @@ ctx_os_service() {
   ctx_epilog ${fname}
 }
 
-select_service() {
-  local profile=$1 suffix=$2
-  if [ "${profile}" = "docker" ]; then echo "ctx_docker_${suffix}"; else echo "ctx_service_${suffix}"; fi
-}
-
-select_cmd_ser() {
-  local profile=$1
-  if [ "${profile}" = "docker" ]; then echo "docker_ser_cmd"; else echo "dummy_ser_cmd"; fi
-}
-
-select_checker() {
-  local profile=$1 suffix=$2
-  if [ "${profile}" = "docker" ]; then echo "docker_check_${suffix}"; else echo "service_check_${suffix}"; fi
-}
-
-dummy_ser_cmd() {
-  echo "$@"
-}
-
 # MacOS
-function brew_list_services() { cmd_exec brew services list; }
-function brew_start() { cmd_exec brew services start $1; }
-function brew_stop() { cmd_exec brew services stop $1; }
+function brew_list_services() { exec_cmd brew services list; }
+function brew_start() { exec_cmd brew services start $1; }
+function brew_stop() { exec_cmd brew services stop $1; }
 
 # Linux, systemd
 function systemctl_list_services() { systemctl list-units --type service | cat; }

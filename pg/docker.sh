@@ -1,8 +1,8 @@
 function ctx_docker_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi; dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
   var BASE_IMAGE "$(docker_arm64v8)postgres:17.5-alpine3.21"
-  var SERVICE_CHECK "pg_isready 1>/dev/null 2>\&1"
+  var SERVICE_CHECK "pg_isready 1>/dev/null 2>&1"
   var CONTAINER "postgres"
   var PUB_PGPORT 2222
   var PGPORT 5432
@@ -12,14 +12,14 @@ function ctx_docker_pg() {
 }
 
 docker_run_pg() {
-  open_ctx ctx_docker_pg || return $?
+  push_ctx ctx_docker_pg || return $?
   load_vars ctx_conn_admin_pg PGPASSWORD PGDATABASE PGUSER || return $?
   var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER"
   var PUBLISH "$(PUB_PGPORT):$(PGPORT)/tcp"
   var POSTGRES_PASSWORD "$(PGPASSWORD)"
   var POSTGRES_DB "$(PGDATABASE)"
   var POSTGRES_USER "$(PGUSER)"
-  docker_run && close_ctx
+  docker_run && pop_ctx
 }
 
 DT_BINDINGS+=(ctx_docker_pg:pg:docker_methods:"docker_run_pg")

@@ -39,6 +39,6 @@ function install_deps() {
   if [ -z "${DEPS}" ]; then return 0; fi
 
   for dep in ${DEPS[@]}; do
-    cmd_exec "${PACMAN} ${dep}"
+    exec_cmd "${PACMAN} ${dep}"
   done
 }

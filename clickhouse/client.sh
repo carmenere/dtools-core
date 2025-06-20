@@ -6,7 +6,6 @@ clickhouse_port() { if [ -n "$(CLICKHOUSE_PORT)" ]; then echo "--port $(CLICKHOU
 clickhouse_db() { if [ -n "$(CLICKHOUSE_DB)" ]; then echo "--database $(CLICKHOUSE_DB)"; fi; }
 clickhouse_user() { if [ -n "$(CLICKHOUSE_USER)" ]; then echo "--user $(CLICKHOUSE_USER)"; fi; }
 clickhouse_password() { if [ -n "$(CLICKHOUSE_PASSWORD)" ]; then echo "--password $(CLICKHOUSE_PASSWORD)"; fi; }
-clickhouse_conn() { cmd_exec ; }
 
 function _clickhouse_conn_cmd() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -19,22 +18,22 @@ function _clickhouse_conn() {
   ser=$(select_cmd_ser ${PROFILE_CLICKHOUSE}) && \
   dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}, args=$@" && \
   err_if_empty ${fname} "ser conn_ctx" && \
-  open_ctx ${conn_ctx} && \
-  cmd_exec $(${ser} $(_clickhouse_conn_cmd $@)) && \
-  close_ctx
+  push_ctx ${conn_ctx} && \
+  exec_cmd $(${ser} $(_clickhouse_conn_cmd $@)) && \
+  pop_ctx
 }
 
 function _clickhouse_cmd() {
   local ser conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
   err_if_empty ${fname} "query_ctx conn_ctx query" && \
-  open_ctx ${query_ctx} && query=$(${query}) && \
+  push_ctx ${query_ctx} && query=$(${query}) && \
   ser=$(select_cmd_ser ${PROFILE_CLICKHOUSE}) && \
   dt_debug ${fname} "cmd_serializer=${ser}" && \
   err_if_empty ${fname} "ser" && \
-  reopen_ctx ${conn_ctx} && conn=$(_clickhouse_conn_cmd) && \
+  push_ctx ${conn_ctx} && conn=$(_clickhouse_conn_cmd) && \
   echo "$(${ser} "${conn} --multiquery $'${query}'")" && \
-  close_ctx
+  pop_ctx
 }
 
 function _clickhouse_init() {
@@ -42,9 +41,9 @@ function _clickhouse_init() {
   dt_debug ${fname} "admin=${admin}, app=${app}" && \
   err_if_empty ${fname} "admin app" && \
   ${admin} && ${app} && \
-  cmd_exec "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
-  cmd_exec "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
-  cmd_exec "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
+  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
+  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
+  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
 }
 
 function _clickhouse_clean() {
@@ -52,6 +51,6 @@ function _clickhouse_clean() {
   dt_debug ${fname} "admin=${admin}, app=${app}" && \
   err_if_empty ${fname} "admin app" && \
   ${admin} && ${app} && \
-  cmd_exec "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
-  cmd_exec "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
+  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
+  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
 }
