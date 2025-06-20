@@ -1,5 +1,9 @@
 # PROFILE_CLICKHOUSE={ host | docker }, by default "host"
-export PROFILE_CLICKHOUSE="host"
+if [ -z "${PROFILE_CLICKHOUSE}" ]; then export PROFILE_CLICKHOUSE="host"; fi
+
+select_service_clickhouse() {
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_service_clickhouse"; fi
+}
 
 clickhouse_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -101,7 +105,7 @@ lsof_clickhouse() {
 
 ctx_service_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
   var CLICKHOUSE_PORT 9000

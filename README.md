@@ -57,6 +57,16 @@ where `%SUBDIR%` is a **placeholder for subdir**.<br>
 9. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
 <br>
 
+10. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
+```shell
+function reinit_dtools() {
+. ./dtools/core/rc.sh
+}
+```
+And now you can run `reinit_dtools` in the directory where `dtools` is.<br>
+
+<br>
+
 ## `dtools` layout
 ```bash
 project_root_dir

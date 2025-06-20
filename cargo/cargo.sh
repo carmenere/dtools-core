@@ -89,7 +89,7 @@ cargo_install_methods() {
 
 ctx_cargo() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var BINS
   var BUILD_AS "package"
   var BUILD_ENVS

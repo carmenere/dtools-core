@@ -1,6 +1,6 @@
 function ctx_crate_cargo_sonar() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var CRATE_NAME "cargo-sonar"
   var CRATE_VERSION "1.3.0"
   ctx_cargo_crate && ctx_epilog ${fname}

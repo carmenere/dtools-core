@@ -5,7 +5,7 @@ function sqlx_envs() {
 
 function ctx_crate_cargo_sonar() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   CRATE_NAME="sqlx-cli"
   CRATE_VERSION="0.8.5"
   ctx_cargo_crate && \
@@ -51,7 +51,7 @@ function sqlx_methods() {
 # Example:
 function ctx_sqlx() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var SCHEMAS "${DT_PROJECT}/migrations/schemas"
   var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas"
   load_vars ctx_conn_migrator_pg PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER && \

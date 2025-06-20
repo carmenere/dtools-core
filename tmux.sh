@@ -60,7 +60,7 @@ function tmux_methods() {
 
 function ctx_tmux() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var TMX_DEFAULT_CMD "/bin/bash"
   var TMX_DEFAULT_TERM "xterm-256color"
   var TMX_HISTORY_LIMIT 1000000

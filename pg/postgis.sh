@@ -25,6 +25,6 @@ function postgis_install() {
 }
 
 function postgis_install() {
-  push_ctx ctx_service_pg || return $?
-  postgis_install && pop_ctx
+  switch_ctx ctx_service_pg || return $?
+  postgis_install
 }

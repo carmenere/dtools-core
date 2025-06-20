@@ -1,5 +1,6 @@
 # PROFILE_PG={ host | docker }, by default "host"
-PROFILE_PG="host"
+# Exported to be seen in child process, if set in parent - do not change.
+if [ -z "${PROFILE_PG}" ]; then export PROFILE_PG="host"; fi
 
 select_service_pg() {
   if [ "${PROFILE_PG}" = "docker" ]; then echo "ctx_docker_pg"; else echo "ctx_service_pg"; fi
@@ -116,7 +117,7 @@ function lsof_pg() {
 
 function ctx_service_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var MAJOR 17
   var MINOR 5
   var PGHOST "localhost"

@@ -49,7 +49,7 @@ function pg_ctl_methods() {
 
 function ctx_pg_ctl() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   load_vars ctx_service_pg PGUSER || return $?
   var PGPORT 5444
   var PGHOST "localhost"

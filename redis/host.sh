@@ -1,4 +1,9 @@
-PROFILE_REDIS="host"
+# PROFILE_REDIS={ host | docker }, by default "host"
+if [ -z "${PROFILE_REDIS}" ]; then export PROFILE_REDIS="host"; fi
+
+select_service_redis() {
+  if [ "${PROFILE_REDIS}" = "docker" ]; then echo "ctx_docker_redis"; else echo "ctx_service_redis"; fi
+}
 
 function redis_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -33,7 +38,7 @@ function lsof_redis() {
 
 function ctx_service_redis() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var REDIS_HOST "localhost"
   var MAJOR 7
   var MINOR 2

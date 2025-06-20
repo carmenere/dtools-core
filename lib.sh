@@ -46,12 +46,12 @@ ser_val() {
 
 err_if_empty() {
   local var vars val fname=$1 vars=($(echo $2))
-  if [ -z "${fname}" ]; then dt_error "err_if_empty" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
-  if [ -z "${vars}" ]; then dt_error "err_if_empty" "Parameter ${BOLD}vars${RESET} must be provided"; return 55; fi
+  if [ -z "${fname}" ]; then dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
+  if [ -z "${vars}" ]; then dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}vars${RESET} must be provided"; return 55; fi
   for var in ${vars[@]}; do
     val="$(eval echo "\$${var}")"
     if [ -z "${val}" ]; then
-      dt_error ${fname} "Parameter ${BOLD}${var}${RESET} is empty"
+      dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}${var}${RESET} is empty"
       return 77
     fi
   done
@@ -122,17 +122,35 @@ is_cached() {
   fi
 }
 
+# dt_ctx is prvided fron ctx_*** function
 ctx_prolog() {
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" || return $?
-  if [ -z "${DT_START_CTX}" ] && ! declare -p cache__${ctx} >/dev/null 2>&1; then
-    dt_debug ${fname} "DT_START_CTX is empty"
-    DT_START_CTX=${ctx}
-    push_ctx ${ctx}
-    dt_debug ${fname} "Starting from DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}"
+  if ! declare -p cache__${ctx} >/dev/null 2>&1; then
+    if [ -z "${DT_START_CTX}" ]; then
+      dt_debug ${fname} "DT_START_CTX is empty"
+      dt_ctx=${DT_CTX}
+      DT_START_CTX=${ctx}
+      DT_CTX=${DT_START_CTX}
+      dt_debug ${fname} "Starting from DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}"
+      return 0
+    elif  [ "${DT_START_CTX}" != "${ctx}" ]; then
+      dt_debug ${fname} "${ctx} is NOT cached, DT_START_CTX=${BOLD}${DT_START_CTX}${RESET} is is being merged with ctx=${BOLD}${ctx}${RESET}"
+      return 0
+    else
+      dt_error ${fname} "${ctx} is NOT cached, DT_START_CTX is NOT zero and DT_START_CTX is equal to ctx"
+      return 99
+    fi
   else
-    if [ "${DT_START_CTX}" != "${ctx}" ]; then
-      dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET} is is being merged with ctx=${BOLD}${ctx}${RESET}"
+    if [ -z "${DT_START_CTX}" ]; then
+      dt_debug ${fname} "Starting from DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}, but is cached, skipping"
+      return 0
+    elif  [ "${DT_START_CTX}" != "${ctx}" ]; then
+      dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET} is is being merged with ctx=${BOLD}${ctx}${RESET}, ${DT_START_CTX} is cached"
+      return 0
+    else
+      dt_error ${fname} "${ctx} is cached, DT_START_CTX is NOT zero and DT_START_CTX is equal to ctx"
+      return 99
     fi
   fi
 }
@@ -150,45 +168,20 @@ ctx_epilog(){
       DT_VARS+=(${var}) && \
       DT_CTXES+=(${ctx})
     fi
-    pop_ctx && \
     DT_START_CTX=
+    DT_CTX=${dt_ctx}
   fi
   dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}"
 }
 
-push_ctx() {
-  local dt_ctx_stack ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+switch_ctx() {
+  local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx" && \
-  dt_debug ${fname} "Pushing ctx ${CYAN}${BOLD}'${ctx}'${RESET}" && \
-  DT_CTX_STACK+=(${ctx}) && \
-  dt_ctx_stack="${DT_CTX_STACK[@]}" && \
-  dt_debug ${fname} "DT_CTX_STACK=${CYAN}${BOLD}( ${dt_ctx_stack} )${RESET}, N=${#DT_CTX_STACK[@]}" && \
+  DT_CTX=${ctx} && \
+  dt_debug ${fname} "${CYAN}${BOLD}DT_CTX=${ctx}${RESET}" && \
   dt_debug ${fname} "Init ctx ${CYAN}${BOLD}${ctx}${RESET}" && \
   ${ctx} && \
   dt_debug ${fname} "${CYAN}${BOLD}Inited${RESET}"
-}
-
-pop_ctx() {
-  local i N=$1 fname=$(fname "${FUNCNAME[0]}" "$0") && \
-  if [ -z "$1" ]; then N=1; else N=$1; fi && \
-  dt_debug ${fname} "Popping ${CYAN}${BOLD}N=${N}${RESET} ctxes ... " && \
-  for ((i = 0; i < N; ++i)); do
-    pop_one_ctx || return $?
-  done
-  dt_debug ${fname} "${CYAN}${BOLD}done${RESET}"
-}
-
-pop_one_ctx() {
-  local dt_ctx_stack fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ "${#DT_CTX_STACK[@]}" -gt 0 ]; then
-    dt_debug ${fname} "Popping ctx ${CYAN}${BOLD}${DT_CTX_STACK[-1]}${RESET}" && \
-    unset 'DT_CTX_STACK[-1]' && \
-    DT_CTX_STACK=($(echo "${DT_CTX_STACK[@]}")) && \
-    dt_ctx_stack="${DT_CTX_STACK[@]}" && \
-    dt_debug ${fname} "DT_CTX_STACK=${CYAN}${BOLD}( ${dt_ctx_stack} )${RESET}, N=${#DT_CTX_STACK[@]}"
-  else
-    dt_debug ${fname} "${CYAN}${BOLD}DT_CTX_STACK${RESET} is empty, nothing to pop"
-  fi
 }
 
 # get value of var in some ctx
@@ -196,9 +189,9 @@ pop_one_ctx() {
 # octx: original ctx
 get_var() {
   local val octx ctx var ovar=$1 octx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX_STACK[-1]}"; fi
+  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
   if [ -z "${ctx}" ]; then
-    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX_STACK${RESET} is empty and ${BOLD}octx${RESET} is empty"
+    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
     return 99
   fi
   var=$(var_pref ${ctx})${ovar} || return $?
@@ -218,9 +211,9 @@ var() {
   if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
   ovar=$1; val=$2 octx=$3
   err_if_empty ${fname} "ovar" || return $?
-  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX_STACK[-1]}"; fi
+  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
   if [ -z "${ctx}" ]; then
-    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX_STACK${RESET} is empty and ${BOLD}octx${RESET} is empty"
+    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
     return 99
   fi
   var=$(var_pref ${ctx})${ovar} || return $?
@@ -255,28 +248,32 @@ drop_all_ctxes() {
 
 # sctx: source ctx
 load_vars() {
-  local var start_ctx sctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local var dt_ctx start_ctx sctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift
   if ! declare -f ${sctx} >/dev/null 2>&1; then
     dt_error ${fname} "Context ${BOLD}${sctx}${RESET} doesn't exist"
     return 99
   fi
-  dt_debug ${fname} "Will init sctx=${BOLD}${sctx}${RESET}"
+  dt_debug ${fname} "Will init sctx=${BOLD}${sctx}${RESET}, DT_CTX=${DT_CTX}"
   start_ctx="${DT_START_CTX}"; DT_START_CTX=
+  dt_ctx="${DT_CTX}"; DT_CTX=
   ${sctx}
+  DT_CTX="${dt_ctx}"
   DT_START_CTX="${start_ctx}"
-  dt_debug ${fname} "${BOLD}done${RESET}"
+  dt_debug ${fname} "${BOLD}Inited${RESET}, DT_CTX=${DT_CTX}"
+  dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered as function yet"
       return 99
     fi
     if ! declare -p $(var_pref ${sctx})${var} >/dev/null 2>&1; then
-      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX_STACK=${BOLD}${DT_CTX_STACK[@]}${RESET}"
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
     var ${var} "$(${var} ${sctx})"
   done
+  dt_debug ${fname} "${BOLD}Done${RESET}"
 }
 
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
@@ -298,8 +295,8 @@ dt_bind() {
     if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); fi
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
-    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { push_ctx ${ctx} && ${method} && pop_ctx; }"
-    eval "function ${method}${suffix}() { push_ctx ${ctx} && ${method} && pop_ctx; }" || return $?
+    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method}; }"
+    eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
   done
 }
 
@@ -339,6 +336,10 @@ dt_vars() {
   for var in ${DT_VARS[@]}; do val="$(eval echo "\$${var}")"; echo "${var}=${val}"; done
 }
 
+function reinit_dtools() {
+. ${DTOOLS}/core/rc.sh
+}
+
 dt_paths() {
   export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
   # Paths that depend on DTOOLS
@@ -369,7 +370,7 @@ dt_defaults() {
   DT_START_CTX=
   DT_BINDINGS=()
   DT_CTXES=()
-  DT_CTX_STACK=()
   DT_METHODS=()
   DT_VARS=()
+  DT_CTX=
 }

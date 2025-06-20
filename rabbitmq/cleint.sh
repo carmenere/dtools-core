@@ -9,10 +9,10 @@ function rabbitmqadmin_delete() {
   local rabbitmqadmin query_ctx=$1 conn_ctx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "query_ctx conn_ctx" || return $?
   dt_debug ${fname} "conn_ctx=${conn_ctx}"
-  push_ctx ${conn_ctx} && \
+  switch_ctx ${conn_ctx} && \
   rabbitmqadmin="$(cmd_echo rmq_conn)"  || return $?
   dt_debug ${fname} "query_ctx=${query_ctx}"
-  push_ctx ${query_ctx} || return $?
+  switch_ctx ${query_ctx} || return $?
   queues=($(echo "$(QUEUES)"))
   dt_debug ${fname} "queues=${queues[@]}"
   for queue in ${queues[@]}; do
@@ -22,7 +22,6 @@ function rabbitmqadmin_delete() {
   for exchange in ${exchanges[@]}; do
     exec_cmd "${rabbitmqadmin} delete exchange name='${exchange}' || true"
   done
-  pop_ctx
 }
 
 rabbitmqctl_check_user() { exec_cmd "${SUDO} rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^$(RABBIT_USER)$'"; }

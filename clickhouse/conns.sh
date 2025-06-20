@@ -5,33 +5,35 @@ clickhouse_connurl() {
 
 ctx_conn_admin_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_USER "dt_admin"
   var CLICKHOUSE_PASSWORD "1234567890"
   var CLICKHOUSE_DB "default"
-  $(select_service ${PROFILE_CLICKHOUSE} "clickhouse") && \
+  $(select_service_clickhouse) && \
   ctx_epilog ${fname}
 }
 
 ctx_conn_app_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var CLICKHOUSE_USER "example_app"
   var CLICKHOUSE_PASSWORD "1234567890"
   var CLICKHOUSE_DB "example"
-  $(select_service ${PROFILE_CLICKHOUSE} "clickhouse") && \
+  $(select_service_clickhouse) && \
   ctx_epilog ${fname}
 }
 
-clickhouse_conn_admin() { _clickhouse_conn ctx_conn_admin_clickhouse "$@"; }
-clickhouse_conn_app() { _clickhouse_conn ctx_conn_app_clickhouse "$@"; }
-
-clickhouse_init() {
-  $(select_checker ${PROFILE_CLICKHOUSE} "clickhouse") && \
-  _clickhouse_init "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse"
+function clickhouse_init() {
+  switch_ctx $(select_service_clickhouse) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_CLICKHOUSE}")) && \
+  _clickhouse_init "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse" $(select_exec "${PROFILE_CLICKHOUSE}")
 }
 
-clickhouse_clean() {
-  $(select_checker ${PROFILE_CLICKHOUSE} "clickhouse") && \
-  _clickhouse_clean "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse"
+function clickhouse_clean() {
+  switch_ctx $(select_service_clickhouse) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_CLICKHOUSE}")) && \
+  _clickhouse_clean "ctx_conn_admin_clickhouse" "ctx_conn_app_clickhouse" $(select_exec "${PROFILE_CLICKHOUSE}")
 }
+
+function clickhouse_conn_admin() { _clickhouse_conn ctx_conn_admin_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }
+function clickhouse_conn_app() { _clickhouse_conn ctx_conn_app_clickhouse $(select_exec "${PROFILE_CLICKHOUSE}") "$@"; }

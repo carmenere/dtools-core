@@ -51,7 +51,7 @@ function rustup_methods() {
 
 ctx_rustup() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var RUSTUP_TOOLCHAIN "1.86.0"
   var RUSTUP_TARGET_TRIPLE $(rust_target_triple)
   var RUSTUP_COMPONENTS "clippy rustfmt"

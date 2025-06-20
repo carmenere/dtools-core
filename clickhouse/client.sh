@@ -13,44 +13,37 @@ function _clickhouse_conn_cmd() {
 }
 
 function _clickhouse_conn() {
-  local ser conn_ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift 1
-  ser=$(select_cmd_ser ${PROFILE_CLICKHOUSE}) && \
-  dt_debug ${fname} "conn_ctx=${conn_ctx}, cmd_serializer=${ser}, args=$@" && \
-  err_if_empty ${fname} "ser conn_ctx" && \
-  push_ctx ${conn_ctx} && \
-  exec_cmd $(${ser} $(_clickhouse_conn_cmd $@)) && \
-  pop_ctx
+  local conn_ctx="$1" exec="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
+  shift 2 && \
+  err_if_empty ${fname} "exec conn_ctx" && \
+  ${conn_ctx} && \
+  ${exec} $(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd $@)
 }
 
 function _clickhouse_cmd() {
-  local ser conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
   err_if_empty ${fname} "query_ctx conn_ctx query" && \
-  push_ctx ${query_ctx} && query=$(${query}) && \
-  ser=$(select_cmd_ser ${PROFILE_CLICKHOUSE}) && \
-  dt_debug ${fname} "cmd_serializer=${ser}" && \
-  err_if_empty ${fname} "ser" && \
-  push_ctx ${conn_ctx} && conn=$(_clickhouse_conn_cmd) && \
-  echo "$(${ser} "${conn} --multiquery $'${query}'")" && \
-  pop_ctx
+  query=$(switch_ctx ${query_ctx} && ${query}) && \
+  conn=$(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd) && \
+  echo "${conn} --multiquery $'${query}'"
 }
 
 function _clickhouse_init() {
-  local ser admin=$1 app=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}" && \
-  err_if_empty ${fname} "admin app" && \
+  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
+  err_if_empty ${fname} "admin app exec" && \
   ${admin} && ${app} && \
-  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
-  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
-  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
 }
 
 function _clickhouse_clean() {
-  local ser admin=$1 app=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}" && \
-  err_if_empty ${fname} "admin app" && \
+  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
+  err_if_empty ${fname} "admin app exec" && \
   ${admin} && ${app} && \
-  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
-  exec_cmd "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
+  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
 }

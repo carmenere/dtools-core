@@ -1,5 +1,5 @@
 # PROFILE_RMQ={ host | docker }, by default "host"
-export PROFILE_RMQ="host"
+if [ -z "${PROFILE_RMQ}" ]; then export PROFILE_RMQ="host"; fi
 
 function rmq_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -31,7 +31,7 @@ function lsof_rmq() {
 
 function ctx_service_rmq() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  ctx_prolog ${fname}; if is_cached ${fname}; then return 0; fi
+  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var EXCHANGES "ems"
   var MAJOR 3
   var MINOR 8
