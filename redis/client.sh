@@ -11,7 +11,7 @@ function _redis_conn() {
   shift 2 && \
   err_if_empty ${fname} "exec conn_ctx" && \
   ${conn_ctx} && \
-  ${exec} $(_redis_conn_cmd $@)
+  ${exec} $(switch_ctx ${conn_ctx} && _redis_conn_cmd $@)
 }
 
 function _redis_cmd() {
