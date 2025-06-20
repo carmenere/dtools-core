@@ -1,10 +1,6 @@
 # PROFILE_CLICKHOUSE={ host | docker }, by default "host"
 if [ -z "${PROFILE_CLICKHOUSE}" ]; then export PROFILE_CLICKHOUSE="host"; fi
 
-select_service_clickhouse() {
-  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_service_clickhouse"; fi
-}
-
 clickhouse_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "clickhouse@$(MAJOR).$(MINOR)"

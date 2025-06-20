@@ -165,6 +165,7 @@ ctx_docker_service() {
   var IMAGE $(BASE_IMAGE)
   var RESTART "always"
   var RM
+  var RUN_ENVS
   var SH "/bin/sh"
 }
 

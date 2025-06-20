@@ -1,5 +1,13 @@
+select_service_clickhouse() {
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_service_clickhouse"; fi
+}
+
 # CLICKHOUSE_PORT for clickhouse-client
 # CLICKHOUSE_HTTP_PORT for applications
+clickhouse_connurl() {
+  local vars=(CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWORD CLICKHOUSE_PORT CLICKHOUSE_USER)
+  echo "${vars[@]}"
+}
 
 clickhouse_host() { if [ -n "$(CLICKHOUSE_HOST)" ]; then echo "--host $(CLICKHOUSE_HOST)"; fi; }
 clickhouse_port() { if [ -n "$(CLICKHOUSE_PORT)" ]; then echo "--port $(CLICKHOUSE_PORT)"; fi; }

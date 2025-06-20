@@ -1,20 +1,9 @@
-ctx_conn_rmq() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
-  if [ "${PROFILE_RMQ}" = "docker" ]; then
-    load_vars ctx_docker_rmq RABBIT_HOST RABBIT_PORT RABBIT_PORT_MGM QUEUES EXCHANGES || return $?
-  else
-    load_vars ctx_service_rmq RABBIT_HOST RABBIT_PORT RABBIT_PORT_MGM QUEUES EXCHANGES || return $?
-  fi
-  ctx_epilog ${fname}
-}
-
 function ctx_conn_admin_rmq() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var RABBIT_USER "guest"
   var RABBIT_PASSWORD "guest"
-  ctx_conn_rmq && \
+  $(select_service_rmq) && \
   ctx_epilog ${fname}
 }
 
@@ -23,7 +12,7 @@ function ctx_conn_app_rmq() {
   local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
   var RABBIT_USER "app_user"
   var RABBIT_PASSWORD 12345
-  ctx_conn_rmq && \
+  $(select_service_rmq) && \
   ctx_epilog ${fname}
 }
 
@@ -52,20 +41,20 @@ rmq_clean_host() {
   fi
 }
 
-rmq_init_docker() {
-  local SUDO fname=$(fname "${FUNCNAME[0]}" "$0")
-  docker_check_rmq && \
-  switch_ctx ctx_conn_app_rmq || return $?
-  SUDO=
-  local check_user=$(escape_quote "$(cmd_echo rabbitmqctl_check_user)")
-  local create_user=$(escape_quote "$(cmd_echo rabbitmqctl_create_user)")
-  local set_user_tags=$(escape_quote "$(cmd_echo rabbitmqctl_set_user_tags)")
-  local set_permissions=$(escape_quote "$(cmd_echo rabbitmqctl_set_permissions)")
-  if ! exec_cmd "$(docker_exec_rmq) sh -c $'${check_user}'"; then
-    exec_cmd "$(docker_exec_rmq) sh -c $'${create_user}'"  && \
-    exec_cmd "$(docker_exec_rmq) sh -c $'${set_user_tags}'"  && \
-    exec_cmd "$(docker_exec_rmq) sh -c $'${set_permissions}'"
-  fi
-}
+#rmq_init_docker() {
+#  local SUDO fname=$(fname "${FUNCNAME[0]}" "$0")
+#  docker_check_rmq && \
+#  switch_ctx ctx_conn_app_rmq || return $?
+#  SUDO=
+#  local check_user=$(escape_quote "$(cmd_echo rabbitmqctl_check_user)")
+#  local create_user=$(escape_quote "$(cmd_echo rabbitmqctl_create_user)")
+#  local set_user_tags=$(escape_quote "$(cmd_echo rabbitmqctl_set_user_tags)")
+#  local set_permissions=$(escape_quote "$(cmd_echo rabbitmqctl_set_permissions)")
+#  if ! exec_cmd "$(docker_exec_rmq) sh -c $'${check_user}'"; then
+#    exec_cmd "$(docker_exec_rmq) sh -c $'${create_user}'"  && \
+#    exec_cmd "$(docker_exec_rmq) sh -c $'${set_user_tags}'"  && \
+#    exec_cmd "$(docker_exec_rmq) sh -c $'${set_permissions}'"
+#  fi
+#}
 
 rmq_clean_docker() { docker_rm_rmq; }

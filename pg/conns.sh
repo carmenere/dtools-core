@@ -1,8 +1,3 @@
-pg_connurl() {
-  local vars=(PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER)
-  echo "${vars[@]}"
-}
-
 ctx_conn_admin_pg() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi

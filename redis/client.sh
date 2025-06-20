@@ -1,3 +1,7 @@
+select_service_redis() {
+  if [ "${PROFILE_REDIS}" = "docker" ]; then echo "ctx_docker_redis"; else echo "ctx_service_redis"; fi
+}
+
 function _redis_conn_cmd() {
   echo "redis-cli -e -u redis://$(REDIS_USER):$(REDIS_PASSWORD)@$(REDIS_HOST):$(REDIS_PORT)/$(REDIS_DB)" $@
 }

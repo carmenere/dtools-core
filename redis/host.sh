@@ -1,10 +1,6 @@
 # PROFILE_REDIS={ host | docker }, by default "host"
 if [ -z "${PROFILE_REDIS}" ]; then export PROFILE_REDIS="host"; fi
 
-select_service_redis() {
-  if [ "${PROFILE_REDIS}" = "docker" ]; then echo "ctx_docker_redis"; else echo "ctx_service_redis"; fi
-}
-
 function redis_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "redis"

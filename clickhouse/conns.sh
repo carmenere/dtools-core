@@ -1,8 +1,3 @@
-clickhouse_connurl() {
-  local vars=(CLICKHOUSE_DB CLICKHOUSE_HOST CLICKHOUSE_PASSWORD CLICKHOUSE_PORT CLICKHOUSE_USER)
-  echo "${vars[@]}"
-}
-
 ctx_conn_admin_clickhouse() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi

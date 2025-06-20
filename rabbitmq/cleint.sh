@@ -1,3 +1,7 @@
+select_service_rmq() {
+  if [ "${PROFILE_PG}" = "docker" ]; then echo "ctx_docker_rmq"; else echo "ctx_service_rmq"; fi
+}
+
 rmq_host() { if [ -n "$(RABBIT_HOST)" ]; then echo "--host $(RABBIT_HOST)"; fi; }
 rmq_port() { if [ -n "$(RABBIT_PORT_MGM)" ]; then echo "--port $(RABBIT_PORT_MGM)"; fi; }
 rmq_user() { if [ -n "$(RABBIT_USER)" ]; then echo "--username $(RABBIT_USER)"; fi; }

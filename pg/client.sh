@@ -1,3 +1,12 @@
+select_service_pg() {
+  if [ "${PROFILE_PG}" = "docker" ]; then echo "ctx_docker_pg"; else echo "ctx_service_pg"; fi
+}
+
+pg_connurl() {
+  local vars=(PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER)
+  echo "${vars[@]}"
+}
+
 function _psql_conn_cmd() {
   local fname=$(fname "${FUNCNAME[0]}" "$0") && \
   echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"
