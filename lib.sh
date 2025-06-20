@@ -337,7 +337,7 @@ dt_vars() {
 }
 
 function reinit_dtools() {
-. ${DTOOLS}/core/rc.sh
+  . ${DTOOLS}/core/rc.sh
 }
 
 dt_paths() {

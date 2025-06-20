@@ -16,45 +16,16 @@ function ctx_conn_app_rmq() {
   ctx_epilog ${fname}
 }
 
-rmq_init() { if [ "${PROFILE_RMQ}" = "docker" ]; then rmq_init_docker; else rmq_init_host; fi; }
-rmq_clean() { if [ "${PROFILE_RMQ}" = "docker" ]; then rmq_clean_docker; else rmq_clean_host; fi; }
-
-rmq_init_host() {
-  service_check_rmq && \
-  switch_ctx ctx_conn_app_rmq || return $?
-  if ! rabbitmqctl_check_user; then
-    rabbitmqctl_create_user && \
-    rabbitmqctl_set_user_tags && \
-    rabbitmqctl_set_permissions
-  fi
+function rmq_init() {
+  switch_ctx $(select_service_rmq) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_RMQ}")) && \
+  _rmq_init "ctx_conn_admin_rmq" "ctx_conn_app_rmq" $(select_exec "${PROFILE_RMQ}")
 }
 
-rmq_clean_host() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  service_check_rmq || return $?
-  local admin=ctx_conn_admin_rmq
-  local app=ctx_conn_app_rmq
-  switch_ctx $app || return $?
-  if rabbitmqctl_check_user; then
-    rabbitmqctl_drop_user && \
-    rabbitmqadmin_delete $app $admin
-  fi
+function rmq_clean() {
+  switch_ctx $(select_service_rmq) && \
+  $(get_method "${DT_CTX}" $(select_service_check "${PROFILE_RMQ}")) && \
+  _rmq_clean "ctx_conn_admin_rmq" "ctx_conn_app_rmq" $(select_exec "${PROFILE_RMQ}")
 }
-
-#rmq_init_docker() {
-#  local SUDO fname=$(fname "${FUNCNAME[0]}" "$0")
-#  docker_check_rmq && \
-#  switch_ctx ctx_conn_app_rmq || return $?
-#  SUDO=
-#  local check_user=$(escape_quote "$(cmd_echo rabbitmqctl_check_user)")
-#  local create_user=$(escape_quote "$(cmd_echo rabbitmqctl_create_user)")
-#  local set_user_tags=$(escape_quote "$(cmd_echo rabbitmqctl_set_user_tags)")
-#  local set_permissions=$(escape_quote "$(cmd_echo rabbitmqctl_set_permissions)")
-#  if ! exec_cmd "$(docker_exec_rmq) sh -c $'${check_user}'"; then
-#    exec_cmd "$(docker_exec_rmq) sh -c $'${create_user}'"  && \
-#    exec_cmd "$(docker_exec_rmq) sh -c $'${set_user_tags}'"  && \
-#    exec_cmd "$(docker_exec_rmq) sh -c $'${set_permissions}'"
-#  fi
-#}
 
 rmq_clean_docker() { docker_rm_rmq; }

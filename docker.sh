@@ -166,6 +166,8 @@ ctx_docker_service() {
   var RESTART "always"
   var RM
   var RUN_ENVS
+#  var PUBLISH
+#  var BUILD_ARGS
   var SH "/bin/sh"
 }
 
