@@ -1,35 +1,28 @@
 ctx_conn_admin_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
-  if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
-    var PGUSER "${USER}"
-  else
-    var PGUSER "postgres"
-  fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  var PGUSER $(pg_superuser)
   var PGPASSWORD "postgres"
   var PGDATABASE "postgres"
-  $(select_service_pg) && \
-  ctx_epilog ${fname}
+  $(select_service_pg) ${caller} && \
+  cache_ctx
 }
 
 ctx_conn_migrator_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var PGUSER "example_migrator"
   var PGPASSWORD "1234567890"
   var PGDATABASE "example"
-  $(select_service_pg) && \
-  ctx_epilog ${fname}
+  $(select_service_pg) ${caller} && \
+  cache_ctx
 }
 
 ctx_conn_app_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var PGUSER "example_app"
   var PGPASSWORD "1234567890"
   var PGDATABASE "example"
-  $(select_service_pg) && \
-  ctx_epilog ${fname}
+  $(select_service_pg) ${caller} && \
+  cache_ctx
 }
 
 function psql_init() {

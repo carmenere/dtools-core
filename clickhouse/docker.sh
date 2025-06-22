@@ -1,6 +1,5 @@
 function ctx_docker_clickhouse() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   var BASE_IMAGE "clickhouse/clickhouse-server:25.5-alpine"
   var CLICKHOUSE_PORT 9000
@@ -9,8 +8,8 @@ function ctx_docker_clickhouse() {
   var PUB_CLICKHOUSE_HTTP_PORT 8300
   var CONTAINER "clickhouse-server"
   var SERVICE_CHECK "clickhouse-client --query \'exit\'"
-  ctx_docker_network && ctx_docker_service && ctx_service_clickhouse && \
-  ctx_epilog ${fname}
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_service_clickhouse ${caller} && \
+  cache_ctx
 }
 
 function docker_run_clickhouse() {

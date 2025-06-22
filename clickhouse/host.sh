@@ -100,8 +100,7 @@ lsof_clickhouse() {
 }
 
 ctx_service_clickhouse() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
   var CLICKHOUSE_PORT 9000
@@ -116,8 +115,8 @@ ctx_service_clickhouse() {
   var SERVICE_PREPARE clickhouse_prepare
   var SERVICE_INSTALL clickhouse_install
   var SERVICE_LSOF lsof_clickhouse
-  ctx_os_service && \
-  ctx_epilog ${fname}
+  ctx_os_service ${caller} && \
+  cache_ctx
 }
 
 DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)

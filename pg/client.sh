@@ -16,16 +16,18 @@ function _psql_conn() {
   local conn_ctx="$1" exec="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
   shift 2 && \
   err_if_empty ${fname} "exec conn_ctx" && \
-  ${conn_ctx} && \
-  ${exec} $(switch_ctx ${conn_ctx} && _psql_conn_cmd $@)
+  switch_ctx ${conn_ctx} && \
+  ${exec} $(_psql_conn_cmd $@)
 }
 
 function _psql_gexec() {
   local conn query_ctx="$1" conn_ctx="$2" query="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
   dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
   err_if_empty ${fname} "query_ctx conn_ctx query" && \
-  query=$(switch_ctx ${query_ctx} && ${query}) && \
-  conn=$(switch_ctx ${conn_ctx} && _psql_conn_cmd) && \
+  switch_ctx ${query_ctx} && \
+  query=$(${query}) && \
+  switch_ctx ${conn_ctx} && \
+  conn=$(_psql_conn_cmd) && \
   echo "echo $'${query}' '\gexec' | ${conn}"
 }
 

@@ -111,77 +111,50 @@ var_pref() {
   fi
 }
 
+# Usage: set_caller $1
+# $1: is an arg $1 of calling function
+# Vars "ctx" and "caller" are NOT local, they must be defined in caller
+set_caller() {
+  if [ -n "$1" ]; then caller=$1; else caller=${ctx}; fi
+  dt_debug set_caller "caller=${BOLD}${caller}${RESET}, ctx=${BOLD}${ctx}${RESET}"
+  if [ -n "${DT_CTX}" ]; then return 0; fi
+  DT_CTX=${caller}
+}
+
+# Vars ctx and caller are not local, they must be defined in caller
 is_cached() {
-  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx" || return $?
-  if [ -z "${DT_START_CTX}" ] && declare -p cache__${ctx} >/dev/null 2>&1; then
-    dt_debug ${fname} "${BOLD}${ctx}${RESET} is cached"
-    return 0
-  else
-    return 99
-  fi
+  local ctx_pair fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx caller" || return $?
+  if [ "${ctx}" != "${caller}" ]; then return 99; fi
+  ctx_pair="${caller}__${ctx}"
+  dt_debug ${fname} "ctx_pair=${BOLD}${ctx_pair}${RESET}"
+  if ! declare -p ${ctx_pair} >/dev/null 2>&1; then; return 99; fi
+  dt_debug ${fname} "Ctx pair ${BOLD}${ctx_pair}${RESET} is cached"
+  DT_CTX=
 }
 
-# dt_ctx is prvided fron ctx_*** function
-ctx_prolog() {
-  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx" || return $?
-  if ! declare -p cache__${ctx} >/dev/null 2>&1; then
-    if [ -z "${DT_START_CTX}" ]; then
-      dt_debug ${fname} "DT_START_CTX is empty"
-      dt_ctx=${DT_CTX}
-      DT_START_CTX=${ctx}
-      DT_CTX=${DT_START_CTX}
-      dt_debug ${fname} "Starting from DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}"
-      return 0
-    elif  [ "${DT_START_CTX}" != "${ctx}" ]; then
-      dt_debug ${fname} "${ctx} is NOT cached, DT_START_CTX=${BOLD}${DT_START_CTX}${RESET} is is being merged with ctx=${BOLD}${ctx}${RESET}"
-      return 0
-    else
-      dt_error ${fname} "${ctx} is NOT cached, DT_START_CTX is NOT zero and DT_START_CTX is equal to ctx"
-      return 99
-    fi
-  else
-    if [ -z "${DT_START_CTX}" ]; then
-      dt_debug ${fname} "Starting from DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}, but is cached, skipping"
-      return 0
-    elif  [ "${DT_START_CTX}" != "${ctx}" ]; then
-      dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET} is is being merged with ctx=${BOLD}${ctx}${RESET}, ${DT_START_CTX} is cached"
-      return 0
-    else
-      dt_error ${fname} "${ctx} is cached, DT_START_CTX is NOT zero and DT_START_CTX is equal to ctx"
-      return 99
-    fi
-  fi
-}
-
-# Consistent behaviour in zsh and bash: ${array[@]:offset:length}
-ctx_epilog(){
-  local var ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx" && \
-  dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}, current is ${BOLD}${ctx}${RESET}" && \
-  if [ "${DT_START_CTX}" = "${ctx}" ]; then
-    var="cache__${ctx}" && \
-    if ! declare -p ${var} >/dev/null 2>&1; then
-      dt_debug ${fname} "Caching ctx=${BOLD}${ctx}${RESET}" && \
-      eval "${var}=1" && \
-      DT_VARS+=(${var}) && \
-      DT_CTXES+=(${ctx})
-    fi
-    DT_START_CTX=
-    DT_CTX=${dt_ctx}
-  fi
-  dt_debug ${fname} "DT_START_CTX=${BOLD}${DT_START_CTX}${RESET}"
+# Vars ctx and caller are not local, they must be defined in caller
+cache_ctx() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx caller" || return $?
+  dt_debug ${fname} "ctx=${ctx}, caller=${caller}"
+  if [ "${ctx}" != "${caller}" ]; then return 0; fi
+  local ctx_pair="${caller}__${ctx}"
+  if declare -p ${ctx_pair} >/dev/null 2>&1; then dt_error ${fname} "ctx_pair=${BOLD}${ctx_pair}${RESET} exists"; return 99; fi
+  dt_debug ${fname} "Caching ctx pair ${BOLD}${ctx_pair}${RESET}"
+  DT_CTX=
+  dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  eval "${ctx_pair}=1"
+  DT_VARS+=(${ctx_pair})
 }
 
 switch_ctx() {
   local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "Switching to ctx ${BOLD}${ctx}${RESET}"
   err_if_empty ${fname} "ctx" && \
-  DT_CTX=${ctx} && \
-  dt_debug ${fname} "${CYAN}${BOLD}DT_CTX=${ctx}${RESET}" && \
-  dt_debug ${fname} "Init ctx ${CYAN}${BOLD}${ctx}${RESET}" && \
+  DT_CTX=
   ${ctx} && \
-  dt_debug ${fname} "${CYAN}${BOLD}Inited${RESET}"
+  DT_CTX=${ctx}
 }
 
 # get value of var in some ctx
@@ -207,7 +180,7 @@ get_var() {
 # ovar: original var
 # octx: original ctx
 var() {
-  local val ovar octx fname=$(fname "${FUNCNAME[0]}" "$0")
+  local val ovar ctx octx fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
   ovar=$1; val=$2 octx=$3
   err_if_empty ${fname} "ovar" || return $?
@@ -235,9 +208,6 @@ drop_vars_by_pref() {
 drop_all_ctxes() {
   local ctx var fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "*"
-  for ctx in ${DT_CTXES[@]}; do
-    unset "cache__${ctx}"
-  done
   for var in ${DT_VARS[@]}; do
     unset ${var}
   done
@@ -254,13 +224,6 @@ load_vars() {
     dt_error ${fname} "Context ${BOLD}${sctx}${RESET} doesn't exist"
     return 99
   fi
-  dt_debug ${fname} "Will init sctx=${BOLD}${sctx}${RESET}, DT_CTX=${DT_CTX}"
-  start_ctx="${DT_START_CTX}"; DT_START_CTX=
-  dt_ctx="${DT_CTX}"; DT_CTX=
-  ${sctx}
-  DT_CTX="${dt_ctx}"
-  DT_START_CTX="${start_ctx}"
-  dt_debug ${fname} "${BOLD}Inited${RESET}, DT_CTX=${DT_CTX}"
   dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
@@ -297,6 +260,8 @@ dt_bind() {
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
     dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method}; }"
     eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
+    dt_debug ${fname} "Initing ctx ${BOLD}${ctx}${RESET}"
+    ${ctx} || return $?
   done
 }
 
@@ -340,6 +305,29 @@ function reinit_dtools() {
   . ${DTOOLS}/core/rc.sh
 }
 
+add_deps() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0"); shift
+  local deps=($(echo "$@"))
+  err_if_empty ${fname} "ctx deps" && \
+  for dep in ${deps[@]}; do
+    dt_debug ${fname} "ctx=${ctx} dep=${dep}"
+    DT_DEPS+=("${ctx} ${dep}")
+  done
+}
+
+init_deps() {
+  tsort_deps | while read dep; do ${dep}; done
+}
+
+tsort_deps() {
+  printf "%s\n" "${DT_DEPS[@]}" > "${DT_CTXES_DEPS}"
+  tsort "${DT_CTXES_DEPS}" | tac
+}
+
+list_deps(){
+  cat ${DT_CTXES_DEPS}
+}
+
 dt_paths() {
   export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
   # Paths that depend on DTOOLS
@@ -351,11 +339,13 @@ dt_paths() {
   export DT_TOOLS=${DTOOLS}/tools
   # Paths that depend on DT_ARTEFACTS
   export DT_LOGS="${DT_ARTEFACTS}/logs"
+  export DT_CTXES_DEPS="${DT_LOGS}/ctxes_deps.txt"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
+  if [ -f "${DT_CTXES_DEPS}" ]; then rm "${DT_CTXES_DEPS}"; fi
 }
 
 # DT_SEVERITY >= 4 for dumps!
@@ -367,10 +357,9 @@ dt_defaults() {
   export PROFILE_CI=
   export DT_SEVERITY
   if [ -z "${DT_SEVERITY}" ]; then DT_SEVERITY=4; fi
-  DT_START_CTX=
   DT_BINDINGS=()
-  DT_CTXES=()
   DT_METHODS=()
   DT_VARS=()
+  DT_DEPS=()
   DT_CTX=
 }

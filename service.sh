@@ -36,8 +36,7 @@ function service_methods() {
 }
 
 ctx_os_service() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if is_cached ${fname}; then return 0; else ctx_prolog ${fname}; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var SERVICE
   var SERVICE_CHECK
   var SERVICE_INSTALL
@@ -45,7 +44,7 @@ ctx_os_service() {
   var SERVICE_STOP "$(service) stop $(SERVICE)"
   var SERVICE_START "$(service) start $(SERVICE)"
   var SERVICE_PREPARE
-  ctx_epilog ${fname}
+  cache_ctx
 }
 
 # MacOS

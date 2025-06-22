@@ -25,13 +25,12 @@ function app_methods() {
 }
 
 function ctx_app() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var APP
   var APP_ENVS
   var BINARY
   var OPTS
   var LOG_FILE "${DT_LOGS}/$(APP).logs"
   var PKILL_PATTERN
-  ctx_epilog ${fname}
+  cache_ctx
 }

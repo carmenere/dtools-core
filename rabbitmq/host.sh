@@ -30,8 +30,7 @@ function lsof_rmq() {
 }
 
 function ctx_service_rmq() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var EXCHANGES "ems"
   var MAJOR 3
   var MINOR 8
@@ -44,8 +43,8 @@ function ctx_service_rmq() {
   var SERVICE $(rmq_service)
   var SERVICE_INSTALL "rmq_install"
   var SERVICE_LSOF "lsof_rmq"
-  ctx_os_service && \
-  ctx_epilog ${fname}
+  ctx_os_service ${caller} && \
+  cache_ctx
 }
 
 DT_BINDINGS+=(ctx_service_rmq:rmq:service_methods)

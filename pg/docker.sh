@@ -1,14 +1,13 @@
 function ctx_docker_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var BASE_IMAGE "$(docker_arm64v8)postgres:17.5-alpine3.21"
   var SERVICE_CHECK "pg_isready 1>/dev/null 2>&1"
   var CONTAINER "postgres"
   var PUB_PGPORT 2222
   var PGPORT 5432
   var PSQL psql
-  ctx_docker_network && ctx_docker_service && ctx_service_pg && \
-  ctx_epilog ${fname}
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_service_pg ${caller} && \
+  cache_ctx
 }
 
 docker_run_pg() {

@@ -23,6 +23,7 @@ function py_set_paths() {
 }
 
 function ctx_python() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   export PYMAKE="${DT_CORE}/python/python.mk"
   export DL="${DT_TOOLCHAIN}/dl"
 
@@ -47,6 +48,7 @@ function ctx_python() {
   if [ "$(os_name)" = "macos" ]; then export CXX="/usr/bin/clang"; fi
   if [ "$(os_name)" = "macos" ]; then export CPPFLAGS="-I$(brew --prefix libpq)/include -I$(brew --prefix openssl@1.1)/include"; fi
   if [ "$(os_name)" = "macos" ]; then export LDFLAGS="-L$(brew --prefix libpq)/lib -L$(brew --prefix openssl@1.1)/lib"; fi
+  cache_ctx
 }
 
 function python_build() {
@@ -83,7 +85,8 @@ function python_clean() {
 }
 
 function ctx_python_3_9_11() {
-  ctx_python
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  ctx_python || return $?
   MAJOR=3
   MINOR=9
   PATCH=11
@@ -96,4 +99,5 @@ function ctx_python_3_9_11() {
   fi
 
   py_set_paths "${MAJOR}.${MINOR}.${PATCH}"
+  cache_ctx
 }

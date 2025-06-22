@@ -2,6 +2,14 @@
 # Exported to be seen in child process, if set in parent - do not change.
 if [ -z "${PROFILE_PG}" ]; then export PROFILE_PG="host"; fi
 
+function pg_superuser() {
+  if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
+    echo "${USER}"
+  else
+    echo "postgres"
+  fi
+}
+
 # ctx_service_pg && pg_install
 function pg_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -112,8 +120,7 @@ function lsof_pg() {
 }
 
 function ctx_service_pg() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var MAJOR 17
   var MINOR 5
   var PGHOST "localhost"
@@ -134,8 +141,8 @@ function ctx_service_pg() {
   var SERVICE_PREPARE "pg_prepare"
   var SERVICE_INSTALL "pg_install"
   var SERVICE_LSOF "lsof_pg"
-  ctx_os_service && \
-  ctx_epilog ${fname}
+  ctx_os_service ${caller} && \
+  cache_ctx
 }
 
 DT_BINDINGS+=(ctx_service_pg:pg:service_methods)

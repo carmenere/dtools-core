@@ -88,8 +88,7 @@ cargo_install_methods() {
 }
 
 ctx_cargo() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var BINS
   var BUILD_AS "package"
   var BUILD_ENVS
@@ -111,11 +110,13 @@ ctx_cargo() {
   var BINS_DIR $(cg_bin_dir)
   # Depends on both MANIFEST and MANIFEST_DIR
   var MANIFEST_PATH $(set_manifest)
-  ctx_epilog ${fname}
+  cache_ctx
 }
 
 ctx_cargo_crate() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   CRATE_NAME=
   CRATE_VERSION=
   FLAGS="--locked"
+  cache_ctx
 }

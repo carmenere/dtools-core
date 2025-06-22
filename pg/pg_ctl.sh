@@ -48,9 +48,8 @@ function pg_ctl_methods() {
 }
 
 function ctx_pg_ctl() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
-  load_vars ctx_service_pg PGUSER || return $?
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  var PGUSER $(pg_superuser)
   var PGPORT 5444
   var PGHOST "localhost"
   var OS_USER "$(PGUSER)"
@@ -63,8 +62,8 @@ function ctx_pg_ctl() {
   var PG_CTL_LOG "$(DATADIR)/pg_ctl.logs"
   var POSTMASTER "$(DATADIR)/postmaster.pid"
   var PG_CONF "$(DATADIR)/postgresql.conf"
-  ctx_os_service && \
-  ctx_epilog ${fname}
+  ctx_os_service ${caller} && \
+  cache_ctx
 }
 
 DT_BINDINGS+=(ctx_pg_ctl:default:pg_ctl_methods)

@@ -1,19 +1,17 @@
 function ctx_conn_admin_rmq() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var RABBIT_USER "guest"
   var RABBIT_PASSWORD "guest"
-  $(select_service_rmq) && \
-  ctx_epilog ${fname}
+  $(select_service_rmq) ${caller} && \
+  cache_ctx
 }
 
 function ctx_conn_app_rmq() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var RABBIT_USER "app_user"
   var RABBIT_PASSWORD 12345
-  $(select_service_rmq) && \
-  ctx_epilog ${fname}
+  $(select_service_rmq) ${caller} && \
+  cache_ctx
 }
 
 function rmq_init() {

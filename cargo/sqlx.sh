@@ -3,16 +3,16 @@ function sqlx_envs() {
   echo "${envs[@]}"
 }
 
-function ctx_crate_cargo_sonar() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+function ctx_crate_sqlx() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   CRATE_NAME="sqlx-cli"
   CRATE_VERSION="0.8.5"
-  ctx_cargo_crate && \
-  ctx_epilog ${fname}
+  ctx_cargo_crate ${caller} && \
+  cache_ctx
 }
 
-DT_BINDINGS+=(ctx_crate_sqlx:sqlx:cargo_install_methods)
+c=ctx_crate_sqlx; add_deps "${c}" "ctx_cargo_crate"
+DT_BINDINGS+=(${c}:sqlx:cargo_install_methods)
 
 function database_url() {
   echo "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)"
@@ -50,13 +50,13 @@ function sqlx_methods() {
 
 # Example:
 function ctx_sqlx() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var SCHEMAS "${DT_PROJECT}/migrations/schemas"
   var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas"
   load_vars ctx_conn_migrator_pg PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER && \
   var DATABASE_URL $(database_url) && \
-  ctx_epilog ${fname}
+  cache_ctx
 }
 
-DT_BINDINGS+=(ctx_sqlx:default:sqlx_methods)
+c=ctx_sqlx; add_deps "${c}" "ctx_conn_migrator_pg"
+DT_BINDINGS+=(${c}:default:sqlx_methods)

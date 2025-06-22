@@ -50,13 +50,12 @@ function rustup_methods() {
 }
 
 ctx_rustup() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  local dt_ctx; ctx_prolog ${fname} || return $?; if is_cached ${fname}; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
   var RUSTUP_TOOLCHAIN "1.86.0"
   var RUSTUP_TARGET_TRIPLE $(rust_target_triple)
   var RUSTUP_COMPONENTS "clippy rustfmt"
   var NIGHTLY_VERSION "nightly-2025-05-01"
-  ctx_epilog ${fname}
+  cache_ctx
 }
 
 DT_BINDINGS+=(ctx_rustup:1.86.0:rustup_methods)
