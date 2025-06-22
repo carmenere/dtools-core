@@ -1,5 +1,5 @@
 ctx_conn_admin_pg() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var PGUSER $(pg_superuser)
   var PGPASSWORD "postgres"
   var PGDATABASE "postgres"
@@ -8,7 +8,7 @@ ctx_conn_admin_pg() {
 }
 
 ctx_conn_migrator_pg() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var PGUSER "example_migrator"
   var PGPASSWORD "1234567890"
   var PGDATABASE "example"
@@ -17,7 +17,7 @@ ctx_conn_migrator_pg() {
 }
 
 ctx_conn_app_pg() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var PGUSER "example_app"
   var PGPASSWORD "1234567890"
   var PGDATABASE "example"

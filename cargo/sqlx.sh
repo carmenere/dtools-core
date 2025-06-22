@@ -4,7 +4,7 @@ function sqlx_envs() {
 }
 
 function ctx_crate_sqlx() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   CRATE_NAME="sqlx-cli"
   CRATE_VERSION="0.8.5"
   ctx_cargo_crate ${caller} && \
@@ -50,7 +50,7 @@ function sqlx_methods() {
 
 # Example:
 function ctx_sqlx() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var SCHEMAS "${DT_PROJECT}/migrations/schemas"
   var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas"
   load_vars ctx_conn_migrator_pg PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER && \

@@ -88,35 +88,35 @@ cargo_install_methods() {
 }
 
 ctx_cargo() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
-  var BINS
-  var BUILD_AS "package"
-  var BUILD_ENVS
-  var CARGO_BUILD_TARGET
-  var CARGO_TARGET_DIR "${DT_PROJECT}/target"
-  var CLIPPY_LINTS
-  var CLIPPY_REPORT
-  var EXCLUDE
-  var FEATURES
-  var MANIFEST 'Cargo.toml'
-  var MANIFEST_DIR
-  var MESSAGE_FORMAT
-  var PACKAGE
-  var PROFILE ${PROFILE_CARGO}
-  var RUSTFLAGS
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var BINS && \
+  var BUILD_AS "package" && \
+  var BUILD_ENVS && \
+  var CARGO_BUILD_TARGET && \
+  var CARGO_TARGET_DIR "${DT_PROJECT}/target" && \
+  var CLIPPY_LINTS && \
+  var CLIPPY_REPORT && \
+  var EXCLUDE && \
+  var FEATURES && \
+  var MANIFEST 'Cargo.toml' && \
+  var MANIFEST_DIR && \
+  var MESSAGE_FORMAT && \
+  var PACKAGE && \
+  var PROFILE ${PROFILE_CARGO} && \
+  var RUSTFLAGS && \
   # Depends on PROFILE
-  var BUILD_MODE $(cg_build_mode)
+  var BUILD_MODE $(cg_build_mode) && \
   # Depends on CARGO_TARGET_DIR, CARGO_TARGET_DIR, BUILD_MODE
-  var BINS_DIR $(cg_bin_dir)
+  var BINS_DIR $(cg_bin_dir) && \
   # Depends on both MANIFEST and MANIFEST_DIR
-  var MANIFEST_PATH $(set_manifest)
+  var MANIFEST_PATH $(set_manifest) && \
   cache_ctx
 }
 
 ctx_cargo_crate() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
-  CRATE_NAME=
-  CRATE_VERSION=
-  FLAGS="--locked"
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var CRATE_NAME && \
+  var CRATE_VERSION && \
+  var FLAGS "--locked" && \
   cache_ctx
 }

@@ -1,5 +1,5 @@
 function ctx_crate_cargo_sonar() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var CRATE_NAME "cargo-sonar"
   var CRATE_VERSION "1.3.0"
   ctx_cargo_crate ${caller} && cache_ctx

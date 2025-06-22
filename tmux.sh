@@ -59,15 +59,15 @@ function tmux_methods() {
 }
 
 function ctx_tmux() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
-  var TMX_DEFAULT_CMD "/bin/bash"
-  var TMX_DEFAULT_TERM "xterm-256color"
-  var TMX_HISTORY_LIMIT 1000000
-  var TMX_TERM_SIZE "240x32"
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var TMX_DEFAULT_CMD "/bin/bash" && \
+  var TMX_DEFAULT_TERM "xterm-256color" && \
+  var TMX_HISTORY_LIMIT 1000000 && \
+  var TMX_TERM_SIZE "240x32" && \
   # tmux session name
-  var TMX_SESSION
+  var TMX_SESSION && \
   # WINDOW_NAME and START_CMD are different for each APP
-  var TMX_WINDOW_NAME
+  var TMX_WINDOW_NAME && \
   var TMX_START_CMD && \
   cache_ctx
 }

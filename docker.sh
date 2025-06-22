@@ -159,7 +159,7 @@ function docker_network_methods() {
 #  BUILD_VERSION="$(git_build_version)"
 
 ctx_docker_service() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var BASE_IMAGE
   var COMMAND
   var CONTAINER
@@ -175,7 +175,7 @@ ctx_docker_service() {
 }
 
 ctx_docker_network() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var SUBNET "192.168.111.0/24"
   var BRIDGE "example"
   var DRIVER "bridge"

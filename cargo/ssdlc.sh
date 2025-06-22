@@ -9,7 +9,7 @@ function cargo_ssdlc_methods() {
 }
 
 function ctx_cargo_ssdlc() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var CLIPPY_REPORT "${DT_REPORTS}/clippy-report.json"
   var AUDIT_REPORT "${DT_REPORTS}/audit-report.json"
   var DENY_REPORT "${DT_REPORTS}/deny-report.json"

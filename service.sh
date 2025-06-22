@@ -36,7 +36,7 @@ function service_methods() {
 }
 
 ctx_os_service() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var SERVICE
   var SERVICE_CHECK
   var SERVICE_INSTALL

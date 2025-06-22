@@ -1,5 +1,5 @@
 function ctx_conn_admin_redis() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var REDIS_USER "default"
   var REDIS_PASSWORD "1234567890"
   var REDIS_DB 0
@@ -8,7 +8,7 @@ function ctx_conn_admin_redis() {
 }
 
 function ctx_conn_app_redis() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var REDIS_USER "example_app"
   var REDIS_PASSWORD "1234567890"
   var REDIS_DB 0

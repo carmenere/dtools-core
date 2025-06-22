@@ -48,7 +48,7 @@ function pg_ctl_methods() {
 }
 
 function ctx_pg_ctl() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var PGUSER $(pg_superuser)
   var PGPORT 5444
   var PGHOST "localhost"

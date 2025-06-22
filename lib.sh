@@ -128,7 +128,7 @@ is_cached() {
   if [ "${ctx}" != "${caller}" ]; then return 99; fi
   ctx_pair="${caller}__${ctx}"
   dt_debug ${fname} "ctx_pair=${BOLD}${ctx_pair}${RESET}"
-  if ! declare -p ${ctx_pair} >/dev/null 2>&1; then; return 99; fi
+  if ! declare -p ${ctx_pair} >/dev/null 2>&1; then return 99; fi
   dt_debug ${fname} "Ctx pair ${BOLD}${ctx_pair}${RESET} is cached"
   DT_CTX=
 }
@@ -190,12 +190,16 @@ var() {
     return 99
   fi
   var=$(var_pref ${ctx})${ovar} || return $?
-  if declare -p ${var} >/dev/null 2>&1 && [ "${mode}" != "reset" ]; then return 0; fi
+  if declare -p ${var} >/dev/null 2>&1; then
+    if [ "${mode}" != "reset" ]; then return 0; fi
+  fi
   val=$(ser_val "${val}")
   dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}, mode=${mode}"
   eval "${var}=${val}"
   if ! is_contained ${var} DT_VARS; then DT_VARS+=(${var}); fi
+#  dt_debug ${fname} "Register function: ${ovar}() { get_var ${ovar} \$1; }"
   eval "${ovar}() { get_var ${ovar} \$1; }"
+#  dt_debug ${fname} "val=$(${ovar})"
 }
 
 drop_vars_by_pref() {
@@ -260,8 +264,6 @@ dt_bind() {
     if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
     dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method}; }"
     eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
-    dt_debug ${fname} "Initing ctx ${BOLD}${ctx}${RESET}"
-    ${ctx} || return $?
   done
 }
 
@@ -316,7 +318,11 @@ add_deps() {
 }
 
 init_deps() {
-  tsort_deps | while read dep; do ${dep}; done
+  tsort_deps | while read dep; do ${dep} || return $?;
+#    if [ "ctx_conn_app_pg_tetrix" = "${dep}" ] || [ "${A}" = 1 ]; then
+#      A=1; dt_warning ">>>>>>>>>>>>>" $(MINOR)
+#    fi
+  done
 }
 
 tsort_deps() {

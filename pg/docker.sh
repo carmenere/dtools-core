@@ -1,5 +1,5 @@
 function ctx_docker_pg() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var BASE_IMAGE "$(docker_arm64v8)postgres:17.5-alpine3.21"
   var SERVICE_CHECK "pg_isready 1>/dev/null 2>&1"
   var CONTAINER "postgres"
@@ -21,4 +21,5 @@ docker_run_pg() {
   docker_run
 }
 
-DT_BINDINGS+=(ctx_docker_pg:pg:docker_methods:"docker_run_pg")
+c=ctx_docker_pg; add_deps "${c}" "ctx_conn_admin_pg"
+DT_BINDINGS+=(${c}:pg:docker_methods:"docker_run_pg")

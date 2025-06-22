@@ -33,7 +33,7 @@ function lsof_redis() {
 }
 
 function ctx_service_redis() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var REDIS_HOST "localhost"
   var MAJOR 7
   var MINOR 2

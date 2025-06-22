@@ -30,7 +30,7 @@ function lsof_rmq() {
 }
 
 function ctx_service_rmq() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var EXCHANGES "ems"
   var MAJOR 3
   var MINOR 8

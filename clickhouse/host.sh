@@ -100,7 +100,7 @@ lsof_clickhouse() {
 }
 
 ctx_service_clickhouse() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
   var CLICKHOUSE_PORT 9000

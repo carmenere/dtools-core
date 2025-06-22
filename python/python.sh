@@ -23,7 +23,7 @@ function py_set_paths() {
 }
 
 function ctx_python() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   export PYMAKE="${DT_CORE}/python/python.mk"
   export DL="${DT_TOOLCHAIN}/dl"
 
@@ -85,7 +85,7 @@ function python_clean() {
 }
 
 function ctx_python_3_9_11() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); dt_debug ${ctx} ">>>>> ctx=${ctx}, caller=?????"; set_caller $1; if is_cached; then return 0; fi
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   ctx_python || return $?
   MAJOR=3
   MINOR=9
