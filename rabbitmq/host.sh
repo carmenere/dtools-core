@@ -9,7 +9,7 @@ function rmq_service() {
   fi
 }
 
-# ctx_service_rabbitmq && rabbitmq_install
+# ctx_host_rabbitmq && rabbitmq_install
 function rmq_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -29,7 +29,7 @@ function lsof_rmq() {
   lsof_tcp
 }
 
-function ctx_service_rmq() {
+function ctx_host_rmq() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var EXCHANGES "ems"
   var MAJOR 3
@@ -47,4 +47,4 @@ function ctx_service_rmq() {
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_service_rmq:rmq:service_methods)
+DT_BINDINGS+=(ctx_host_rmq:rmq:service_methods)

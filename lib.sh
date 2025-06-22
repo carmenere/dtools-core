@@ -180,7 +180,7 @@ get_var() {
 # ovar: original var
 # octx: original ctx
 var() {
-  local val ovar ctx octx fname=$(fname "${FUNCNAME[0]}" "$0")
+  local mode val ovar ctx octx fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
   ovar=$1; val=$2 octx=$3
   err_if_empty ${fname} "ovar" || return $?
@@ -228,7 +228,10 @@ load_vars() {
     dt_error ${fname} "Context ${BOLD}${sctx}${RESET} doesn't exist"
     return 99
   fi
+  dt_ctx=${DT_CTX}
+  dt_debug ${fname} "Will init ctx ${BOLD}${sctx}${RESET}"
   dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
+  DT_CTX=${dt_ctx}
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered as function yet"
@@ -252,6 +255,7 @@ dt_bind() {
   methods=$(echo "$1" | cut -d':' -f 3)
   excluded=$(echo "$1" | cut -d':' -f 4)
   err_if_empty ${fname} "ctx suffix methods" || return $?
+  dt_debug ${fname} "ctx=${BOLD}${ctx}${RESET}, suffix=${suffix}, methods=${methods}"
   if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
   methods=($(echo $(${methods})| sort))
   excluded=($(echo ${excluded}))
@@ -259,10 +263,15 @@ dt_bind() {
   for method in ${methods[@]}; do
     mref=$(mref ${ctx} ${method})
     eval "${mref}=${method}${suffix}"
-    if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); fi
+    if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); else dt_error ${fname} "${mref} has been added to DT_VARS"; fi
     if is_contained ${method}${suffix} excluded; then continue; fi
-    if is_contained ${method}${suffix} DT_METHODS; then continue; else DT_METHODS+=(${method}${suffix}); fi
-    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method}; }"
+    if is_contained ${method}${suffix} DT_METHODS; then
+      dt_error ${fname} "Duplicated method=${BOLD}${method}${suffix}${RESET}"
+      return 99
+    else
+      DT_METHODS+=(${method}${suffix})
+    fi
+#    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method} $@; DT_CTX=; }"
     eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
   done
 }
@@ -270,20 +279,22 @@ dt_bind() {
 mref() {
   local ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx method" || return $?
-  echo "${ctx}__${method}"
+  echo "${ctx}__mref__${method}"
 }
 
 get_method() {
   local mref ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "ctx method" || return $?
-  mref=${ctx}__${method}
-  echo "$(eval echo "\$${mref}")"
+  mref=$(mref ${ctx} ${method})
+  val="$(eval echo "\$${mref}")"
+  dt_debug ${fname} "Lookups mref=${mref}, mref contains: ${val}"
+  echo "${val}"
 }
 
 dt_register() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")
   DT_BINDINGS=($(for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done | sort))
-  for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}"; done
+  for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}" || return $?; done
 }
 
 dt_bindings() {
@@ -333,6 +344,46 @@ tsort_deps() {
 list_deps(){
   cat ${DT_CTXES_DEPS}
 }
+
+dryrun_off() { DT_DRYRUN="n"; }
+dryrun_on() { DT_DRYRUN="y"; }
+
+exec_cmd () {
+  local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -z "${cmd}" ]; then
+    dt_error ${fname} "The command is empty cmd='${cmd}'."
+    return 99
+  fi
+  if [ "${DT_DRYRUN}" = "y" ]; then
+    if [ "${DT_ECHO}" = "y" ]; then
+      >&2 echo -e "${BOLD}[dtools][DT_DRYRUN]${RESET}"
+      >&2 echo -e "${cmd}"
+    fi
+    if [ "${DT_ECHO_STDOUT}" = "y" ]; then
+      echo -e "${cmd}"
+    fi
+  else
+    if [ "${DT_ECHO}" = "y" ]; then
+      >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][DT_ECHO][exec_cmd]${RESET}"
+      >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
+    fi
+    eval "$(echo -e "${cmd}")" || return $?
+  fi
+}
+
+#cmd_echo() {
+#  local fname=$(fname "${FUNCNAME[0]}" "$0")
+#  local saved_DRYRUN saved_ECHO
+#  saved_DRYRUN=${DT_DRYRUN}
+#  saved_ECHO=${DT_DRYRUN}
+#  dryrun_on
+#  DT_ECHO_STDOUT="y"
+#  DT_ECHO="n"
+#  $@ || return $?
+#  DT_ECHO_STDOUT="n"
+#  DT_DRYRUN=${saved_DRYRUN}
+#  DT_ECHO=${saved_ECHO}
+#}
 
 dt_paths() {
   export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)

@@ -31,8 +31,8 @@ function dt_init() {
   . "${DT_TOOLS}/rc.sh" && \
   . "${DT_STANDS}/rc.sh" && \
   if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi
-  init_deps && \
   dt_register
+#  init_deps
 }
 
 dt_init $0

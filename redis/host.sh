@@ -9,7 +9,7 @@ function redis_service() {
   fi
 }
 
-# ctx_service_redis && redis_install
+# ctx_host_redis && redis_install
 function redis_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -32,7 +32,7 @@ function lsof_redis() {
   lsof_tcp
 }
 
-function ctx_service_redis() {
+function ctx_host_redis() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var REDIS_HOST "localhost"
   var MAJOR 7
@@ -47,4 +47,4 @@ function ctx_service_redis() {
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_service_redis:redis:service_methods)
+DT_BINDINGS+=(ctx_host_redis:redis:service_methods)

@@ -1,16 +1,27 @@
-# PROFILE_PG={ host | docker }, by default "host"
+# PG_MODE={ host | docker }, by default "host"
 # Exported to be seen in child process, if set in parent - do not change.
-if [ -z "${PROFILE_PG}" ]; then export PROFILE_PG="host"; fi
+if [ -z "${PG_MODE}" ]; then export PG_MODE="host"; fi
+
+pg_mode() {
+  if [ "${PG_MODE}" = "docker" ]; then
+    echo "docker"
+  elif [ "${PG_MODE}" = "host" ]; then
+    echo "host"
+  else
+    dt_error ${fname} "Unknown pg mode: PG_MODE=${PG_MODE}"
+    return 99
+  fi
+}
 
 function pg_superuser() {
-  if [ "$(os_name)" = "macos" ] && [ "${PROFILE_PG}" = "host" ]; then
+  if [ "$(os_name)" = "macos" ] && [ "$(pg_mode)" = "host" ]; then
     echo "${USER}"
   else
     echo "postgres"
   fi
 }
 
-# ctx_service_pg && pg_install
+# ctx_pg_host && pg_install
 function pg_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -119,30 +130,30 @@ function lsof_pg() {
   lsof_tcp
 }
 
-function ctx_service_pg() {
+function ctx_pg_host() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var MAJOR 17
-  var MINOR 5
-  var PGHOST "localhost"
-  var PGPORT 5555
-  var SERVICE $(pg_service)
-  var BIN_DIR $(bin_dir)
-  var PG_HBA_CONF $(pg_hba_conf)
-  var POSTGRESQL_CONF $(postgresql_conf)
-  var PSQL "$(BIN_DIR)/psql"
-  var PG_CONFIG "$(BIN_DIR)/pg_config"
+  var MAJOR 17 && \
+  var MINOR 5 && \
+  var PGHOST "localhost" && \
+  var PGPORT 5555 && \
+  var SERVICE $(pg_service) && \
+  var BIN_DIR $(bin_dir) && \
+  var PG_HBA_CONF $(pg_hba_conf) && \
+  var POSTGRESQL_CONF $(postgresql_conf) && \
+  var PSQL "$(BIN_DIR)/psql" && \
+  var PG_CONFIG "$(BIN_DIR)/pg_config" && \
   if [ ! -x "$(PG_CONFIG)" ]; then
-    dt_warning ${fname} "The binary '$(PG_CONFIG)' doesn't exist"
+    dt_warning ${fname} "The binary '$(PG_CONFIG)' doesn't exist" || return $?
   else
-    var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"
-    var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)"
+    var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
+    var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
   fi
-  var SERVICE_CHECK "psql_conn_admin -c \"'select true;'\""
-  var SERVICE_PREPARE "pg_prepare"
-  var SERVICE_INSTALL "pg_install"
-  var SERVICE_LSOF "lsof_pg"
+  var SERVICE_CHECK "psql_conn_admin_host -c \"'select true;'\"" && \
+  var SERVICE_PREPARE "pg_prepare" && \
+  var SERVICE_INSTALL "pg_install" && \
+  var SERVICE_LSOF "lsof_pg" && \
   ctx_os_service ${caller} && \
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_service_pg:pg:service_methods)
+DT_BINDINGS+=(ctx_pg_host:pg:service_methods)

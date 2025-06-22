@@ -51,8 +51,8 @@ function sqlx_methods() {
 # Example:
 function ctx_sqlx() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var SCHEMAS "${DT_PROJECT}/migrations/schemas"
-  var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas"
+  var SCHEMAS "${DT_PROJECT}/migrations/schemas" && \
+  var TMP_SCHEMAS "${DT_ARTEFACTS}/schemas" && \
   load_vars ctx_conn_migrator_pg PGDATABASE PGHOST PGPASSWORD PGPORT PGUSER && \
   var DATABASE_URL $(database_url) && \
   cache_ctx

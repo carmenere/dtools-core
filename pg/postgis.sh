@@ -25,6 +25,6 @@ function postgis_install() {
 }
 
 function postgis_install() {
-  switch_ctx ctx_service_pg || return $?
+  switch_ctx ctx_pg_host || return $?
   postgis_install
 }

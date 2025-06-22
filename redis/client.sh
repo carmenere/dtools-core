@@ -1,5 +1,5 @@
 select_service_redis() {
-  if [ "${PROFILE_REDIS}" = "docker" ]; then echo "ctx_docker_redis"; else echo "ctx_service_redis"; fi
+  if [ "${PROFILE_REDIS}" = "docker" ]; then echo "ctx_docker_redis"; else echo "ctx_host_redis"; fi
 }
 
 function _redis_conn_cmd() {

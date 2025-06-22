@@ -17,7 +17,7 @@ clickhouse_conf() {
   fi
 }
 
-# ctx_service_clickhouse && clickhouse_install
+# ctx_host_clickhouse && clickhouse_install
 clickhouse_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -99,7 +99,7 @@ lsof_clickhouse() {
   lsof_tcp
 }
 
-ctx_service_clickhouse() {
+ctx_host_clickhouse() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var CLICKHOUSE_HOST "localhost"
   # for clickhouse-client
@@ -119,4 +119,4 @@ ctx_service_clickhouse() {
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_service_clickhouse:clickhouse:service_methods)
+DT_BINDINGS+=(ctx_host_clickhouse:clickhouse:service_methods)

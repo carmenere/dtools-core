@@ -8,7 +8,7 @@ function ctx_docker_clickhouse() {
   var PUB_CLICKHOUSE_HTTP_PORT 8300
   var CONTAINER "clickhouse-server"
   var SERVICE_CHECK "clickhouse-client --query \'exit\'"
-  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_service_clickhouse ${caller} && \
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_host_clickhouse ${caller} && \
   cache_ctx
 }
 

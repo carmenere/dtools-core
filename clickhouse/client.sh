@@ -1,5 +1,5 @@
 select_service_clickhouse() {
-  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_service_clickhouse"; fi
+  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_host_clickhouse"; fi
 }
 
 # CLICKHOUSE_PORT for clickhouse-client

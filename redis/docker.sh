@@ -5,7 +5,7 @@ function ctx_docker_redis() {
   var REDIS_PORT 6379
   var PUB_REDIS_PORT 6644
   var PUBLISH "$(PUB_REDIS_PORT):$(REDIS_PORT)/tcp"
-  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_service_redis ${caller} && \
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_host_redis ${caller} && \
   cache_ctx
 }
 

@@ -1,5 +1,5 @@
 select_service_rmq() {
-  if [ "${PROFILE_RMQ}" = "docker" ]; then echo "ctx_docker_rmq"; else echo "ctx_service_rmq"; fi
+  if [ "${PROFILE_RMQ}" = "docker" ]; then echo "ctx_docker_rmq"; else echo "ctx_host_rmq"; fi
 }
 
 rmq_host() { if [ -n "$(RABBIT_HOST)" ]; then echo "--host $(RABBIT_HOST)"; fi; }

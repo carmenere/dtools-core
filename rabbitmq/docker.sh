@@ -7,7 +7,7 @@ function ctx_docker_rmq() {
   var PUB_RABBIT_PORT 5670
   var PUB_RABBIT_PORT_MGM 15670
   var PUBLISH "$(PUB_RABBIT_PORT):$(RABBIT_PORT)/tcp $(PUB_RABBIT_PORT_MGM):$(RABBIT_PORT_MGM)/tcp"
-  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_service_rmq ${caller} && \
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_host_rmq ${caller} && \
   cache_ctx
 }
 
