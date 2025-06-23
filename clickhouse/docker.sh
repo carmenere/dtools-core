@@ -24,5 +24,4 @@ function docker_run_clickhouse() {
   docker_run
 }
 
-c=ctx_docker_clickhouse; add_deps "${c}" "ctx_conn_admin_clickhouse"
-DT_BINDINGS+=(${c}:clickhouse:docker_methods:"docker_run_clickhouse")
+DT_BINDINGS+=(ctx_docker_clickhouse:clickhouse:docker_methods:"docker_run_clickhouse")

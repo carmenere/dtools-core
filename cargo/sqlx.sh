@@ -11,8 +11,7 @@ function ctx_crate_sqlx() {
   cache_ctx
 }
 
-c=ctx_crate_sqlx; add_deps "${c}" "ctx_cargo_crate"
-DT_BINDINGS+=(${c}:sqlx:cargo_install_methods)
+DT_BINDINGS+=(ctx_crate_sqlx:sqlx:cargo_install_methods)
 
 function database_url() {
   echo "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)"
@@ -58,5 +57,4 @@ function ctx_sqlx() {
   cache_ctx
 }
 
-c=ctx_sqlx; add_deps "${c}" "ctx_conn_migrator_pg"
-DT_BINDINGS+=(${c}:default:sqlx_methods)
+DT_BINDINGS+=(ctx_sqlx:default:sqlx_methods)
