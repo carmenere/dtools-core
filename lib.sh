@@ -250,7 +250,7 @@ load_vars() {
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 ## will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
 dt_bind() {
-  local ctx mref suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
+  local ctx suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
   ctx=$(echo "$1" | cut -d':' -f 1)
   suffix=$(echo "$1" | cut -d':' -f 2)
   methods=$(echo "$1" | cut -d':' -f 3)
@@ -262,38 +262,34 @@ dt_bind() {
   excluded=($(echo ${excluded}))
   if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
   for method in ${methods[@]}; do
-    mref=$(mref ${ctx} ${method})
-    eval "${mref}=${method}${suffix}"
-    if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); else dt_error ${fname} "${mref} has been added to DT_VARS"; fi
+#    mref=$(mref ${ctx} ${method})
+#    eval "${mref}=${method}${suffix}"
+#    if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); else dt_error ${fname} "${mref} has been added to DT_VARS"; fi
     if is_contained ${method}${suffix} excluded; then continue; fi
     if is_contained ${method}${suffix} DT_METHODS; then
       dt_error ${fname} "Duplicated method=${BOLD}${method}${suffix}${RESET}"
       return 99
-    else
-      DT_METHODS+=(${method}${suffix})
     fi
-#    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method} $@; DT_CTX=; }"
-    eval "function ${method}${suffix}() {
-      local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}
-      switch_ctx ${ctx} && ${method} \$@
-      local err=\$?; DTC_CTX=\${dt_ctx}; return \${err} }" || return $?
+    dt_debug ${fname} "Registering method: ${BOLD}${method}${suffix}${RESET}"
+    DT_METHODS+=(${method}${suffix})
+    eval "function ${method}${suffix}() { local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" || return $?
   done
 }
 
-mref() {
-  local ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx method" || return $?
-  echo "${ctx}__mref__${method}"
-}
-
-get_method() {
-  local mref ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "ctx method" || return $?
-  mref=$(mref ${ctx} ${method})
-  val="$(eval echo "\$${mref}")"
-  dt_debug ${fname} "Lookups mref=${mref}, mref contains: ${val}"
-  echo "${val}"
-}
+#mref() {
+#  local ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+#  err_if_empty ${fname} "ctx method" || return $?
+#  echo "${ctx}__mref__${method}"
+#}
+#
+#get_method() {
+#  local mref ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+#  err_if_empty ${fname} "ctx method" || return $?
+#  mref=$(mref ${ctx} ${method})
+#  val="$(eval echo "\$${mref}")"
+#  dt_debug ${fname} "Lookups mref=${mref}, mref contains: ${val}"
+#  echo "${val}"
+#}
 
 dt_register() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -423,4 +419,41 @@ dt_defaults() {
   DT_VARS=()
   DT_DEPS=()
   DT_CTX=
+  DT_STAND='n'
+}
+
+function dt_rc_load() {
+  description=$1
+  dir=$2
+  if [ -z "${description}" ]; then return 99; fi
+  if [ -z "${dir}" ]; then return 99; fi
+  echo -e "Loading ${BOLD}$description${RESET} ... "
+  for file in "$dir"/*.sh; do
+    if [ "$(basename "$file")" != "rc.sh"  ]; then
+      echo -e -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
+      . "$file" || return 55
+      echo "done.";
+    fi
+  done
+}
+
+function dt_init() {
+  if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
+  local self_dir="$(dirname $(realpath "${self}"))"
+  . "${self_dir}/colors.sh" && \
+  . "${self_dir}/lib.sh" && \
+  drop_all_ctxes && \
+  dt_paths && \
+  dt_defaults && \
+  dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
+  . "${self_dir}/clickhouse/rc.sh" && \
+  . "${self_dir}/pg/rc.sh" && \
+  . "${self_dir}/redis/rc.sh" && \
+  . "${self_dir}/rabbitmq/rc.sh" && \
+  . "${self_dir}/cargo/rc.sh" && \
+  . "${self_dir}/python/rc.sh" && \
+  . "${DT_TOOLS}/rc.sh" && \
+  . "${DT_STANDS}/rc.sh" && \
+  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi
+  dt_register
 }
