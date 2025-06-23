@@ -1,7 +1,7 @@
 function pg_sql_alter_role_password() {
-  local query=$(
-    escape_quote "ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'"
-  ) || return $?
+  local query=$(escape_quote "
+    ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'
+  ") || return $?
   echo "${query}"
 }
 
@@ -9,63 +9,70 @@ function pg_sql_alter_role_password() {
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
 function pg_sql_create_user() {
   local query=$(escape_dollar $(escape_quote "
-    SELECT \$\$CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)'\$\$
-    WHERE NOT EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
+    SELECT
+      \$\$CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)'\$\$
+    WHERE
+      NOT EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
   ")) || return $?
   echo "${query}"
 }
 
 function pg_sql_drop_user() {
-  local query=$(
-    echo "DROP USER IF EXISTS $(PGUSER)"
-  ) || return $?
+  local query=$(escape_quote "
+    SELECT
+      'DROP OWNED BY $(PGUSER)',
+      'DROP USER IF EXISTS $(PGUSER)'
+    WHERE
+      EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
+  ") || return $?
   echo "${query}"
 }
 
 function pg_sql_create_db() {
-  local query=$(
-    escape_quote "
-    SELECT 'CREATE DATABASE $(PGDATABASE)'
-    WHERE NOT EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
+  local query=$(escape_quote "
+    SELECT
+      'CREATE DATABASE $(PGDATABASE)'
+    WHERE
+      NOT EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
   ") || return $?
   echo "${query}"
 }
 
 function pg_sql_drop_db() {
-  local query=$(
-    escape_quote "
-    SELECT 'DROP DATABASE IF EXISTS $(PGDATABASE)'
-    WHERE EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
+  local query=$(escape_quote "
+    SELECT
+      'DROP DATABASE IF EXISTS $(PGDATABASE)'
+    WHERE
+      EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
   ") || return $?
   echo "${query}"
 }
 
 function pg_sql_grant_user_migrator() {
-  local query=$(
-    escape_quote "
-      SELECT
-        'ALTER ROLE $(PGUSER) WITH SUPERUSER CREATEDB',
-        'ALTER DATABASE $(PGDATABASE) OWNER TO $(PGUSER)'
-      WHERE
-        EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-        AND
-        EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
+  local query=$(escape_quote "
+    SELECT
+      'ALTER ROLE $(PGUSER) WITH SUPERUSER CREATEDB',
+      'ALTER DATABASE $(PGDATABASE) OWNER TO $(PGUSER)'
+    WHERE
+      EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
+    AND
+      EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
   ") || return $?
   echo "${query}"
 }
 
-function pg_sql_revoke_user_migrator() {
-  local query=$(
-    escape_quote "
-      SELECT 'DROP OWNED BY $(PGUSER)'
-      WHERE EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ") || return $?
-  echo "${query}"
-}
+#function pg_sql_revoke_user_migrator() {
+#  local query=$(escape_quote "
+#    SELECT
+#      'DROP OWNED BY $(PGUSER)'
+#    WHERE
+#      EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
+#  ") || return $?
+#  echo "${query}"
+#}
 
 function pg_sql_grant_user_app() {
-  local query=$(
-    escape_quote "
+  local query=$(escape_quote "
     SELECT
       'GRANT USAGE ON SCHEMA public TO $(PGUSER)',
       'GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO $(PGUSER)',
@@ -74,15 +81,14 @@ function pg_sql_grant_user_app() {
       'GRANT CONNECT ON DATABASE $(PGDATABASE) TO $(PGUSER)'
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-      AND
+    AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
   ") || return $?
   echo "${query}"
 }
 
 function pg_sql_revoke_user_app() {
-  local query=$(
-    escape_quote "
+  local query=$(escape_quote "
     SELECT
       'REVOKE SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public FROM $(PGUSER)',
       'REVOKE USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public FROM $(PGUSER)',
@@ -92,8 +98,16 @@ function pg_sql_revoke_user_app() {
       'REVOKE ALL ON SCHEMA public FROM $(PGUSER)'
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-      AND
+    AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '$(PGDATABASE)')
   ") || return $?
   echo "${query}"
 }
+
+# Grant syntax with ALL PRIVILEGES and DEFAULT PRIVILEGES
+#psql -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO $(PGUSER);"
+#psql -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO $(PGUSER);"
+#psql -c "GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO $(PGUSER);"
+#psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO $(PGUSER);"
+#psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO $(PGUSER);"
+#psql -c "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON FUNCTIONS TO $(PGUSER);"

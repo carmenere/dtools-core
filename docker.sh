@@ -46,19 +46,20 @@ docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
 docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
 
 docker_build() { exec_cmd docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
-docker_exec_i_cmd() { exec_cmd "docker exec -i $(CONTAINER) /bin/sh << EOF\n$@\nEOF"; }
-docker_exec_it_cmd() { exec_cmd "docker exec -ti $(CONTAINER) /bin/sh -c '$@'"; }
-docker_exec_sh() { exec_cmd "docker exec -ti $(CONTAINER) /bin/sh"; }
-docker_logs() { exec_cmd docker logs "$(CONTAINER)"; }
-docker_logs_save_to_logfile() { exec_cmd docker logs "$(CONTAINER)" '>' "${DT_LOGS}/container-$(CONTAINER).log" '2>&1'; }
+docker_check() { service_check; }
+docker_exec_i_cmd() { exec_cmd "docker exec -i $(SERVICE) /bin/sh << EOF\n$@\nEOF"; }
+docker_exec_it_cmd() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh -c \"$@\""; }
+docker_exec_sh() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh"; }
+docker_logs() { exec_cmd docker logs "$(SERVICE)"; }
+docker_logs_save_to_logfile() { exec_cmd docker logs "$(SERVICE)" '>' "${DT_LOGS}/container-$(SERVICE).log" '2>&1'; }
 docker_network_create() { exec_cmd docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
 docker_network_rm() { exec_cmd docker network rm $(BRIDGE); }
 docker_pull() { exec_cmd docker pull $(IMAGE); }
-docker_rm() { exec_cmd docker rm --force $(CONTAINER); }
+docker_rm() { exec_cmd docker rm --force $(SERVICE); }
 docker_rmi() { exec_cmd docker rmi $(IMAGE); }
-docker_start() { exec_cmd docker start $(CONTAINER); }
-docker_status() { exec_cmd docker ps -a --filter name="^$(CONTAINER)$"; }
-docker_stop() { exec_cmd docker stop $(CONTAINER); }
+docker_start() { exec_cmd docker start $(SERVICE); }
+docker_status() { exec_cmd docker ps -a --filter name="^$(SERVICE)$"; }
+docker_stop() { exec_cmd docker stop $(SERVICE); }
 
 function docker_network_create() {
   local id fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -74,32 +75,19 @@ function docker_network_create() {
 docker_run() {
   local id fname=$(fname "${FUNCNAME[0]}" "$0")
   docker_network_create || return $?
-  id="$(exec_cmd "docker ps -aq --filter name="^$(CONTAINER)$" --filter status=running")" || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=running")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} with id='${id}' is running, skip run."
+    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' is running, skip run."
     return 0
   fi
-  id="$(exec_cmd "docker ps -aq --filter name="^$(CONTAINER)$" --filter status=exited --filter status=created")" || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=exited --filter status=created")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} with id='${id}' was created but is stopped now, so start it."
-    exec_cmd docker start $(CONTAINER) || return $?
+    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' was created but is stopped now, so start it."
+    exec_cmd docker start $(SERVICE) || return $?
     return 0
   fi
-  exec_cmd docker run $(FLAGS) --name $(CONTAINER) $(docker_run_envs) $(docker_run_publish) --restart $(RESTART) \
+  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(docker_run_envs) $(docker_run_publish) --restart $(RESTART) \
       --network $(BRIDGE) $(IMAGE) "$(COMMAND)"
-}
-
-docker_check() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -z "$(SERVICE_CHECK)" ]; then dt_error ${fname} "Variable ${BOLD}SERVICE_CHECK${RESET} is empty"; return 99; fi
-  for i in $(seq 1 30); do
-    dt_info ${fname} "Waiting ${BOLD}$(CONTAINER)${RESET} runtime: attempt ${BOLD}$i${RESET} ... ";
-    if docker_exec_cmd "$(SERVICE_CHECK)"; then
-      dt_info ${fname} "Container ${BOLD}$(CONTAINER)${RESET} is up now"
-      break
-    fi
-    sleep 1
-  done
 }
 
 # Don't depend on Vars
@@ -160,18 +148,22 @@ function docker_network_methods() {
 
 ctx_docker_service() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var BASE_IMAGE
-  var COMMAND
-  var CONTAINER
-  var CTX "."
-  var FLAGS "-d"
-  var IMAGE $(BASE_IMAGE)
-  var RESTART "always"
-  var RM
-  var RUN_ENVS
-  var PUBLISH
-  var BUILD_ARGS
-  var SH "/bin/sh"
+  var BASE_IMAGE && \
+  var COMMAND && \
+  var SERVICE && \
+  var CTX "." && \
+  var FLAGS "-d" && \
+  var IMAGE $(BASE_IMAGE) && \
+  var RESTART "always" && \
+  var RM && \
+  var RUN_ENVS && \
+  var PUBLISH && \
+  var BUILD_ARGS && \
+  var SH "/bin/sh" && \
+  var EXEC "docker_exec_i_cmd" && \
+  var TERMINAL "docker_exec_it_cmd" && \
+  var CHECK "docker_check" && \
+  cache_ctx
 }
 
 ctx_docker_network() {

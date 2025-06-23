@@ -273,7 +273,10 @@ dt_bind() {
       DT_METHODS+=(${method}${suffix})
     fi
 #    dt_debug ${fname} "Register method: ${BOLD}${method}${suffix}${RESET}() { switch_ctx ${ctx} && ${method} $@; DT_CTX=; }"
-    eval "function ${method}${suffix}() { switch_ctx ${ctx} && ${method}; }" || return $?
+    eval "function ${method}${suffix}() {
+      local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}
+      switch_ctx ${ctx} && ${method} \$@
+      local err=\$?; DTC_CTX=\${dt_ctx}; return \${err} }" || return $?
   done
 }
 

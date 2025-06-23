@@ -3,8 +3,8 @@ function ctx_conn_admin_pg() {
   var PGUSER $(pg_superuser $2) && \
   var PGPASSWORD "postgres" && \
   var PGDATABASE "postgres" && \
-  $(select_ctx ctx_client pg_mode) ${caller} && \
-  $(select_ctx ctx_pg pg_mode) ${caller} && \
+  var CONN ctx_conn_admin_pg && \
+  $(select_pg_service) ${caller} && \
   cache_ctx
 }
 
@@ -13,8 +13,11 @@ function ctx_conn_migrator_pg() {
   var PGUSER "example_migrator" && \
   var PGPASSWORD "1234567890" && \
   var PGDATABASE "example" && \
-  $(select_ctx ctx_client pg_mode) ${caller} && \
-  $(select_ctx ctx_pg pg_mode) ${caller} && \
+  var GRANT pg_sql_grant_user_migrator && \
+  var REVOKE pg_sql_revoke_user_migrator && \
+  var CONN ctx_conn_admin_pg && \
+  var GRANT_CONN ctx_conn_admin_pg && \
+  ctx_conn_admin_pg ${caller} && \
   cache_ctx
 }
 
@@ -23,8 +26,11 @@ function ctx_conn_app_pg() {
   var PGUSER "example_app" && \
   var PGPASSWORD "1234567890" && \
   var PGDATABASE "example" && \
-  $(select_ctx ctx_client pg_mode) ${caller} && \
-  $(select_ctx ctx_pg pg_mode) ${caller} && \
+  var GRANT pg_sql_grant_user_app && \
+  var REVOKE pg_sql_revoke_user_app && \
+  var CONN ctx_conn_admin_pg && \
+  var GRANT_CONN ctx_conn_migrator_pg && \
+  ctx_conn_admin_pg ${caller} && \
   cache_ctx
 }
 
@@ -33,15 +39,13 @@ DT_BINDINGS+=(ctx_conn_migrator_pg:migrator:psql_methods)
 DT_BINDINGS+=(ctx_conn_app_pg:app:psql_methods)
 
 function psql_init() {
-  local admin=ctx_conn_admin_pg && \
-  local migrator=ctx_conn_migrator_pg && \
-  local app=ctx_conn_app_pg && \
+  switch_ctx $(select_pg_service) && $(CHECK) && \
+  admin="admin" && app="app" && migrator="migrator" && \
   _psql_init
 }
 
 function psql_clean() {
-  local admin=ctx_conn_admin_pg && \
-  local migrator=ctx_conn_migrator_pg && \
-  local app=ctx_conn_app_pg && \
+  switch_ctx $(select_pg_service) && $(CHECK) && \
+  admin="admin" && app="app" && migrator="migrator" && \
   _psql_clean
 }

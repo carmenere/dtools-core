@@ -3,46 +3,56 @@ pg_connurl() {
   echo "${vars[@]}"
 }
 
-function _psql_conn() {
-  echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"
-}
+function _psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
 
 function _psql_gexec() {
-  local query_ctx="$1" conn_ctx="$2" query="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
-  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
-  err_if_empty ${fname} "query_ctx conn_ctx query" && \
-  switch_ctx ${query_ctx} && \
+  local conn_ctx="$1" query="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
+  dt_debug ${fname} "conn_ctx=${conn_ctx}, query=${query}" && \
+  err_if_empty ${fname} "conn_ctx query" && \
   query=$(${query}) && \
-  local exec=$(EXEC) && \
   switch_ctx ${conn_ctx} && \
-  ${exec} "echo $'${query}' '\gexec' | $(_psql_conn)"
+  $(EXEC) "echo $'${query}' '\gexec' | $(_psql_conn)"
 }
 
 function _psql_init() {
-  dt_warning _psql_init "admin=${admin} admin=${admin}" && \
-
-  _psql_gexec ${admin} ${admin} pg_sql_alter_role_password && \
-  _psql_gexec ${migrator} ${admin} pg_sql_create_db && \
-  _psql_gexec ${migrator} ${admin} pg_sql_create_user && \
-  _psql_gexec ${migrator} ${admin} pg_sql_grant_user_migrator && \
-  _psql_gexec ${app} ${admin} pg_sql_create_user && \
-  _psql_gexec ${app} ${migrator} pg_sql_grant_user_app
+  local spec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "spec=${spec}" && err_if_empty ${fname} "admin migrator app" && \
+  if [ -n "${spec}" ]; then spec="_${spec}"; fi && \
+  psql_alter_role_password_${admin}${spec} && \
+  psql_create_db_${migrator}${spec} && \
+  psql_create_user_${migrator}${spec} && \
+  psql_grant_user_${migrator}${spec} && \
+  psql_create_user_${app}${spec} && \
+  psql_grant_user_${app}${spec}
 }
 
 function _psql_clean() {
-  _psql_gexec ${app} ${admin} pg_sql_revoke_user_app && \
-  _psql_gexec ${migrator} ${admin} pg_sql_revoke_user_migrator && \
-  _psql_gexec ${migrator} ${admin} pg_sql_drop_db && \
-  _psql_gexec ${app} ${admin} pg_sql_drop_user && \
-  _psql_gexec ${migrator} ${admin} pg_sql_drop_user
+  local spec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "spec=${spec}" && err_if_empty ${fname} "migrator app" && \
+  if [ -n "${spec}" ]; then spec="_${spec}"; fi && \
+  psql_drop_db_${migrator}${spec} && \
+  psql_drop_user_${migrator}${spec} && \
+  psql_drop_user_${app}${spec}
 }
 
-function psql_conn() {
-  $(CONN) "$(inline_vars "$(pg_connurl)") $(PSQL) $@"
-}
+function psql_conn() { $(TERMINAL) "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
+function psql_alter_role_password() { _psql_gexec $(CONN) pg_sql_alter_role_password; }
+function psql_create_db() { _psql_gexec $(CONN) pg_sql_create_db; }
+function psql_create_user() { _psql_gexec $(CONN) pg_sql_create_user; }
+function psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
+function psql_drop_db() { _psql_gexec $(CONN) pg_sql_drop_db; }
+function psql_drop_user() { _psql_gexec $(CONN) pg_sql_drop_user; }
+function psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
 
 function psql_methods() {
   local methods=()
   methods+=(psql_conn)
+  methods+=(psql_alter_role_password)
+  methods+=(psql_create_db)
+  methods+=(psql_create_user)
+  methods+=(psql_grant_user)
+  methods+=(psql_drop_db)
+  methods+=(psql_drop_user)
+  methods+=(psql_revoke_user)
   echo "${methods[@]}"
 }

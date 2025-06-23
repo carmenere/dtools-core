@@ -39,7 +39,7 @@ function ctx_host_rmq() {
   var RABBIT_HOST "localhost"
   var RABBIT_PORT 5672
   var RABBIT_PORT_MGM 15672
-  var SERVICE_CHECK "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
+  var SERVICE_CHECK_CMD "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
   var SERVICE $(rmq_service)
   var SERVICE_INSTALL "rmq_install"
   var SERVICE_LSOF "lsof_rmq"

@@ -40,7 +40,7 @@ function ctx_host_redis() {
   var PATCH 4
   var REDIS_PORT 6379
   var SERVICE $(redis_service)
-  var SERVICE_CHECK "sh -c 'redis-cli ping 1>/dev/null 2>&1'"
+  var SERVICE_CHECK_CMD "sh -c 'redis-cli ping 1>/dev/null 2>&1'"
   var SERVICE_INSTALL redis_install
   var SERVICE_LSOF lsof_redis
   ctx_os_service ${caller} && \
