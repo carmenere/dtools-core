@@ -9,22 +9,23 @@ function _psql_conn() {
 
 function _psql_gexec() {
   local query_ctx="$1" conn_ctx="$2" query="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
-  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}"
-  err_if_empty ${fname} "query_ctx conn_ctx query"
-  switch_ctx ${query_ctx}
-  query=$(${query})
-  local exec=$(EXEC)
-  switch_ctx ${conn_ctx}
+  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
+  err_if_empty ${fname} "query_ctx conn_ctx query" && \
+  switch_ctx ${query_ctx} && \
+  query=$(${query}) && \
+  local exec=$(EXEC) && \
+  switch_ctx ${conn_ctx} && \
   ${exec} "echo $'${query}' '\gexec' | $(_psql_conn)"
 }
 
 function _psql_init() {
-  dt_warning _psql_init "admin=${admin} admin=${admin}"
-  _psql_gexec ${admin} ${admin} pg_sql_alter_role_password
-  _psql_gexec ${migrator} ${admin} pg_sql_create_db
-  _psql_gexec ${migrator} ${admin} pg_sql_create_user
-  _psql_gexec ${migrator} ${admin} pg_sql_grant_user_migrator
-  _psql_gexec ${app} ${admin} pg_sql_create_user
+  dt_warning _psql_init "admin=${admin} admin=${admin}" && \
+
+  _psql_gexec ${admin} ${admin} pg_sql_alter_role_password && \
+  _psql_gexec ${migrator} ${admin} pg_sql_create_db && \
+  _psql_gexec ${migrator} ${admin} pg_sql_create_user && \
+  _psql_gexec ${migrator} ${admin} pg_sql_grant_user_migrator && \
+  _psql_gexec ${app} ${admin} pg_sql_create_user && \
   _psql_gexec ${app} ${migrator} pg_sql_grant_user_app
 }
 

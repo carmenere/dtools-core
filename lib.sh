@@ -222,16 +222,17 @@ drop_all_ctxes() {
 
 # sctx: source ctx
 load_vars() {
-  local var dt_ctx start_ctx sctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local var dt_ctx sctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift
   if ! declare -f ${sctx} >/dev/null 2>&1; then
     dt_error ${fname} "Context ${BOLD}${sctx}${RESET} doesn't exist"
     return 99
   fi
-  dt_ctx=${DT_CTX}
-  dt_debug ${fname} "Will init ctx ${BOLD}${sctx}${RESET}"
-  dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
+  dt_ctx=${DT_CTX}; DT_CTX=
+  dt_debug ${fname} "Will init ctx ${BOLD}${sctx}${RESET}, DT_CTX=${DT_CTX}, previous DT_CTX=${dt_ctx}"
+  ${sctx}
   DT_CTX=${dt_ctx}
+  dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
   for var in "$@"; do
     if ! declare -f ${var} >/dev/null 2>&1; then
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered as function yet"
