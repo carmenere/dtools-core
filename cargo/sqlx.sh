@@ -5,8 +5,8 @@ function sqlx_envs() {
 
 function ctx_crate_sqlx() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  CRATE_NAME="sqlx-cli"
-  CRATE_VERSION="0.8.5"
+  var CRATE_NAME "sqlx-cli" && \
+  var CRATE_VERSION "0.8.5" && \
   ctx_cargo_crate ${caller} && \
   cache_ctx
 }

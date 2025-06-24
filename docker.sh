@@ -34,10 +34,12 @@ docker_arm64v8() {
 }
 
 docker_default_tag() {
+  local tag=v0.0.1
+  if [ -n "$1" ]; then tag=$1; fi
   if [ "$(uname -m)" = "arm64" ]; then
-    echo "v0.0.1-arm64"
+    echo "${tag}-arm64"
   else
-    echo "v0.0.1"
+    echo "${tag}"
   fi
 }
 
@@ -86,7 +88,7 @@ docker_run() {
     exec_cmd docker start $(SERVICE) || return $?
     return 0
   fi
-  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(docker_run_envs) $(docker_run_publish) --restart $(RESTART) \
+  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(docker_run_envs) $(docker_run_publish) $(RM) --restart $(RESTART) \
       --network $(BRIDGE) $(IMAGE) "$(COMMAND)"
 }
 

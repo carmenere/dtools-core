@@ -36,7 +36,7 @@ rustup_target_list() { exec_cmd rustup target list; }
 rustup_toolchain_install() { exec_cmd rustup toolchain install $(RUSTUP_TOOLCHAIN)-$(RUSTUP_TARGET_TRIPLE); }
 rustup_toolchain_list() { exec_cmd rustup toolchain list; }
 
-rustup_init() { rustup_install && rustup_nightly_install && rustup_component_add; }
+rustup_init() {  rustup_install && . "${HOME}/.cargo/env" && rustup_nightly_install && rustup_component_add; }
 
 function rustup_methods() {
   local methods=()
