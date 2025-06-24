@@ -42,7 +42,8 @@ _clickhouse_clean() {
   ${app}__clickhouse_drop_user
 }
 
-clickhouse_conn() { $(TERMINAL) "$(inline_vars "$(clickhouse_connurl)") $(CLIENT) $@"; }
+clickhouse_conn() { $(TERMINAL) "$(_clickhouse_conn $@)"; }
+
 clickhouse_create_db() { _clickhouse_exec $(CONN) sql_click_create_db; }
 clickhouse_create_user() { _clickhouse_exec $(CONN) sql_click_create_user; }
 clickhouse_drop_db() { _clickhouse_exec $(CONN) sql_click_drop_db; }

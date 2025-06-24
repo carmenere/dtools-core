@@ -115,7 +115,8 @@ var_pref() {
 # $1: is an arg $1 of calling function
 # Vars "ctx" and "caller" are NOT local, they must be defined in caller
 set_caller() {
-  if [ -n "$1" ]; then caller=$1; else caller=${ctx}; fi
+  if [ -n "$1" ]; then caller=$1; else caller=${ctx}; fi && \
+  if ! is_contained ${ctx} DT_CTXES; then DT_CTXES+=(${ctx}); fi && \
   dt_debug set_caller "caller=${BOLD}${caller}${RESET}, ctx=${BOLD}${ctx}${RESET}"
   if [ -n "${DT_CTX}" ]; then return 0; fi
   DT_CTX=${caller}
@@ -219,6 +220,9 @@ drop_all_ctxes() {
   for var in ${DT_METHODS[@]}; do
     unset -f ${var}
   done
+  for var in ${DT_CTXES[@]}; do
+    unset -f ${var}
+  done
 }
 
 # sctx: source ctx
@@ -292,6 +296,12 @@ dt_methods() {
   local method fname=$(fname "${FUNCNAME[0]}" "$0")
   DT_METHODS=($(for method in ${DT_METHODS[@]}; do echo "${method}"; done | sort))
   for method in ${DT_METHODS[@]}; do echo "${method}"; done
+}
+
+dt_ctxes() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_CTXES=($(for var in ${DT_CTXES[@]}; do echo "${var}"; done | sort))
+  for var in ${DT_CTXES[@]}; do echo "${var}"; done
 }
 
 dt_vars() {
@@ -405,6 +415,7 @@ dt_defaults() {
   DT_VARS=()
   DT_DEPS=()
   DT_CTX=
+  DT_CTXES=()
   DT_STAND='n'
 }
 

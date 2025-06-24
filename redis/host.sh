@@ -1,5 +1,29 @@
-# PROFILE_REDIS={ host | docker }, by default "host"
-if [ -z "${PROFILE_REDIS}" ]; then export PROFILE_REDIS="host"; fi
+# REDIS_MODE={ host | docker }, by default "host"
+# Exported to be seen in child process, if set in parent - do not change.
+if [ -z "${REDIS_MODE}" ]; then export REDIS_MODE="host"; fi
+
+redis_mode() {
+  if [ "${REDIS_MODE}" = "docker" ]; then
+    echo "docker"
+  elif [ "${REDIS_MODE}" = "host" ]; then
+    echo "host"
+  else
+    dt_error ${fname} "Unknown redis mode: REDIS_MODE=${REDIS_MODE}"
+    return 99
+  fi
+}
+
+set_redis_mode_docker() {
+  REDIS_MODE=docker
+  reinit_dtools && \
+  dt_info redis_set_mode_docker "REDIS_MODE=${REDIS_MODE}"
+}
+
+set_redis_mode_host() {
+  REDIS_MODE=host
+  reinit_dtools && \
+  dt_info redis_set_mode_host "REDIS_MODE=${REDIS_MODE}"
+}
 
 function redis_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -32,7 +56,7 @@ function lsof_redis() {
   lsof_tcp
 }
 
-function ctx_host_redis() {
+function ctx_redis_host() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var REDIS_HOST "localhost" && \
   var MAJOR 7 && \
@@ -40,11 +64,12 @@ function ctx_host_redis() {
   var PATCH 4 && \
   var REDIS_PORT 6379 && \
   var SERVICE $(redis_service) && \
-  var SERVICE_CHECK_CMD "sh -c 'redis-cli ping 1>/dev/null 2>&1'" && \
+  var SERVICE_CHECK_CMD "redis_conn_admin -c \$\'ping\'" && \
   var SERVICE_INSTALL redis_install && \
   var SERVICE_LSOF lsof_redis && \
+  var CLIENT redis-cli && \
   ctx_os_service ${caller} && \
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_host_redis:redis:service_methods)
+DT_BINDINGS+=(ctx_redis_host:redis:service_methods)

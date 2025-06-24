@@ -43,8 +43,9 @@ function _psql_clean() {
   ${admin}__psql_drop_role_password
 }
 
+function psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
+
 function psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
-function psql_conn() { $(TERMINAL) "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
 function psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
 function psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
 function psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
