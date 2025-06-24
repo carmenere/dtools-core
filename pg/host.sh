@@ -13,9 +13,6 @@ pg_mode() {
   fi
 }
 
-# by default selects "host"
-select_pg_service() { if [ "$(pg_mode)" = "docker" ]; then echo "ctx_pg_docker"; else echo "ctx_pg_host"; fi; }
-
 function pg_superuser() {
   if [ "$(os_name)" = "macos" ] && [ "$(pg_mode)" = "host" ]; then
     echo "${USER}"
@@ -149,7 +146,7 @@ function ctx_pg_host() {
     dt_warning ${fname} "The binary '$(PG_CONFIG)' doesn't exist" || return $?
   else
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
-    var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $? && \
+    var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
   fi
   var SERVICE_CHECK_CMD "psql_conn_admin -c \$\'select true;\'" && \
   var SERVICE_PREPARE "pg_prepare" && \

@@ -215,8 +215,8 @@ drop_all_ctxes() {
   for var in ${DT_VARS[@]}; do
     unset ${var}
   done
-  for var in ${DT_MREFS[@]}; do
-    unset ${var}
+  for var in ${DT_METHODS[@]}; do
+    unset -f ${var}
   done
 }
 
@@ -242,7 +242,7 @@ load_vars() {
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
-    var ${var} "$(${var} ${sctx})" && \
+    var ${var} "$(${var} ${sctx})"
   done
   dt_debug ${fname} "${BOLD}Done${RESET}"
 }
@@ -250,7 +250,7 @@ load_vars() {
 ## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
 ## will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
 dt_bind() {
-  local ctx suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
+  local body ctx suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
   ctx=$(echo "$1" | cut -d':' -f 1)
   suffix=$(echo "$1" | cut -d':' -f 2)
   methods=$(echo "$1" | cut -d':' -f 3)
@@ -262,34 +262,19 @@ dt_bind() {
   excluded=($(echo ${excluded}))
   if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
   for method in ${methods[@]}; do
-#    mref=$(mref ${ctx} ${method})
-#    eval "${mref}=${method}${suffix}"
-#    if ! is_contained ${mref} DT_VARS; then DT_VARS+=(${mref}); else dt_error ${fname} "${mref} has been added to DT_VARS"; fi
     if is_contained ${method}${suffix} excluded; then continue; fi
-    if is_contained ${method}${suffix} DT_METHODS; then
+    if [ declare -p ${method}${suffix} >/dev/null 2>&1 ] || [ declare -p ${ctx}__${method} >/dev/null 2>&1 ]; then
       dt_error ${fname} "Duplicated method=${BOLD}${method}${suffix}${RESET}"
       return 99
     fi
-    dt_debug ${fname} "Registering method: ${BOLD}${method}${suffix}${RESET}"
+    dt_debug ${fname} "Registering methods: ${BOLD}${method}${suffix}${RESET} and ${BOLD}${ctx}__${method}${RESET}"
     DT_METHODS+=(${method}${suffix})
-    eval "function ${method}${suffix}() { local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" || return $?
+    DT_METHODS+=(${ctx}__${method})
+    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }"
+    eval "function ${method}${suffix}() ${body}" || return $?
+    eval "function ${ctx}__${method}() ${body}" || return $?
   done
 }
-
-#mref() {
-#  local ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-#  err_if_empty ${fname} "ctx method" || return $?
-#  echo "${ctx}__mref__${method}"
-#}
-#
-#get_method() {
-#  local mref ctx=$1 method=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-#  err_if_empty ${fname} "ctx method" || return $?
-#  mref=$(mref ${ctx} ${method})
-#  val="$(eval echo "\$${mref}")"
-#  dt_debug ${fname} "Lookups mref=${mref}, mref contains: ${val}"
-#  echo "${val}"
-#}
 
 dt_register() {
   local binding fname=$(fname "${FUNCNAME[0]}" "$0")

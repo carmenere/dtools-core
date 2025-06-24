@@ -1,10 +1,12 @@
+select_service_pg() { if [ "$(pg_mode)" = "docker" ]; then echo "ctx_pg_docker"; else echo "ctx_pg_host"; fi; }
+
 function ctx_conn_admin_pg() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var PGUSER $(pg_superuser $2) && \
   var PGPASSWORD "postgres" && \
   var PGDATABASE "postgres" && \
   var CONN ctx_conn_admin_pg && \
-  $(select_pg_service) ${caller} && \
+  $(select_service_pg) ${caller} && \
   cache_ctx
 }
 
@@ -39,13 +41,11 @@ DT_BINDINGS+=(ctx_conn_migrator_pg:migrator:psql_methods)
 DT_BINDINGS+=(ctx_conn_app_pg:app:psql_methods)
 
 function psql_init() {
-  switch_ctx $(select_pg_service) && $(CHECK) && \
-  admin="admin" && app="app" && migrator="migrator" && \
-  _psql_init
+  switch_ctx $(select_service_pg) && $(CHECK) && \
+  _psql_init ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
 }
 
 function psql_clean() {
-  switch_ctx $(select_pg_service) && $(CHECK) && \
-  admin="admin" && app="app" && migrator="migrator" && \
-  _psql_clean
+  switch_ctx $(select_service_pg) && $(CHECK) && \
+  _psql_clean ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
 }

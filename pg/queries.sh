@@ -1,6 +1,19 @@
 function pg_sql_alter_role_password() {
   local query=$(escape_quote "
-    ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'
+    SELECT
+      \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'\$\$
+    WHERE
+      EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
+  ") || return $?
+  echo "${query}"
+}
+
+function pg_sql_drop_role_password() {
+  local query=$(escape_quote "
+    SELECT
+      \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD ''\$\$
+    WHERE
+      EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
   ") || return $?
   echo "${query}"
 }
