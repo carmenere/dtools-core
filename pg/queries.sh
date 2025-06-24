@@ -1,26 +1,26 @@
-function pg_sql_alter_role_password() {
-  local query=$(escape_quote "
+function sql_pg_alter_role_password() {
+  local query=$(escape_dollar $(escape_quote "
     SELECT
       \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'\$\$
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ") || return $?
+  ")) || return $?
   echo "${query}"
 }
 
-function pg_sql_drop_role_password() {
-  local query=$(escape_quote "
+function sql_pg_drop_role_password() {
+  local query=$(escape_dollar $(escape_quote "
     SELECT
       \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD ''\$\$
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ") || return $?
+  ")) || return $?
   echo "${query}"
 }
 
 # In postgres the $$ ... $$ means dollar-quoted string.
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
-function pg_sql_create_user() {
+function sql_pg_create_user() {
   local query=$(escape_dollar $(escape_quote "
     SELECT
       \$\$CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)'\$\$
@@ -30,7 +30,7 @@ function pg_sql_create_user() {
   echo "${query}"
 }
 
-function pg_sql_drop_user() {
+function sql_pg_drop_user() {
   local query=$(escape_quote "
     SELECT
       'DROP OWNED BY $(PGUSER)',
@@ -41,7 +41,7 @@ function pg_sql_drop_user() {
   echo "${query}"
 }
 
-function pg_sql_create_db() {
+function sql_pg_create_db() {
   local query=$(escape_quote "
     SELECT
       'CREATE DATABASE $(PGDATABASE)'
@@ -51,7 +51,7 @@ function pg_sql_create_db() {
   echo "${query}"
 }
 
-function pg_sql_drop_db() {
+function sql_pg_drop_db() {
   local query=$(escape_quote "
     SELECT
       'DROP DATABASE IF EXISTS $(PGDATABASE)'
@@ -61,7 +61,7 @@ function pg_sql_drop_db() {
   echo "${query}"
 }
 
-function pg_sql_grant_user_migrator() {
+function sql_pg_grant_user_migrator() {
   local query=$(escape_quote "
     SELECT
       'ALTER ROLE $(PGUSER) WITH SUPERUSER CREATEDB',
@@ -74,7 +74,7 @@ function pg_sql_grant_user_migrator() {
   echo "${query}"
 }
 
-#function pg_sql_revoke_user_migrator() {
+#function sql_pg_revoke_user_migrator() {
 #  local query=$(escape_quote "
 #    SELECT
 #      'DROP OWNED BY $(PGUSER)'
@@ -84,7 +84,7 @@ function pg_sql_grant_user_migrator() {
 #  echo "${query}"
 #}
 
-function pg_sql_grant_user_app() {
+function sql_pg_grant_user_app() {
   local query=$(escape_quote "
     SELECT
       'GRANT USAGE ON SCHEMA public TO $(PGUSER)',
@@ -100,7 +100,7 @@ function pg_sql_grant_user_app() {
   echo "${query}"
 }
 
-function pg_sql_revoke_user_app() {
+function sql_pg_revoke_user_app() {
   local query=$(escape_quote "
     SELECT
       'REVOKE SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public FROM $(PGUSER)',

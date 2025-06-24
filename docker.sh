@@ -145,6 +145,7 @@ function docker_network_methods() {
 ctx_docker_service() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var BASE_IMAGE && \
+  var BUILDER_IMAGE && \
   var BUILDER $(BUILDER_IMAGE) && \
   var BUILD_ARGS && \
   var BUILD_VERSION "$(git_build_version)" && \

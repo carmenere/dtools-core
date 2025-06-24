@@ -15,7 +15,6 @@ MODES=($(echo $(service_modes)))
 
 select_service() {
   local prefix="$1" mode="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && err_if_empty ${fname} "prefix mode" && \
-
   echo "${prefix}_$(${mode})"
 }
 
@@ -57,7 +56,7 @@ ctx_os_service() {
   var SERVICE_LSOF  && \
   var SERVICE_STOP "$(service) stop $(SERVICE)"  && \
   var SERVICE_START "$(service) start $(SERVICE)"  && \
-  var SERVICE_PREPARE  && \
+  var SERVICE_PREPARE && \
   var EXEC "exec_cmd" && \
   var TERMINAL "exec_cmd" && \
   var CHECK "service_check" && \

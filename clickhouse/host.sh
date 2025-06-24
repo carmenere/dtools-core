@@ -1,5 +1,32 @@
-# PROFILE_CLICKHOUSE={ host | docker }, by default "host"
-if [ -z "${PROFILE_CLICKHOUSE}" ]; then export PROFILE_CLICKHOUSE="host"; fi
+# CLICKHOUSE_MODE={ host | docker }, by default "host"
+if [ -z "${CLICKHOUSE_MODE}" ]; then export CLICKHOUSE_MODE="host"; fi
+
+# CLICKHOUSE_MODE={ host | docker }, by default "host"
+# Exported to be seen in child process, if set in parent - do not change.
+if [ -z "${CLICKHOUSE_MODE}" ]; then export CLICKHOUSE_MODE="host"; fi
+
+clickhouse_mode() {
+  if [ "${CLICKHOUSE_MODE}" = "docker" ]; then
+    echo "docker"
+  elif [ "${CLICKHOUSE_MODE}" = "host" ]; then
+    echo "host"
+  else
+    dt_error ${fname} "Unknown pg mode: CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
+    return 99
+  fi
+}
+
+set_clickhouse_mode_docker() {
+  CLICKHOUSE_MODE=docker
+  reinit_dtools && \
+  dt_info clickhouse_set_mode_docker "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
+}
+
+set_clickhouse_mode_host() {
+  CLICKHOUSE_MODE=host
+  reinit_dtools && \
+  dt_info clickhouse_set_mode_host "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
+}
 
 clickhouse_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -59,25 +86,19 @@ clickhouse_user_xml() {
 }
 
 clickhouse_gen_user_xml() {
-  if [ "$(os_name)" = "macos" ]; then
-    # sudo -E: indicates to the security policy that the user wishes to preserve their existing environment variables.
-    # The security policy may return an error if the user does not have permission to preserve the environment.
-    local SUDO="sudo -E"
-  else
-    local SUDO="sudo"
-  fi
   local query="$(clickhouse_user_xml)"
   local cmd="echo $'${query}' | sudo tee $(CH_USER_XML)"
   exec_cmd "${cmd}"
 }
 
 clickhouse_prepare() {
+  switch_ctx ctx_conn_admin_clickhouse && \
   if [ -f "$(CH_USER_XML)" ]; then
-    local user_xml_hash=$(${SUDO} sha256sum "$(CH_USER_XML)" | cut -d' ' -f 1)
+    local user_xml_hash=$(${SUDO} sha256sum "$(CH_USER_XML)" | cut -d' ' -f 1) || return $?
   fi
-  clickhouse_gen_user_xml
-  local user_xml_hash_new=$(${SUDO} sha256sum "$(CH_USER_XML)" | cut -d' ' -f 1)
-  if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then return 0; fi
+  clickhouse_gen_user_xml && \
+  local user_xml_hash_new=$(${SUDO} sha256sum "$(CH_USER_XML)" | cut -d' ' -f 1) && \
+  if [ "${user_xml_hash}" = "${user_xml_hash_new}" ]; then return 0; fi && \
   service_stop
 }
 
@@ -88,8 +109,6 @@ clickhouse_user_xml_dir() {
     echo "/etc/clickhouse-server/users.d"
   fi
 }
-
-service_prepare_clickhouse() { ctx_conn_clickhouse && ctx_conn_clickhouse_admin && clickhouse_prepare $1; }
 
 lsof_clickhouse() {
   HOST=$(CLICKHOUSE_HOST)
@@ -108,13 +127,14 @@ ctx_host_clickhouse() {
   var CLICKHOUSE_HTTP_PORT 8123 && \
   var MAJOR 23 && \
   var MINOR 5 && \
-  var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $? && \
+  var CH_USER_XML "$(clickhouse_user_xml_dir)/dt_admin.xml" || return $? && \
   var CH_CONFIG_XML $(clickhouse_conf) || return $? && \
   var SERVICE $(clickhouse_service) && \
-  var SERVICE_CHECK_CMD "clickhouse_conn_admin --query \"'exit'\"" && \
+  var SERVICE_CHECK_CMD "clickhouse_conn_admin --query \$\'exit\'" && \
   var SERVICE_PREPARE clickhouse_prepare && \
   var SERVICE_INSTALL clickhouse_install && \
   var SERVICE_LSOF lsof_clickhouse && \
+  var CLIENT clickhouse-client && \
   ctx_os_service ${caller} && \
   cache_ctx
 }

@@ -27,8 +27,7 @@ function pg_ctl_clean() {
 }
 
 function pg_ctl_lsof() {
-  sudo lsof -nP -i4TCP@0.0.0.0:$(PGPORT)
-  sudo lsof -nP -i4TCP@localhost:$(PGPORT)
+  lsof_pg
 }
 
 function pg_ctl_conn() {

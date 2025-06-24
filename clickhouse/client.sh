@@ -1,7 +1,3 @@
-select_service_clickhouse() {
-  if [ "${PROFILE_CLICKHOUSE}" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_host_clickhouse"; fi
-}
-
 # CLICKHOUSE_PORT for clickhouse-client
 # CLICKHOUSE_HTTP_PORT for applications
 clickhouse_connurl() {
@@ -15,43 +11,53 @@ clickhouse_db() { if [ -n "$(CLICKHOUSE_DB)" ]; then echo "--database $(CLICKHOU
 clickhouse_user() { if [ -n "$(CLICKHOUSE_USER)" ]; then echo "--user $(CLICKHOUSE_USER)"; fi; }
 clickhouse_password() { if [ -n "$(CLICKHOUSE_PASSWORD)" ]; then echo "--password $(CLICKHOUSE_PASSWORD)"; fi; }
 
-function _clickhouse_conn_cmd() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  echo "clickhouse-client $(clickhouse_host) $(clickhouse_port) $(clickhouse_db) $(clickhouse_user) $(clickhouse_password) $@"
+_clickhouse_conn() {
+  echo "$(CLIENT) $(clickhouse_host) $(clickhouse_port) $(clickhouse_db) $(clickhouse_user) $(clickhouse_password) $@"
 }
 
-function _clickhouse_conn() {
-  local conn_ctx="$1" exec="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
-  shift 2 && \
-  err_if_empty ${fname} "exec conn_ctx" && \
-  ${conn_ctx} && \
-  ${exec} $(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd $@)
+_clickhouse_exec() {
+  local conn_ctx="$1" query="$2" fname=$(fname "${FUNCNAME[0]}" "$0") && \
+  dt_debug ${fname} "conn_ctx=${conn_ctx}, query=${query}" && \
+  err_if_empty ${fname} "conn_ctx query" && \
+  query=$(${query}) && \
+  switch_ctx ${conn_ctx} && \
+  $(EXEC) "$(_clickhouse_conn) --multiquery $'${query}'"
 }
 
-function _clickhouse_cmd() {
-  local conn query_ctx=$1 conn_ctx=$2 query=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, query=${query}" && \
-  err_if_empty ${fname} "query_ctx conn_ctx query" && \
-  query=$(switch_ctx ${query_ctx} && ${query}) && \
-  conn=$(switch_ctx ${conn_ctx} && _clickhouse_conn_cmd) && \
-  echo "${conn} --multiquery $'${query}'"
+_clickhouse_init() {
+  local migrator="$1" app="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "migrator=${migrator}, app=${app}" && err_if_empty ${fname} "migrator app" && \
+  ${migrator}__clickhouse_create_db && \
+  ${migrator}__clickhouse_create_user && \
+  ${migrator}__clickhouse_grant_user && \
+  ${app}__clickhouse_create_user && \
+  ${app}__clickhouse_grant_user
 }
 
-function _clickhouse_init() {
-  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
-  err_if_empty ${fname} "admin app exec" && \
-  ${admin} && ${app} && \
-  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_db)" && \
-  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_create_user)" && \
-  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_grant_user)"
+_clickhouse_clean() {
+  local migrator="$1" app="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "migrator=${migrator}, app=${app}" && err_if_empty ${fname} "migrator app" && \
+  ${migrator}__clickhouse_drop_db && \
+  ${migrator}__clickhouse_drop_user && \
+  ${app}__clickhouse_drop_user
 }
 
-function _clickhouse_clean() {
-  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
-  err_if_empty ${fname} "admin app exec" && \
-  ${admin} && ${app} && \
-  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_db)" && \
-  ${exec} "$(_clickhouse_cmd ${app} ${admin} clickhouse_sql_drop_user)"
+clickhouse_conn() { $(TERMINAL) "$(inline_vars "$(clickhouse_connurl)") $(CLIENT) $@"; }
+clickhouse_create_db() { _clickhouse_exec $(CONN) sql_click_create_db; }
+clickhouse_create_user() { _clickhouse_exec $(CONN) sql_click_create_user; }
+clickhouse_drop_db() { _clickhouse_exec $(CONN) sql_click_drop_db; }
+clickhouse_drop_user() { _clickhouse_exec $(CONN) sql_click_drop_user; }
+clickhouse_grant_user() { _clickhouse_exec $(CONN) $(GRANT); }
+clickhouse_revoke_user() { _clickhouse_exec $(CONN) $(REVOKE); }
+
+clickhouse_methods() {
+  local methods=()
+  methods+=(clickhouse_conn)
+  methods+=(clickhouse_create_db)
+  methods+=(clickhouse_create_user)
+  methods+=(clickhouse_drop_db)
+  methods+=(clickhouse_drop_user)
+  methods+=(clickhouse_grant_user)
+  methods+=(clickhouse_revoke_user)
+  echo "${methods[@]}"
 }

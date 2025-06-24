@@ -26,10 +26,10 @@ function brew_prefix() {
   echo $(brew --prefix)
 }
 
-function sudo() {
+function dt_sudo() {
   if [ "$(os_kernel)" = "Linux" ]; then
     echo "sudo"
   fi
 }
 
-SUDO=$(sudo)
+SUDO=$(dt_sudo)

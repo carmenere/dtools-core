@@ -43,13 +43,13 @@ function _psql_clean() {
   ${admin}__psql_drop_role_password
 }
 
-function psql_alter_role_password() { _psql_gexec $(CONN) pg_sql_alter_role_password "local"; }
+function psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
 function psql_conn() { $(TERMINAL) "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
-function psql_create_db() { _psql_gexec $(CONN) pg_sql_create_db; }
-function psql_create_user() { _psql_gexec $(CONN) pg_sql_create_user; }
-function psql_drop_db() { _psql_gexec $(CONN) pg_sql_drop_db; }
-function psql_drop_role_password() { _psql_gexec $(CONN) pg_sql_drop_role_password; }
-function psql_drop_user() { _psql_gexec $(CONN) pg_sql_drop_user; }
+function psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
+function psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
+function psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
+function psql_drop_role_password() { _psql_gexec $(CONN) sql_pg_drop_role_password; }
+function psql_drop_user() { _psql_gexec $(CONN) sql_pg_drop_user; }
 function psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
 function psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
 

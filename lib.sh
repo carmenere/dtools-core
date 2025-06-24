@@ -150,9 +150,9 @@ cache_ctx() {
 
 switch_ctx() {
   local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "Switching to ctx ${BOLD}${ctx}${RESET}"
+  dt_debug ${fname} "Switching to ctx ${BOLD}${ctx}${RESET}" && \
   err_if_empty ${fname} "ctx" && \
-  DT_CTX=
+  DT_CTX= && \
   ${ctx} && \
   DT_CTX=${ctx}
 }
@@ -173,6 +173,7 @@ get_var() {
     echo "${val}"
   else
     dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist"
+    return 99
   fi
 }
 
@@ -230,7 +231,7 @@ load_vars() {
   fi
   dt_ctx=${DT_CTX}; DT_CTX=
   dt_debug ${fname} "Will init ctx ${BOLD}${sctx}${RESET}, DT_CTX=${DT_CTX}, previous DT_CTX=${dt_ctx}"
-  ${sctx}
+  ${sctx} || return $?
   DT_CTX=${dt_ctx}
   dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
   for var in "$@"; do
@@ -242,7 +243,7 @@ load_vars() {
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
-    var ${var} "$(${var} ${sctx})"
+    var ${var} "$(${var} ${sctx})" || return $?
   done
   dt_debug ${fname} "${BOLD}Done${RESET}"
 }
@@ -262,7 +263,7 @@ dt_bind() {
   excluded=($(echo ${excluded}))
   if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
   for method in ${methods[@]}; do
-    if is_contained ${method}${suffix} excluded; then continue; fi
+    if is_contained ${method}${suffix} excluded; then continue; fi && \
     if [ declare -p ${method}${suffix} >/dev/null 2>&1 ] || [ declare -p ${ctx}__${method} >/dev/null 2>&1 ]; then
       dt_error ${fname} "Duplicated method=${BOLD}${method}${suffix}${RESET}"
       return 99
@@ -270,8 +271,8 @@ dt_bind() {
     dt_debug ${fname} "Registering methods: ${BOLD}${method}${suffix}${RESET} and ${BOLD}${ctx}__${method}${RESET}"
     DT_METHODS+=(${method}${suffix})
     DT_METHODS+=(${ctx}__${method})
-    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }"
-    eval "function ${method}${suffix}() ${body}" || return $?
+    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" && \
+    eval "function ${method}${suffix}() ${body}" && \
     eval "function ${ctx}__${method}() ${body}" || return $?
   done
 }

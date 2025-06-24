@@ -15,8 +15,8 @@ function ctx_conn_migrator_pg() {
   var PGUSER "example_migrator" && \
   var PGPASSWORD "1234567890" && \
   var PGDATABASE "example" && \
-  var GRANT pg_sql_grant_user_migrator && \
-  var REVOKE pg_sql_revoke_user_migrator && \
+  var GRANT sql_pg_grant_user_migrator && \
+  var REVOKE sql_pg_revoke_user_migrator && \
   var CONN ctx_conn_admin_pg && \
   var GRANT_CONN ctx_conn_admin_pg && \
   ctx_conn_admin_pg ${caller} && \
@@ -28,8 +28,8 @@ function ctx_conn_app_pg() {
   var PGUSER "example_app" && \
   var PGPASSWORD "1234567890" && \
   var PGDATABASE "example" && \
-  var GRANT pg_sql_grant_user_app && \
-  var REVOKE pg_sql_revoke_user_app && \
+  var GRANT sql_pg_grant_user_app && \
+  var REVOKE sql_pg_revoke_user_app && \
   var CONN ctx_conn_admin_pg && \
   var GRANT_CONN ctx_conn_migrator_pg && \
   ctx_conn_admin_pg ${caller} && \
