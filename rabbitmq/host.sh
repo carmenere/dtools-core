@@ -1,5 +1,29 @@
-# PROFILE_RMQ={ host | docker }, by default "host"
-if [ -z "${PROFILE_RMQ}" ]; then export PROFILE_RMQ="host"; fi
+# RMQ_MODE={ host | docker }, by default "host"
+# Exported to be seen in child process, if set in parent - do not change.
+if [ -z "${RMQ_MODE}" ]; then export RMQ_MODE="host"; fi
+
+rmq_mode() {
+  if [ "${RMQ_MODE}" = "docker" ]; then
+    echo "docker"
+  elif [ "${RMQ_MODE}" = "host" ]; then
+    echo "host"
+  else
+    dt_error ${fname} "Unknown rmq mode: RMQ_MODE=${RMQ_MODE}"
+    return 99
+  fi
+}
+
+set_rmq_mode_docker() {
+  RMQ_MODE=docker
+  reinit_dtools && \
+  dt_info rmq_set_mode_docker "RMQ_MODE=${RMQ_MODE}"
+}
+
+set_rmq_mode_host() {
+  RMQ_MODE=host
+  reinit_dtools && \
+  dt_info rmq_set_mode_host "RMQ_MODE=${RMQ_MODE}"
+}
 
 function rmq_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -23,13 +47,13 @@ function rmq_install() {
 }
 
 function lsof_rmq() {
-  HOST=$(RABBIT_HOST); PORT=$(RABBIT_PORT)
+  HOST=$(RMQ_HOST); PORT=$(RMQ_PORT)
   lsof_tcp
-  PORT=$(RABBIT_PORT_MGM)
+  PORT=$(RMQ_PORT_MGM)
   lsof_tcp
 }
 
-function ctx_host_rmq() {
+function ctx_rmq_host() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var EXCHANGES "ems" && \
   var MAJOR 3 && \
@@ -39,7 +63,7 @@ function ctx_host_rmq() {
   var RABBIT_HOST "localhost" && \
   var RABBIT_PORT 5672 && \
   var RABBIT_PORT_MGM 15672 && \
-  var SERVICE_CHECK_CMD "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'" && \
+  var SERVICE_CHECK_CMD "rmq_conn_admin \$\'status\' 1>/dev/null" && \
   var SERVICE $(rmq_service) && \
   var SERVICE_INSTALL "rmq_install" && \
   var SERVICE_LSOF "lsof_rmq" && \
@@ -47,4 +71,4 @@ function ctx_host_rmq() {
   cache_ctx
 }
 
-DT_BINDINGS+=(ctx_host_rmq:rmq:service_methods)
+DT_BINDINGS+=(ctx_rmq_host:rmq:service_methods)

@@ -2,28 +2,37 @@
 #   $1: must contain $0 of caller
 #   $2: must contain err message
 dt_error() {
-  if [ "${DT_SEVERITY}" -ge 0 ]; then
+  if [ "${DT_SEVERITY}" -ge 1 ]; then
     >&2 echo -e "${RED}${BOLD}[dtools][ERROR][$1]${RESET} $2"
   fi
 }
 
 dt_warning() {
-  if [ "${DT_SEVERITY}" -ge 1 ]; then
+  if [ "${DT_SEVERITY}" -ge 2 ]; then
     >&2 echo -e "${CYAN}${BOLD}[dtools][WARNING][$1]${RESET} $2"
   fi
 }
 
 dt_info() {
-  if [ "${DT_SEVERITY}" -ge 2 ]; then
+  if [ "${DT_SEVERITY}" -ge 3 ]; then
     >&2 echo -e "${GREEN}${BOLD}[dtools][INFO][$1]${RESET} $2"
   fi
 }
 
 dt_debug () {
-  if [ "${DT_SEVERITY}" -ge 3 ]; then
+  if [ "${DT_SEVERITY}" -ge 4 ]; then
     >&2 echo -e "${MAGENTA}${BOLD}[dtools][DEBUG][$1]${RESET} $2"
   fi
 }
+
+dt_log() {
+  >&2 echo -e "${BOLD}[dtools][LOG][$1]${RESET} $2"
+}
+
+set_severity_error() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=1; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_warning() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=2; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_info() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=3; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_debug() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=4; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
 
 fname() { if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi; }
 severity_debug() { DT_SEVERITY=3; }
@@ -275,7 +284,7 @@ dt_bind() {
     dt_debug ${fname} "Registering methods: ${BOLD}${method}${suffix}${RESET} and ${BOLD}${ctx}__${method}${RESET}"
     DT_METHODS+=(${method}${suffix})
     DT_METHODS+=(${ctx}__${method})
-    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" && \
+    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; local self=${ctx}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" && \
     eval "function ${method}${suffix}() ${body}" && \
     eval "function ${ctx}__${method}() ${body}" || return $?
   done
@@ -420,16 +429,17 @@ dt_defaults() {
 }
 
 function dt_rc_load() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   description=$1
   dir=$2
   if [ -z "${description}" ]; then return 99; fi
   if [ -z "${dir}" ]; then return 99; fi
-  echo -e "Loading ${BOLD}$description${RESET} ... "
+  dt_info ${fname} "Loading ${BOLD}$description${RESET} ... "
   for file in "$dir"/*.sh; do
     if [ "$(basename "$file")" != "rc.sh"  ]; then
-      echo -e -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
+      dt_info ${fname} "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
       . "$file" || return 55
-      echo "done.";
+      dt_info ${fname} "done.";
     fi
   done
 }

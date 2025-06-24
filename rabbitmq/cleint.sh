@@ -1,62 +1,63 @@
-select_service_rmq() {
-  if [ "${PROFILE_RMQ}" = "docker" ]; then echo "ctx_docker_rmq"; else echo "ctx_host_rmq"; fi
-}
+rmq_host() { if [ -n "$(RMQ_HOST)" ]; then echo "--host $(RMQ_HOST)"; fi; }
+rmq_port() { if [ -n "$(PORT_MGM)" ]; then echo "--port $(PORT_MGM)"; fi; }
+rmq_user() { if [ -n "$(RMQ_USER)" ]; then echo "--username $(RMQ_USER)"; fi; }
+rmq_password() { if [ -n "$(RMQ_PASSWORD)" ]; then echo "--password $(RMQ_PASSWORD)"; fi; }
 
-rmq_host() { if [ -n "$(RABBIT_HOST)" ]; then echo "--host $(RABBIT_HOST)"; fi; }
-rmq_port() { if [ -n "$(RABBIT_PORT_MGM)" ]; then echo "--port $(RABBIT_PORT_MGM)"; fi; }
-rmq_user() { if [ -n "$(RABBIT_USER)" ]; then echo "--username $(RABBIT_USER)"; fi; }
-rmq_password() { if [ -n "$(RABBIT_PASSWORD)" ]; then echo "--password $(RABBIT_PASSWORD)"; fi; }
+_rabbitmqadmin_conn() { echo "rabbitmqadmin $(rmq_host) $(rmq_port) $(rmq_user) $(rmq_password)"; }
+_rabbitmqctl_conn() { echo "rabbitmqctl $@"; }
 
-_rabbitmqadmin_conn_cmd() {
-  echo "rabbitmqadmin $(rmq_host) $(rmq_port) $(rmq_user) $(rmq_password)"
-}
+rmq_conn() { $(TERMINAL) "$(_rabbitmqctl_conn $@)"; }
 
-rabbitmqctl_check_user() { echo "${SUDO} rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^$(RABBIT_USER)$'"; }
-rabbitmqctl_create_user() { echo "${SUDO} rabbitmqctl add_user $(RABBIT_USER) $(RABBIT_PASSWORD)"; }
-rabbitmqctl_drop_user() { echo "${SUDO} rabbitmqctl delete_user $(RABBIT_USER)"; }
-rabbitmqctl_set_user_tags() { echo "${SUDO} rabbitmqctl set_user_tags $(RABBIT_USER) administrator"; }
-rabbitmqctl_set_permissions() { echo "${SUDO} rabbitmqctl set_permissions -p / $(RABBIT_USER) '.*' '.*' '.*'"; }
+rmq_check_user() { $(EXEC) "${SUDO} rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^$(RMQ_USER)$'"; }
+rmq_create_user() { $(EXEC) "${SUDO} rabbitmqctl add_user $(RMQ_USER) $(RMQ_PASSWORD)"; }
+rmq_drop_user() { $(EXEC) "${SUDO} rabbitmqctl delete_user $(RMQ_USER)"; }
+rmq_set_user_tags() { $(EXEC) "${SUDO} rabbitmqctl set_user_tags $(RMQ_USER) administrator"; }
+rmq_set_permissions() { $(EXEC) "${SUDO} rabbitmqctl set_permissions -p / $(RMQ_USER) '.*' '.*' '.*'"; }
 
-rabbitmqadmin_delete() {
-  local fname conn query_ctx=$1 conn_ctx=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "query_ctx=${query_ctx}, conn_ctx=${conn_ctx}, exec=${exec}" && \
-  err_if_empty ${fname} "query_ctx conn_ctx exec" && \
-  ${conn_ctx} && \
-  conn="$(switch_ctx ${conn_ctx} && _rabbitmqadmin_conn_cmd)" && \
-  ${query_ctx} && \
+rmq_delete() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local queues=($(echo "$(QUEUES)")) exchanges=($(echo "$(EXCHANGES)"))
+  local conn="$(switch_ctx $(CONN) && _rabbitmqadmin_conn)" && \
+  dt_debug ${fname} "conn=$(CONN), queues=$(QUEUES), exchanges=$(EXCHANGES), conn=${conn}" && \
   (
-    switch_ctx ${query_ctx} && \
-    queues=($(echo "$(QUEUES)"))
-    dt_debug ${fname} "queues=${queues[@]}"
     for queue in ${queues[@]}; do
-      ${exec} "${conn} delete queue name='${queue}' || true"
+      $(EXEC) "${conn} delete queue name='${queue}' || true"
     done
-    exchanges=($(echo "$(EXCHANGES)"))
     for exchange in ${exchanges[@]}; do
-      ${exec} "${conn} delete exchange name='${exchange}' || true"
+      $(EXEC) "${conn} delete exchange name='${exchange}' || true"
     done
   )
 }
 
-_rmq_init() {
-  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
-  err_if_empty ${fname} "admin app exec" && \
-  ${admin} && ${app} && \
-  if ! ${exec} "$(switch_ctx ${app} && rabbitmqctl_check_user)"; then
-    ${exec} "$(switch_ctx ${app} && rabbitmqctl_create_user)" && \
-    ${exec} "$(switch_ctx ${app} && rabbitmqctl_set_user_tags)" && \
-    ${exec} "$(switch_ctx ${app} && rabbitmqctl_set_permissions)"
+function _rmq_init() {
+  local app="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "app=${app}" && \
+  err_if_empty ${fname} "app" && \
+  if ! ${app}__rmq_check_user; then
+    ${app}__rmq_create_user && \
+    ${app}__rmq_set_user_tags && \
+    ${app}__rmq_set_permissions
   fi
 }
 
-_rmq_clean() {
-  local admin=$1 app=$2 exec=$3 fname=$(fname "${FUNCNAME[0]}" "$0")
-  dt_debug ${fname} "admin=${admin}, app=${app}, exec=${exec}" && \
-  err_if_empty ${fname} "admin app exec" && \
-  ${admin} && ${app} && \
-  if ${exec} "$(switch_ctx ${app} && rabbitmqctl_check_user)"; then
-    ${exec} "$(switch_ctx ${app} && rabbitmqctl_drop_user)" && \
-    rabbitmqadmin_delete ${app} ${admin} ${exec}
+function _rmq_clean() {
+  local app="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "app=${app}" && \
+  err_if_empty ${fname} "app" && \
+  if ${app}__rmq_check_user; then
+    ${app}__rmq_drop_user && \
+    ${app}__rmq_delete
   fi
+}
+
+rmq_methods() {
+  local methods=()
+  methods+=(rmq_conn)
+  methods+=(rmq_check_user)
+  methods+=(rmq_create_user)
+  methods+=(rmq_drop_user)
+  methods+=(rmq_set_user_tags)
+  methods+=(rmq_set_permissions)
+  methods+=(rmq_delete)
+  echo "${methods[@]}"
 }
