@@ -51,10 +51,10 @@ function rustup_methods() {
 
 ctx_rustup() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var RUSTUP_TOOLCHAIN "1.86.0"
-  var RUSTUP_TARGET_TRIPLE $(rust_target_triple)
-  var RUSTUP_COMPONENTS "clippy rustfmt"
-  var NIGHTLY_VERSION "nightly-2025-05-01"
+  var RUSTUP_TOOLCHAIN "1.86.0" && \
+  var RUSTUP_TARGET_TRIPLE $(rust_target_triple) && \
+  var RUSTUP_COMPONENTS "clippy rustfmt" && \
+  var NIGHTLY_VERSION "nightly-2025-05-01" && \
   cache_ctx
 }
 

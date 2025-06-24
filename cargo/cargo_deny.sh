@@ -1,7 +1,7 @@
 function ctx_crate_cargo_deny() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var CRATE_NAME "cargo-deny"
-  var CRATE_VERSION "0.18.2"
+  var CRATE_NAME "cargo-deny" && \
+  var CRATE_VERSION "0.18.2" && \
   ctx_cargo_crate ${caller} && cache_ctx
 }
 

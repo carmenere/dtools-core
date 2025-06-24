@@ -31,18 +31,18 @@ function lsof_rmq() {
 
 function ctx_host_rmq() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var EXCHANGES "ems"
-  var MAJOR 3
-  var MINOR 8
-  var PATCH 3
-  var QUEUES 'notification ems.error ems.result ems.task'
-  var RABBIT_HOST "localhost"
-  var RABBIT_PORT 5672
-  var RABBIT_PORT_MGM 15672
-  var SERVICE_CHECK_CMD "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
-  var SERVICE $(rmq_service)
-  var SERVICE_INSTALL "rmq_install"
-  var SERVICE_LSOF "lsof_rmq"
+  var EXCHANGES "ems" && \
+  var MAJOR 3 && \
+  var MINOR 8 && \
+  var PATCH 3 && \
+  var QUEUES 'notification ems.error ems.result ems.task' && \
+  var RABBIT_HOST "localhost" && \
+  var RABBIT_PORT 5672 && \
+  var RABBIT_PORT_MGM 15672 && \
+  var SERVICE_CHECK_CMD "sh -c 'rabbitmqctl status 1>/dev/null 2>&1'" && \
+  var SERVICE $(rmq_service) && \
+  var SERVICE_INSTALL "rmq_install" && \
+  var SERVICE_LSOF "lsof_rmq" && \
   ctx_os_service ${caller} && \
   cache_ctx
 }

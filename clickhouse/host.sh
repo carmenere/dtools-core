@@ -101,20 +101,20 @@ lsof_clickhouse() {
 
 ctx_host_clickhouse() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var CLICKHOUSE_HOST "localhost"
+  var CLICKHOUSE_HOST "localhost" && \
   # for clickhouse-client
-  var CLICKHOUSE_PORT 9000
+  var CLICKHOUSE_PORT 9000 && \
   # for applications
-  var CLICKHOUSE_HTTP_PORT 8123
-  var MAJOR 23
-  var MINOR 5
-  var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $?
-  var CH_CONFIG_XML $(clickhouse_conf) || return $?
-  var SERVICE $(clickhouse_service)
-  var SERVICE_CHECK_CMD "clickhouse_conn_admin --query \"'exit'\""
-  var SERVICE_PREPARE clickhouse_prepare
-  var SERVICE_INSTALL clickhouse_install
-  var SERVICE_LSOF lsof_clickhouse
+  var CLICKHOUSE_HTTP_PORT 8123 && \
+  var MAJOR 23 && \
+  var MINOR 5 && \
+  var CH_USER_XML "$(clickhouse_user_xml_dir)/admin.xml" || return $? && \
+  var CH_CONFIG_XML $(clickhouse_conf) || return $? && \
+  var SERVICE $(clickhouse_service) && \
+  var SERVICE_CHECK_CMD "clickhouse_conn_admin --query \"'exit'\"" && \
+  var SERVICE_PREPARE clickhouse_prepare && \
+  var SERVICE_INSTALL clickhouse_install && \
+  var SERVICE_LSOF lsof_clickhouse && \
   ctx_os_service ${caller} && \
   cache_ctx
 }

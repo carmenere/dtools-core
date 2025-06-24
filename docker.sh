@@ -1,4 +1,4 @@
-#  FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
+# FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 
 docker_install() {
   SUDO=sudo
@@ -19,8 +19,8 @@ docker_install() {
   fi
 }
 
+# post-install actions
 docker_post_install() {
-  # post-install actions
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
       ${SUDO} groupadd docker || true
       ${SUDO} usermod -aG docker ${USER}
@@ -142,35 +142,34 @@ function docker_network_methods() {
   echo "${methods[@]}"
 }
 
-#  IMAGE="pg:${DEFAULT_TAG}"
-#  BUILDER=${BUILDER_IMAGE}
-#  BUILD_VERSION="$(git_build_version)"
-
 ctx_docker_service() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   var BASE_IMAGE && \
+  var BUILDER $(BUILDER_IMAGE) && \
+  var BUILD_ARGS && \
+  var BUILD_VERSION "$(git_build_version)" && \
+  var CHECK "docker_check" && \
   var COMMAND && \
-  var SERVICE && \
   var CTX "." && \
+  var DEFAULT_TAG $(docker_default_tag) && \
+  var EXEC "docker_exec_i_cmd" && \
   var FLAGS "-d" && \
   var IMAGE $(BASE_IMAGE) && \
+  var PUBLISH && \
   var RESTART "always" && \
   var RM && \
   var RUN_ENVS && \
-  var PUBLISH && \
-  var BUILD_ARGS && \
+  var SERVICE && \
   var SH "/bin/sh" && \
-  var EXEC "docker_exec_i_cmd" && \
   var TERMINAL "docker_exec_it_cmd" && \
-  var CHECK "docker_check" && \
   cache_ctx
 }
 
 ctx_docker_network() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var SUBNET "192.168.111.0/24"
-  var BRIDGE "example"
-  var DRIVER "bridge"
+  var SUBNET "192.168.111.0/24" && \
+  var BRIDGE "example" && \
+  var DRIVER "bridge" && \
   cache_ctx
 }
 

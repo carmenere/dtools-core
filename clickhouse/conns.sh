@@ -1,17 +1,17 @@
 ctx_conn_admin_clickhouse() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var CLICKHOUSE_USER "dt_admin"
-  var CLICKHOUSE_PASSWORD "1234567890"
-  var CLICKHOUSE_DB "default"
+  var CLICKHOUSE_USER "dt_admin" && \
+  var CLICKHOUSE_PASSWORD "1234567890" && \
+  var CLICKHOUSE_DB "default" && \
   $(select_service_clickhouse) ${caller} && \
   cache_ctx
 }
 
 ctx_conn_app_clickhouse() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var CLICKHOUSE_USER "example_app"
-  var CLICKHOUSE_PASSWORD "1234567890"
-  var CLICKHOUSE_DB "example"
+  var CLICKHOUSE_USER "example_app" && \
+  var CLICKHOUSE_PASSWORD "1234567890" && \
+  var CLICKHOUSE_DB "example" && \
   $(select_service_clickhouse) ${caller} && \
   cache_ctx
 }

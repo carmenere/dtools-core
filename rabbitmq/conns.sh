@@ -1,15 +1,15 @@
 function ctx_conn_admin_rmq() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var RABBIT_USER "guest"
-  var RABBIT_PASSWORD "guest"
+  var RABBIT_USER "guest" && \
+  var RABBIT_PASSWORD "guest" && \
   $(select_service_rmq) ${caller} && \
   cache_ctx
 }
 
 function ctx_conn_app_rmq() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var RABBIT_USER "app_user"
-  var RABBIT_PASSWORD 12345
+  var RABBIT_USER "app_user" && \
+  var RABBIT_PASSWORD 12345 && \
   $(select_service_rmq) ${caller} && \
   cache_ctx
 }

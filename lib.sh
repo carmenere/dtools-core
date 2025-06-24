@@ -242,7 +242,7 @@ load_vars() {
       dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
       return 99
     fi
-    var ${var} "$(${var} ${sctx})"
+    var ${var} "$(${var} ${sctx})" && \
   done
   dt_debug ${fname} "${BOLD}Done${RESET}"
 }

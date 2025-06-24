@@ -49,19 +49,19 @@ function pg_ctl_methods() {
 
 function ctx_pg_ctl() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var PGUSER $(pg_superuser)
-  var PGPORT 5444
-  var PGHOST "localhost"
-  var OS_USER "$(PGUSER)"
-  var DATADIR "${DT_ARTEFACTS}/pg_ctl/data"
-  var INITDB_AUTH_HOST "md5"
-  var INITDB_AUTH_LOCAL "peer"
-  var INITDB_PWFILE "/tmp/passwd.tmp"
-  var PG_CTL_LOGGING_COLLECTOR "on"
-  var PG_CTL_CONF "$(DATADIR)/postgresql.conf"
-  var PG_CTL_LOG "$(DATADIR)/pg_ctl.logs"
-  var POSTMASTER "$(DATADIR)/postmaster.pid"
-  var PG_CONF "$(DATADIR)/postgresql.conf"
+  var PGUSER $(pg_superuser) && \
+  var PGPORT 5444 && \
+  var PGHOST "localhost" && \
+  var OS_USER "$(PGUSER)" && \
+  var DATADIR "${DT_ARTEFACTS}/pg_ctl/data" && \
+  var INITDB_AUTH_HOST "md5" && \
+  var INITDB_AUTH_LOCAL "peer" && \
+  var INITDB_PWFILE "/tmp/passwd.tmp" && \
+  var PG_CTL_LOGGING_COLLECTOR "on" && \
+  var PG_CTL_CONF "$(DATADIR)/postgresql.conf" && \
+  var PG_CTL_LOG "$(DATADIR)/pg_ctl.logs" && \
+  var POSTMASTER "$(DATADIR)/postmaster.pid" && \
+  var PG_CONF "$(DATADIR)/postgresql.conf" && \
   ctx_os_service ${caller} && \
   cache_ctx
 }
