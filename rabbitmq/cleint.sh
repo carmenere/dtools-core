@@ -4,7 +4,7 @@ rmq_user() { if [ -n "$(RMQ_USER)" ]; then echo "--username $(RMQ_USER)"; fi; }
 rmq_password() { if [ -n "$(RMQ_PASSWORD)" ]; then echo "--password $(RMQ_PASSWORD)"; fi; }
 
 _rabbitmqadmin_conn() { echo "rabbitmqadmin $(rmq_host) $(rmq_port) $(rmq_user) $(rmq_password)"; }
-_rabbitmqctl_conn() { echo "rabbitmqctl $@"; }
+_rabbitmqctl_conn() { echo "${SUDO} rabbitmqctl $@"; }
 
 rmq_conn() { $(TERMINAL) "$(_rabbitmqctl_conn $@)"; }
 
