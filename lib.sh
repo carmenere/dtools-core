@@ -171,7 +171,7 @@ switch_ctx() {
 # ovar: original var
 # octx: original ctx
 get_var() {
-  local val octx ctx var ovar=$1 octx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local val octx ctx var ovar="$1" octx="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
   if [ -z "${ctx}" ]; then
     dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
@@ -191,26 +191,23 @@ get_var() {
 # ovar: original var
 # octx: original ctx
 var() {
-  local mode val ovar ctx octx fname=$(fname "${FUNCNAME[0]}" "$0")
+  local mode val ovar ctx fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
-  ovar=$1; val=$2 octx=$3
+  ovar="$1"; shift; val="$*"
   err_if_empty ${fname} "ovar" || return $?
-  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
+  ctx="${DT_CTX}"
   if [ -z "${ctx}" ]; then
     dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
     return 99
   fi
   var=$(var_pref ${ctx})${ovar} || return $?
   if declare -p ${var} >/dev/null 2>&1; then
-    if [ "${mode}" != "reset" ]; then return 0; fi
+    if [ "${mode}" != "reset" ]; then dt_info ${fname} "${var} exists, but mode != 'reset'"; return 0; fi
   fi
-  val=$(ser_val "${val}")
   dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}, mode=${mode}"
-  eval "${var}=${val}"
+  eval "${var}=\"${val}\""
   if ! is_contained ${var} DT_VARS; then DT_VARS+=(${var}); fi
-#  dt_debug ${fname} "Register function: ${ovar}() { get_var ${ovar} \$1; }"
-  eval "${ovar}() { get_var ${ovar} \$1; }"
-#  dt_debug ${fname} "val=$(${ovar})"
+  eval "${ovar}() { get_var ${ovar} "\$1"; }"
 }
 
 drop_vars_by_pref() {
@@ -218,6 +215,15 @@ drop_vars_by_pref() {
   err_if_empty ${fname} "pref" || return $?
   dt_debug ${fname} "pref=${pref}"
   env | awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
+}
+
+drop_vars() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "*"
+  for var in ${DT_VARS[@]}; do
+    unset ${var}
+  done
+  DT_VARS=()
 }
 
 drop_all_ctxes() {
@@ -232,6 +238,9 @@ drop_all_ctxes() {
   for var in ${DT_CTXES[@]}; do
     unset -f ${var}
   done
+  DT_VARS=()
+  DT_METHODS=()
+  DT_CTXES=()
 }
 
 # sctx: source ctx
@@ -335,9 +344,6 @@ add_deps() {
 
 init_deps() {
   tsort_deps | while read dep; do ${dep} || return $?;
-#    if [ "ctx_conn_app_pg_tetrix" = "${dep}" ] || [ "${A}" = 1 ]; then
-#      A=1; dt_warning ">>>>>>>>>>>>>" $(MINOR)
-#    fi
   done
 }
 

@@ -106,9 +106,9 @@ function pg_add_path() {
 
 function pg_hba_add_policy() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  old_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) || return $?
-  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' $(PG_HBA_CONF)" || return $?
-  new_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) || return $?
+  old_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) && \
+  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' $(PG_HBA_CONF)" && \
+  new_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) && \
   if [ "${old_hash}" != "${new_hash}" ]; then
     dt_info ${fname} "$(PG_HBA_CONF) is ${BOLD}is changed${RESET}"; return 77
   else
@@ -118,9 +118,9 @@ function pg_hba_add_policy() {
 
 function pg_conf_set_port() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
-  old_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
-  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" || return $?
-  new_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) || return $?
+  old_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) && \
+  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" && \
+  new_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) && \
   if [ "${old_hash}" != "${new_hash}" ]; then
     dt_info ${fname} "$(POSTGRESQL_CONF) is ${BOLD}is changed${RESET}"; return 77
   else
@@ -131,9 +131,9 @@ function pg_conf_set_port() {
 # OS service methods
 function pg_prepare() {
   local changed
-  pg_hba_add_policy; if [ "$?" = 77 ]; then changed="y"; fi
-  pg_conf_set_port; if [ "$?" = 77 ]; then changed="y"; fi
-  if [ "${changed}" != "y" ]; then return 0; fi
+  pg_hba_add_policy; err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
+  pg_conf_set_port;  err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
+  if [ "${changed}" != "y" ]; then return 0; fi && \
   service_stop_pg
 }
 
@@ -160,7 +160,7 @@ function ctx_pg_host() {
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
     var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
   fi
-  var SERVICE_CHECK_CMD "psql_conn_admin -c \$\'select true;\'" && \
+  var SERVICE_CHECK_CMD "psql_local_conn_admin -c \$\'select true;\'" && \
   var SERVICE_PREPARE "pg_prepare" && \
   var SERVICE_INSTALL "pg_install" && \
   var SERVICE_LSOF "lsof_pg" && \

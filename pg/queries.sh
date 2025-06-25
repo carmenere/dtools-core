@@ -1,32 +1,38 @@
+if [ "$(pg_mode)" = "docker" ]; then
+  DD='\$\$'
+else
+  DD='$$'
+fi
+
 function sql_pg_alter_role_password() {
-  local query=$(escape_dollar $(escape_quote "
+  local query=$(escape_quote "
     SELECT
-      \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)'\$\$
+      ${DD} ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '$(PGPASSWORD)' ${DD}
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ")) || return $?
+  ") || return $?
   echo "${query}"
 }
 
 function sql_pg_drop_role_password() {
-  local query=$(escape_dollar $(escape_quote "
+  local query=$(escape_quote "
     SELECT
-      \$\$ALTER ROLE \"$(PGUSER)\" WITH PASSWORD ''\$\$
+      ${DD} ALTER ROLE \"$(PGUSER)\" WITH PASSWORD '' ${DD} 
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ")) || return $?
+  ") || return $?
   echo "${query}"
 }
 
 # In postgres the $$ ... $$ means dollar-quoted string.
 # So, we must escape each $ to avoid bash substitution: \$\$ ... \$\$.
 function sql_pg_create_user() {
-  local query=$(escape_dollar $(escape_quote "
+  local query=$(escape_quote "
     SELECT
-      \$\$CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)'\$\$
+      ${DD} CREATE USER $(PGUSER) WITH ENCRYPTED PASSWORD '$(PGPASSWORD)' ${DD}
     WHERE
       NOT EXISTS (SELECT true FROM pg_roles WHERE rolname = '$(PGUSER)')
-  ")) || return $?
+  ") || return $?
   echo "${query}"
 }
 

@@ -4,12 +4,12 @@ pg_connurl() {
 }
 
 pg_local_connurl() {
-  local vars=(PGPORT PGDATABASE PGUSER)
+  local vars=(PGPORT PGDATABASE)
   echo "${vars[@]}"
 }
 
 function _psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
-function _psql_local_conn() { echo "$(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
+function _psql_local_conn() { echo "$(dt_sudo) -u $(PGUSER) $(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
 
 function _psql_gexec() {
   local conn="_psql_conn" conn_ctx="$1" query="$2" conn_type="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
@@ -25,7 +25,6 @@ function _psql_init() {
   local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
   err_if_empty ${fname} "admin migrator app" && \
-  ${admin}__psql_alter_role_password && \
   ${migrator}__psql_create_db && \
   ${migrator}__psql_create_user && \
   ${migrator}__psql_grant_user && \
@@ -39,10 +38,10 @@ function _psql_clean() {
   err_if_empty ${fname} "admin migrator app" && \
   ${migrator}__psql_drop_db && \
   ${migrator}__psql_drop_user && \
-  ${app}__psql_drop_user && \
-  ${admin}__psql_drop_role_password
+  ${app}__psql_drop_user
 }
 
+function psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
 function psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
 
 function psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
@@ -58,6 +57,7 @@ function psql_methods() {
   local methods=()
   methods+=(psql_alter_role_password)
   methods+=(psql_conn)
+  methods+=(psql_local_conn)
   methods+=(psql_create_db)
   methods+=(psql_create_user)
   methods+=(psql_drop_db)

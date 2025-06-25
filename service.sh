@@ -54,8 +54,8 @@ ctx_os_service() {
   var SERVICE_CHECK_CMD  && \
   var SERVICE_INSTALL  && \
   var SERVICE_LSOF  && \
-  var SERVICE_STOP "$(service) stop $(SERVICE)"  && \
-  var SERVICE_START "$(service) start $(SERVICE)"  && \
+  var SERVICE_STOP $(service) stop $(SERVICE)  && \
+  var SERVICE_START $(service) start $(SERVICE)  && \
   var SERVICE_PREPARE && \
   var EXEC "exec_cmd" && \
   var TERMINAL "exec_cmd" && \
