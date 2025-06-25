@@ -60,10 +60,10 @@ function ctx_rmq_host() {
   var MINOR 8 && \
   var PATCH 3 && \
   var QUEUES 'notification ems.error ems.result ems.task' && \
-  var RABBIT_HOST "localhost" && \
-  var RABBIT_PORT 5672 && \
-  var RABBIT_PORT_MGM 15672 && \
-  var SERVICE_CHECK_CMD "rmq_conn_admin \$\'status\' 1>/dev/null" && \
+  var RMQ_HOST "localhost" && \
+  var RMQ_PORT 5672 && \
+  var PORT_MGM 15672 && \
+  var SERVICE_CHECK_CMD "rmq_conn_admin $'status' 1>/dev/null" && \
   var SERVICE $(rmq_service) && \
   var SERVICE_INSTALL "rmq_install" && \
   var SERVICE_LSOF "lsof_rmq" && \

@@ -356,8 +356,8 @@ list_deps(){
   cat ${DT_CTXES_DEPS}
 }
 
-dryrun_off() { DT_DRYRUN="n"; }
-dryrun_on() { DT_DRYRUN="y"; }
+set_dryrun_off() { DT_DRYRUN="n"; }
+set_dryrun_on() { DT_DRYRUN="y"; }
 
 exec_cmd () {
   local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")

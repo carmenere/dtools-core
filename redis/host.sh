@@ -64,7 +64,7 @@ function ctx_redis_host() {
   var PATCH 4 && \
   var REDIS_PORT 6379 && \
   var SERVICE $(redis_service) && \
-  var SERVICE_CHECK_CMD "redis_conn_admin -c \$\'ping\'" && \
+  var SERVICE_CHECK_CMD "redis_conn_admin -c $'ping'" && \
   var SERVICE_INSTALL redis_install && \
   var SERVICE_LSOF lsof_redis && \
   var CLIENT redis-cli && \

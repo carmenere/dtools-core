@@ -17,7 +17,8 @@ rmq_set_permissions() { $(EXEC) "${SUDO} rabbitmqctl set_permissions -p / $(RMQ_
 rmq_delete() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local queues=($(echo "$(QUEUES)")) exchanges=($(echo "$(EXCHANGES)"))
-  local conn="$(switch_ctx $(CONN) && _rabbitmqadmin_conn)" && \
+  switch_ctx $(CONN) && \
+  local conn="$(_rabbitmqadmin_conn)" && \
   dt_debug ${fname} "conn=$(CONN), queues=$(QUEUES), exchanges=$(EXCHANGES), conn=${conn}" && \
   (
     for queue in ${queues[@]}; do
