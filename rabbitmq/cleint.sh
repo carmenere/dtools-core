@@ -4,15 +4,16 @@ rmq_user() { if [ -n "$(RMQ_USER)" ]; then echo "--username $(RMQ_USER)"; fi; }
 rmq_password() { if [ -n "$(RMQ_PASSWORD)" ]; then echo "--password $(RMQ_PASSWORD)"; fi; }
 
 _rabbitmqadmin_conn() { echo "rabbitmqadmin $(rmq_host) $(rmq_port) $(rmq_user) $(rmq_password)"; }
-_rabbitmqctl_conn() { echo "${SUDO} rabbitmqctl $@"; }
+_rabbitmqctl_conn() { echo "$(_rmq_sudo) rabbitmqctl $@"; }
+_rmq_sudo() { if [ "$(rmq_mode)" = "docker" ]; then echo ""; else echo "$(dt_sudo)"; fi; }
 
 rmq_conn() { $(TERMINAL) "$(_rabbitmqctl_conn $@)"; }
 
-rmq_check_user() { $(EXEC) "${SUDO} rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^$(RMQ_USER)$'"; }
-rmq_create_user() { $(EXEC) "${SUDO} rabbitmqctl add_user $(RMQ_USER) $(RMQ_PASSWORD)"; }
-rmq_drop_user() { $(EXEC) "${SUDO} rabbitmqctl delete_user $(RMQ_USER)"; }
-rmq_set_user_tags() { $(EXEC) "${SUDO} rabbitmqctl set_user_tags $(RMQ_USER) administrator"; }
-rmq_set_permissions() { $(EXEC) "${SUDO} rabbitmqctl set_permissions -p / $(RMQ_USER) '.*' '.*' '.*'"; }
+rmq_check_user() { $(EXEC) "$(_rmq_sudo) rabbitmqctl --quiet list_users | sed -n '1d;p' | cut -d$'\t' -f1 | grep -m 1 '^$(RMQ_USER)$'"; }
+rmq_create_user() { $(EXEC) "$(_rmq_sudo) rabbitmqctl add_user $(RMQ_USER) $(RMQ_PASSWORD)"; }
+rmq_drop_user() { $(EXEC) "$(_rmq_sudo) rabbitmqctl delete_user $(RMQ_USER)"; }
+rmq_set_user_tags() { $(EXEC) "$(_rmq_sudo) rabbitmqctl set_user_tags $(RMQ_USER) administrator"; }
+rmq_set_permissions() { $(EXEC) "$(_rmq_sudo) rabbitmqctl set_permissions -p / $(RMQ_USER) '.*' '.*' '.*'"; }
 
 rmq_delete() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")

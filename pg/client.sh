@@ -4,14 +4,15 @@ pg_connurl() {
 }
 
 pg_local_connurl() {
-  local vars=(PGPORT PGDATABASE)
+  local vars=(PGUSER PGPORT PGDATABASE)
   echo "${vars[@]}"
 }
 
-function _psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
-function _psql_local_conn() { echo "$(dt_sudo) -u $(PGUSER) $(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
+_psql_sudo() { if [ "$(pg_mode)" = "docker" ]; then echo ""; else echo "$(dt_sudo) -u $(PGUSER)"; fi; }
+_psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
+_psql_local_conn() { echo "$(_psql_sudo) $(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
 
-function _psql_gexec() {
+_psql_gexec() {
   local conn="_psql_conn" conn_ctx="$1" query="$2" conn_type="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
   dt_debug ${fname} "conn_ctx=${conn_ctx}, query=${query}" && \
   err_if_empty ${fname} "conn_ctx query" && \
@@ -21,7 +22,7 @@ function _psql_gexec() {
   $(EXEC) "echo $'${query}' '\gexec' | $(${conn})"
 }
 
-function _psql_init() {
+_psql_init() {
   local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
   err_if_empty ${fname} "admin migrator app" && \
@@ -32,7 +33,7 @@ function _psql_init() {
   ${app}__psql_grant_user
 }
 
-function _psql_clean() {
+_psql_clean() {
   local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
   dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
   err_if_empty ${fname} "admin migrator app" && \
@@ -41,19 +42,19 @@ function _psql_clean() {
   ${app}__psql_drop_user
 }
 
-function psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
-function psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
+psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
+psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
 
-function psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
-function psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
-function psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
-function psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
-function psql_drop_role_password() { _psql_gexec $(CONN) sql_pg_drop_role_password; }
-function psql_drop_user() { _psql_gexec $(CONN) sql_pg_drop_user; }
-function psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
-function psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
+psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
+psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
+psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
+psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
+psql_drop_role_password() { _psql_gexec $(CONN) sql_pg_drop_role_password; }
+psql_drop_user() { _psql_gexec $(CONN) sql_pg_drop_user; }
+psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
+psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
 
-function psql_methods() {
+psql_methods() {
   local methods=()
   methods+=(psql_alter_role_password)
   methods+=(psql_conn)

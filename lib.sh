@@ -92,13 +92,8 @@ inline_vars() {
   echo "${result[@]}"
 }
 
-escape_quote() {
-  echo "$@" | sed -e "s/'/\\\\'/g"
-}
-
-escape_dollar() {
-  echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"
-}
+escape_quote() { echo "$@" | sed -e "s/'/\\\\'/g"; }
+escape_dollar() { echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"; }
 
 is_contained() {
   local item=$1 registry=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -189,7 +184,6 @@ get_var() {
 
 # sets or resets var in some ctx
 # ovar: original var
-# octx: original ctx
 var() {
   local mode val ovar ctx fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
@@ -328,9 +322,7 @@ dt_vars() {
   for var in ${DT_VARS[@]}; do val="$(eval echo "\$${var}")"; echo "${var}=${val}"; done
 }
 
-function reinit_dtools() {
-  . ${DTOOLS}/core/rc.sh
-}
+function reinit_dtools() { . ${DTOOLS}/core/rc.sh; }
 
 add_deps() {
   local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0"); shift
@@ -352,10 +344,7 @@ tsort_deps() {
   tsort "${DT_CTXES_DEPS}" | tac
 }
 
-list_deps(){
-  cat ${DT_CTXES_DEPS}
-}
-
+list_deps(){ cat ${DT_CTXES_DEPS}; }
 set_dryrun_off() { DT_DRYRUN="n"; }
 set_dryrun_on() { DT_DRYRUN="y"; }
 
@@ -370,9 +359,6 @@ exec_cmd () {
       >&2 echo -e "${BOLD}[dtools][DT_DRYRUN]${RESET}"
       >&2 echo -e "${cmd}"
     fi
-    if [ "${DT_ECHO_STDOUT}" = "y" ]; then
-      echo -e "${cmd}"
-    fi
   else
     if [ "${DT_ECHO}" = "y" ]; then
       >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][DT_ECHO][exec_cmd]${RESET}"
@@ -381,20 +367,6 @@ exec_cmd () {
     eval "$(echo -e "${cmd}")" || return $?
   fi
 }
-
-#cmd_echo() {
-#  local fname=$(fname "${FUNCNAME[0]}" "$0")
-#  local saved_DRYRUN saved_ECHO
-#  saved_DRYRUN=${DT_DRYRUN}
-#  saved_ECHO=${DT_DRYRUN}
-#  dryrun_on
-#  DT_ECHO_STDOUT="y"
-#  DT_ECHO="n"
-#  $@ || return $?
-#  DT_ECHO_STDOUT="n"
-#  DT_DRYRUN=${saved_DRYRUN}
-#  DT_ECHO=${saved_ECHO}
-#}
 
 dt_paths() {
   export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
@@ -421,7 +393,6 @@ dt_defaults() {
   export DT_DRYRUN="n"
   export DT_ECHO="y"
   export DT_ECHO_COLOR="${YELLOW}"
-  export DT_ECHO_STDOUT="n"
   export PROFILE_CI=
   export DT_SEVERITY
   if [ -z "${DT_SEVERITY}" ]; then DT_SEVERITY=4; fi

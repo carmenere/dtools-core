@@ -160,7 +160,7 @@ function ctx_pg_host() {
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
     var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
   fi
-  var SERVICE_CHECK_CMD "psql_local_conn_admin -c \$\'select true;\'" && \
+  var SERVICE_CHECK_CMD "psql_local_conn_admin -c $'select true;'" && \
   var SERVICE_PREPARE "pg_prepare" && \
   var SERVICE_INSTALL "pg_install" && \
   var SERVICE_LSOF "lsof_pg" && \
