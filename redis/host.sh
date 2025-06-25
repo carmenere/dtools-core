@@ -14,15 +14,17 @@ redis_mode() {
 }
 
 set_redis_mode_docker() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   REDIS_MODE=docker
-  reinit_dtools && \
-  dt_info redis_set_mode_docker "REDIS_MODE=${REDIS_MODE}"
+  if is_var_changed REDIS_MODE; then drop_vars; fi && \
+  dt_info ${fname} "REDIS_MODE=${REDIS_MODE}"
 }
 
 set_redis_mode_host() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   REDIS_MODE=host
-  reinit_dtools && \
-  dt_info redis_set_mode_host "REDIS_MODE=${REDIS_MODE}"
+  if is_var_changed REDIS_MODE; then drop_vars; fi && \
+  dt_info ${fname} "REDIS_MODE=${REDIS_MODE}"
 }
 
 function redis_service() {

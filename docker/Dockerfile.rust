@@ -3,7 +3,7 @@ ARG BASE_IMAGE=alpine:3.21.3
 FROM ${BASE_IMAGE}
 ########################################################################################################################
 ARG DT_PROJECT=/project
-ARG PG_MAJOR=
+ARG PG_MAJOR=17
 
 RUN apk update --no-cache && apk add --no-cache \
     automake \
@@ -49,5 +49,6 @@ RUN apk update --no-cache && apk add --no-cache \
 
 COPY . ${DT_PROJECT}
 WORKDIR ${DT_PROJECT}
+SHELL ["/bin/bash", "-c"]
 
-RUN /bin/bash -c '. dtools/core/rc.sh && rustup_init_1.86.0'
+RUN . dtools/core/rc.sh && rustup_init_1.86.0

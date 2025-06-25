@@ -368,6 +368,24 @@ exec_cmd () {
   fi
 }
 
+is_var_changed(){
+  local ecode var=$1 pvar new_val prev_val fname=$(fname "${FUNCNAME[0]}" "$0")
+  pvar="PREV_${var}"
+  err_if_empty ${fname} "var" && \
+  new_val="$(eval echo "\$${var}")" && \
+  prev_val="$(eval echo "\$${pvar}")" && \
+  err_if_empty ${fname} "new_val" && \
+  if ! declare -p ${pvar} >/dev/null 2>&1; then
+    ecode=0
+  elif [ "${prev_val}" != "${new_val}" ]; then
+    ecode=0
+  else
+    ecode=99
+  fi && \
+  eval "${pvar}=${new_val}" && \
+  return ${ecode}
+}
+
 dt_paths() {
   export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
   # Paths that depend on DTOOLS

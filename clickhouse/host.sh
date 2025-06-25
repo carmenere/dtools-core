@@ -17,15 +17,17 @@ clickhouse_mode() {
 }
 
 set_clickhouse_mode_docker() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   CLICKHOUSE_MODE=docker
-  reinit_dtools && \
-  dt_info clickhouse_set_mode_docker "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
+  if is_var_changed CLICKHOUSE_MODE; then drop_vars; fi && \
+  dt_info ${fname} "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
 }
 
 set_clickhouse_mode_host() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   CLICKHOUSE_MODE=host
-  reinit_dtools && \
-  dt_info clickhouse_set_mode_host "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
+  if is_var_changed CLICKHOUSE_MODE; then drop_vars; fi && \
+  dt_info ${fname} "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
 }
 
 clickhouse_service() {

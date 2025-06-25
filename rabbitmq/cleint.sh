@@ -20,7 +20,6 @@ rmq_delete() {
   local queues=($(echo "$(QUEUES)")) exchanges=($(echo "$(EXCHANGES)"))
   switch_ctx $(CONN) && \
   local conn="$(_rabbitmqadmin_conn)" && \
-  dt_debug ${fname} "conn=$(CONN), queues=$(QUEUES), exchanges=$(EXCHANGES), conn=${conn}" && \
   (
     for queue in ${queues[@]}; do
       $(EXEC) "${conn} delete queue name='${queue}' || true"

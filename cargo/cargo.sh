@@ -1,5 +1,16 @@
 # PROFILE_CARGO={ release | dev }, by default "release"
 export PROFILE_CARGO="dev"
+set_cargo_profile_dev() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  PROFILE_CARGO="dev"
+  dt_info ${fname} "PROFILE_CARGO=${PROFILE_CARGO}"
+}
+
+set_cargo_profile_release() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  PROFILE_CARGO="release"
+  dt_info ${fname} "PROFILE_CARGO=${PROFILE_CARGO}"
+}
 
 cargo_envs() {
   local envs=()

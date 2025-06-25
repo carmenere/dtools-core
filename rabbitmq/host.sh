@@ -14,15 +14,17 @@ rmq_mode() {
 }
 
 set_rmq_mode_docker() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   RMQ_MODE=docker
-  reinit_dtools && \
-  dt_info rmq_set_mode_docker "RMQ_MODE=${RMQ_MODE}"
+  if is_var_changed RMQ_MODE; then drop_vars; fi && \
+  dt_info ${fname} "RMQ_MODE=${RMQ_MODE}"
 }
 
 set_rmq_mode_host() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   RMQ_MODE=host
-  reinit_dtools && \
-  dt_info rmq_set_mode_host "RMQ_MODE=${RMQ_MODE}"
+  if is_var_changed RMQ_MODE; then drop_vars; fi && \
+  dt_info ${fname} "RMQ_MODE=${RMQ_MODE}"
 }
 
 function rmq_service() {
@@ -37,8 +39,9 @@ function rmq_service() {
 function rmq_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      exec_cmd "${SUDO} apt install gnupg erlang -y" || return $?
-      exec_cmd "${SUDO} apt install rabbitmq-server -y" || return $?
+      exec_cmd "${SUDO} apt install gnupg erlang -y" && \
+      exec_cmd "${SUDO} apt install rabbitmq-server -y" && \
+      exec_cmd "${SUDO} sudo rabbitmq-plugins enable rabbitmq_management"
   elif [ "$(os_kernel)" = "Darwin" ]; then
     exec_cmd "brew install $(rmq_service)"
   else
@@ -49,7 +52,7 @@ function rmq_install() {
 function lsof_rmq() {
   HOST=$(RMQ_HOST); PORT=$(RMQ_PORT)
   lsof_tcp
-  PORT=$(RMQ_PORT_MGM)
+  PORT=$(PORT_MGM)
   lsof_tcp
 }
 

@@ -14,15 +14,17 @@ pg_mode() {
 }
 
 set_pg_mode_docker() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   PG_MODE=docker
-  reinit_dtools && \
-  dt_info pg_set_mode_docker "PG_MODE=${PG_MODE}"
+  if is_var_changed PG_MODE; then drop_vars; fi && \
+  dt_info ${fname} "PG_MODE=${PG_MODE}"
 }
 
 set_pg_mode_host() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
   PG_MODE=host
-  reinit_dtools && \
-  dt_info pg_set_mode_host "PG_MODE=${PG_MODE}"
+  if is_var_changed PG_MODE; then drop_vars; fi && \
+  dt_info ${fname} "PG_MODE=${PG_MODE}"
 }
 
 function pg_superuser() {
