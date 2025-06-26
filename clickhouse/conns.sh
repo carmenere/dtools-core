@@ -1,41 +1,51 @@
-function clickhouse_user_admin() {
-  CLICKHOUSE_PASSWORD="1234567890"
-  CLICKHOUSE_USER="dt_admin"
+select_service_clickhouse() {
+  if [ "$(clickhouse_mode)" = "docker" ]; then echo "ctx_docker_clickhouse"; else echo "ctx_host_clickhouse"; fi
 }
 
-function clickhouse_db_default() {
-  CLICKHOUSE_DB="default"
+ctx_conn_admin_clickhouse() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var CLICKHOUSE_USER "dt_admin" && \
+  var CLICKHOUSE_PASSWORD "1234567890" && \
+  var CLICKHOUSE_DB "default" && \
+  var CONN ctx_conn_admin_clickhouse && \
+  $(select_service_clickhouse) ${caller} && \
+  cache_ctx
 }
 
-function clickhouse_db_example() {
-  CLICKHOUSE_DB="example"
+ctx_conn_migrator_clickhouse() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var CLICKHOUSE_USER "example_migrator" && \
+  var CLICKHOUSE_PASSWORD "1234567890" && \
+  var CLICKHOUSE_DB "example" && \
+  var GRANT sql_click_grant_user && \
+  var REVOKE sql_click_revoke_user && \
+  var CONN ctx_conn_admin_clickhouse && \
+  $(select_service_clickhouse) ${caller} && \
+  cache_ctx
 }
 
-function clickhouse_user_app() {
-  CLICKHOUSE_PASSWORD="12345"
-  CLICKHOUSE_USER="example"
+ctx_conn_app_clickhouse() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var CLICKHOUSE_USER "example_app" && \
+  var CLICKHOUSE_PASSWORD "1234567890" && \
+  var CLICKHOUSE_DB "example" && \
+  var GRANT sql_click_grant_user && \
+  var REVOKE sql_click_revoke_user && \
+  var CONN ctx_conn_admin_clickhouse && \
+  $(select_service_clickhouse) ${caller} && \
+  cache_ctx
 }
 
-function ctx_conn_clickhouse_admin() {
-  ctx_service_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
+DT_BINDINGS+=(ctx_conn_admin_clickhouse:admin:clickhouse_methods)
+DT_BINDINGS+=(ctx_conn_migrator_clickhouse:migrator:clickhouse_methods)
+DT_BINDINGS+=(ctx_conn_app_clickhouse:app:clickhouse_methods)
+
+function clickhouse_init() {
+  switch_ctx $(select_service_clickhouse) && $(CHECK) && \
+  _clickhouse_init ctx_conn_migrator_clickhouse ctx_conn_app_clickhouse
 }
 
-function ctx_conn_clickhouse_app() {
-  ctx_service_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
-}
-
-function ctx_conn_docker_clickhouse_admin() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_default && \
-  clickhouse_user_admin
-}
-
-function ctx_conn_docker_clickhouse_app() {
-  ctx_docker_clickhouse && \
-  clickhouse_db_example && \
-  clickhouse_user_app
+function clickhouse_clean() {
+  switch_ctx $(select_service_clickhouse) && $(CHECK) && \
+  _clickhouse_clean ctx_conn_migrator_clickhouse ctx_conn_app_clickhouse
 }

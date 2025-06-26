@@ -1,36 +1,23 @@
-function ctx_docker_pg() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx_service_pg && \
-  ctx_docker_image && \
-  ctx_docker_container && \
-  ctx_docker_network; exit_on_err ${fname} $? || return $?
-
-  if [ "$(uname -m)" = "arm64" ]; then
-    BASE_IMAGE="arm64v8/postgres:${MAJOR}.${MINOR}-alpine3.21"
-  else
-    BASE_IMAGE="postgres:${MAJOR}.${MINOR}-alpine3.21"
-  fi
-  PGPORT=5411
-  PUBLISH=("${PGPORT}:5432/tcp")
-  CTX="."
-  IMAGE=${BASE_IMAGE}
-#  IMAGE = "pg:${DEFAULT_TAG}"
-#  BUILDER=${BUILDER_IMAGE}
-#  BUILD_VERSION="$(git_build_version)"
-  BACKGROUND="y"
-  CONTAINER="postgres"
-  RESTART="always"
-  CHECK_CMD="sh -c 'pg_isready 1>/dev/null 2>&1'"
-
-  # hooks
-  _hook_pre_docker_run=hooks_pre_docker_run_pg
-  _docker_run_envs=(POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER)
+function ctx_pg_docker() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var BASE_IMAGE "$(docker_arm64v8)postgres:17.5-alpine3.21" && \
+  var SERVICE "postgres" && \
+  var PUB_PGPORT 2222 && \
+  var PGPORT 5432 && \
+  var PSQL psql && \
+  var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER" && \
+  var PUBLISH "$(PUB_PGPORT):$(PGPORT)/tcp" && \
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_pg_host ${caller} && \
+  cache_ctx
 }
 
-function hooks_pre_docker_run_pg() {
-  POSTGRES_DB=${PGDATABASE}
-  POSTGRES_PASSWORD=${PGPASSWORD}
-  POSTGRES_USER=${PGUSER}
+docker_run_pg() {
+  switch_ctx ctx_pg_docker && \
+  load_vars ctx_conn_admin_pg PGPASSWORD PGDATABASE PGUSER && \
+  var POSTGRES_PASSWORD "$(PGPASSWORD)" && \
+  var POSTGRES_DB "$(PGDATABASE)" && \
+  var POSTGRES_USER "$(PGUSER)" && \
+  docker_run
 }
 
-dt_register ctx_conn_docker_pg_admin pg "${docker_methods[@]}"
+DT_BINDINGS+=(ctx_pg_docker:pg:docker_methods:"docker_run_pg")

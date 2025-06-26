@@ -1,36 +1,36 @@
-function app_log_file() {
-  if [ -z "${LOG_FILE}" ] && [ -n "${DT_LOGS}" ] && [ -n "${APP}" ]; then
-    LOG_FILE="${DT_LOGS}/${APP}.logs"
-  fi
-  if [ -n "${LOG_FILE}" ] && [ ! -d "$(dirname ${LOG_FILE})" ]; then mkdir -p $(dirname "${LOG_FILE}"); fi
-}
+app_envs() { echo "$(inline_vars "$(APP_ENVS)")"; }
 
 function app_start() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "BINARY"; exit_on_err ${fname} $? || return $?
-  if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
-  app_log_file
-  if [ -n "${LOG_FILE}" ]; then export > ${LOG_FILE}; fi
-  local cmd=("$(dt_inline_envs "${_inline_envs[@]}")")
-  cmd+=("${BINARY} ${OPTS} 2>&1")
-  if [ -n "${LOG_FILE}" ]; then cmd+=("| tee -a ${LOG_FILE}"); fi
-  dt_exec "${cmd[@]}"
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  non_empty=(APP BINARY LOG_FILE)
+  for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; return 99; fi; done
+  if [ -n "$(LOG_FILE)" ] && [ ! -d "$(dirname $(LOG_FILE))" ]; then mkdir -p $(dirname "$(LOG_FILE)"); fi
+  exec_cmd $(app_envs) $(BINARY) $(OPTS) 2\>\&1 \| tee -a $(LOG_FILE)
 }
 
 function app_stop() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  dt_err_if_empty ${fname} "PKILL_PATTERN"; exit_on_err ${fname} $? || return $?
-  dt_err_if_empty ${fname} "APP"; exit_on_err ${fname} $? || return $?
-  dt_info "Sending signal 'KILL' to ${BOLD}${APP}${RESET} ..."
-  local cmd="ps -A -o pid,args | grep -v grep | grep '${PKILL_PATTERN}' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
-  dt_exec "${cmd}"
-  dt_info "${BOLD}done${RESET}"
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  non_empty=(APP PKILL_PATTERN)
+  for v in ${non_empty[@]}; do if [ -z "$(${v})" ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; return 99; fi; done
+  dt_info ${fname} "Sending signal 'KILL' to ${BOLD}$(APP)${RESET} ..."
+  exec_cmd "ps -A -o pid,args | grep -v grep | grep '$(PKILL_PATTERN)' | awk '{print \$1}' | xargs -I {} kill -s 'KILL' {}"
+  dt_info ${fname} "${BOLD}done${RESET}"
 }
 
-function app_restart() { app_stop && app_start; }
+function app_methods() {
+  local methods=()
+  methods+=(app_stop)
+  methods+=(app_start)
+  echo "${methods[@]}"
+}
 
-app_methods=()
-
-app_methods+=(app_stop)
-app_methods+=(app_start)
-app_methods+=(app_restart)
+function ctx_app() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var APP && \
+  var APP_ENVS && \
+  var BINARY && \
+  var OPTS && \
+  var LOG_FILE "${DT_LOGS}/$(APP).logs" && \
+  var PKILL_PATTERN && \
+  cache_ctx
+}

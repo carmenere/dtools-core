@@ -8,7 +8,7 @@ function openssl_dir() {
 
 function py_set_paths() {
   version="$1"
-  if [ -z "${version}" ]; then dt_error "Var version is empty"; return 99; fi
+  if [ -z "${version}" ]; then error "Var version is empty"; return 99; fi
   export PREFIX="${DT_TOOLCHAIN}/py/${version}"
   export TAR="Python-${version}.tgz"
   export SRC="${DL}/Python-${version}"
@@ -23,6 +23,7 @@ function py_set_paths() {
 }
 
 function ctx_python() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
   export PYMAKE="${DT_CORE}/python/python.mk"
   export DL="${DT_TOOLCHAIN}/dl"
 
@@ -47,29 +48,30 @@ function ctx_python() {
   if [ "$(os_name)" = "macos" ]; then export CXX="/usr/bin/clang"; fi
   if [ "$(os_name)" = "macos" ]; then export CPPFLAGS="-I$(brew --prefix libpq)/include -I$(brew --prefix openssl@1.1)/include"; fi
   if [ "$(os_name)" = "macos" ]; then export LDFLAGS="-L$(brew --prefix libpq)/lib -L$(brew --prefix openssl@1.1)/lib"; fi
+  cache_ctx
 }
 
 function python_build() {
   export
-  dt_exec "make -f ${PYMAKE} python3"
+  exec_cmd "make -f ${PYMAKE} python3"
 }
 
 function python_venv_init() {
-    dt_exec "make -f ${PYMAKE} venv-init"
+    exec_cmd "make -f ${PYMAKE} venv-init"
 }
 
 function python_pip_init() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  dt_exec "make -f ${PYMAKE} pip-init"
+  exec_cmd "make -f ${PYMAKE} pip-init"
 }
 
 function python_venv_clean() {
-  dt_exec "make -f ${PYMAKE} venv-clean"
+  exec_cmd "make -f ${PYMAKE} venv-clean"
 }
 
 function python_pip_clean() {
   export SITE_PACKAGES="$("${VPYTHON}" -m pip show pip | grep Location | cut -d':' -f 2)"
-  dt_exec "make -f ${PYMAKE} pip-clean"
+  exec_cmd "make -f ${PYMAKE} pip-clean"
 }
 
 function python_prepare() {
@@ -83,7 +85,8 @@ function python_clean() {
 }
 
 function ctx_python_3_9_11() {
-  ctx_python
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  ctx_python || return $?
   MAJOR=3
   MINOR=9
   PATCH=11
@@ -96,4 +99,5 @@ function ctx_python_3_9_11() {
   fi
 
   py_set_paths "${MAJOR}.${MINOR}.${PATCH}"
+  cache_ctx
 }

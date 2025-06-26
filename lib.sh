@@ -1,283 +1,461 @@
-function dt_warning() {
-  # $1: info message
-  >&2 echo -e "${BOLD}[dtools]${MAGENTA}[WARNING]${RESET} $1"
-}
-
-function dt_error() {
-  # $1: must contain $0 of caller
-  # $2: must contain err message
-  >&2 echo -e "${BOLD}[dtools]${RED}[ERROR]<in function $1>${RESET} $2"
-}
-
-function dt_info() {
-  # $1: info message
-  >&2 echo -e "${BOLD}[dtools]${GREEN}[INFO]${RESET} $1"
-}
-
-function dt_debug() {
-  # $1: debug message
-  >&2 echo -e "${BOLD}${MAGENTA}[dtools][DEBUG]${RESET} $1"
-}
-
-function dt_target() {
-  # $1: name of target. Each target is a callable.
-  if [ -z "$1" ]; then return 0; fi
-    dt_info "Running target ${BOLD}${GREEN}$1${RESET} ... "
-    $1
-}
-
-# Example: dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-function dt_err_if_empty() {
-  local val="$(eval echo "\$$2")"
-  if [ -n "${val}" ]; then return 0; fi
-  dt_error $1 "Parameter ${BOLD}$2${RESET} is empty"
-  return 77
-}
-
-# Example: exit_on_err ${fname} $err_code
-# $0 contains name of caller function
-function exit_on_err() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  # $1: must contain $0 of caller
-  # $2: error code
-  # $3: error message, if it is empty use name of current function instead
-  local err_msg=$3
-  if [ -z "${err_msg}" ]; then err_msg=${fname}; fi
-  if [ "$2" != 0 ] ; then
-    dt_error $1 "${err_msg}"
-    return $2
+# All functions "error", "warning", "dt_info" and "debug" have the same signature:
+#   $1: must contain $0 of caller
+#   $2: must contain err message
+dt_error() {
+  if [ "${DT_SEVERITY}" -ge 1 ]; then
+    >&2 echo -e "${RED}${BOLD}[dtools][ERROR][$1]${RESET} $2"
   fi
 }
 
-function dt_inline_envs() {
-  local envs=()
-  for env in "$@"; do
-    if [ -z "$env" ]; then continue; fi
-    local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
-    if [ -n "${val}" ]; then envs+=("${env}=$'${val}'"); fi
-  done
-  echo "${envs[@]}"
+dt_warning() {
+  if [ "${DT_SEVERITY}" -ge 2 ]; then
+    >&2 echo -e "${CYAN}${BOLD}[dtools][WARNING][$1]${RESET} $2"
+  fi
 }
 
-# Example: ( ctx_cargo; dt_export_envs; export )
-function dt_export_envs() {
-  for env in ${_export_envs[@]}; do
-    if [ -z "$env" ]; then continue; fi
-    local val=$(dt_escape_single_quotes "$(eval echo "\$$env")")
-    if [ -n "${val}" ]; then
-      dt_exec "export ${env}="${val}""
+dt_info() {
+  if [ "${DT_SEVERITY}" -ge 3 ]; then
+    >&2 echo -e "${GREEN}${BOLD}[dtools][INFO][$1]${RESET} $2"
+  fi
+}
+
+dt_debug () {
+  if [ "${DT_SEVERITY}" -ge 4 ]; then
+    >&2 echo -e "${MAGENTA}${BOLD}[dtools][DEBUG][$1]${RESET} $2"
+  fi
+}
+
+dt_log() {
+  >&2 echo -e "${BOLD}[dtools][LOG][$1]${RESET} $2"
+}
+
+set_severity_error() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=1; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_warning() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=2; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_info() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=3; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+set_severity_debug() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=4; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
+
+fname() { if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi; }
+severity_debug() { DT_SEVERITY=3; }
+severity_error() { DT_SEVERITY=0; }
+severity_info() { DT_SEVERITY=2; }
+severity_warning() { DT_SEVERITY=1; }
+sleep_1() { exec_cmd "sleep 1"; }
+sleep_5() { exec_cmd "sleep 5"; }
+
+ser_val() {
+  local val=$1
+  if $(echo "${val}" | grep "'" >/dev/null 2>&1); then
+    val="$(escape_quote "${val}")"
+    val="$'${val}'"
+  elif $(echo "${val}" | grep ' ' >/dev/null 2>&1); then
+    val="\"${val}\""
+  fi
+  echo "${val}"
+}
+
+err_if_empty() {
+  local var vars val fname=$1 vars=($(echo $2))
+  if [ -z "${fname}" ]; then dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}fname${RESET} must be provided"; return 55; fi
+  if [ -z "${vars}" ]; then dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}vars${RESET} must be provided"; return 55; fi
+  for var in ${vars[@]}; do
+    val="$(eval echo "\$${var}")"
+    if [ -z "${val}" ]; then
+      dt_error "err_if_empty in ${fname}" "Parameter ${BOLD}${var}${RESET} is empty"
+      return 77
     fi
   done
 }
 
-function dt_unexport_envs() {
-  for env in ${_export_envs[@]}; do
-    dt_exec "unset ${env}"
+inline_vals() {
+  local pref vals result val fname=$(fname "${FUNCNAME[0]}" "$0")
+  vals=($(echo "$1"))
+  [ -n "$2" ] && pref="$2 "
+  result=()
+  for val in ${vals[@]}; do
+    val=$(ser_val "${val}")
+    result+=("${pref}${val}")
   done
+  echo "${result[@]}"
 }
 
-function dt_escape_single_quotes() {
-  echo "$1" | sed -e "s/'/\\\\'/g"
+inline_vars() {
+  local pref result var val vars=($(echo "$1")) fname=$(fname "${FUNCNAME[0]}" "$0")
+  [ -n "$2" ] && pref="$2 "
+  result=()
+  for var in ${vars[@]}; do
+    val=$(${var})
+    dt_debug ${fname} "var=${var}; val=${val}"
+    if [ -z "${val}" ]; then continue; fi
+    val=$(ser_val "${val}")
+    result+=("${pref}${var}=${val}")
+  done
+  echo "${result[@]}"
 }
 
-function dt_rc_load() {
-  description=$1
-  dir=$2
-  if [ -z "${description}" ]; then return 99; fi
-  if [ -z "${dir}" ]; then return 99; fi
-  echo -e "Loading ${BOLD}$description${RESET} ... "
-  for file in "$dir"/*.sh; do
-    if [ "$(basename "$file")" != "rc.sh"  ]; then
-      echo -e -n "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
-      . "$file" || return 55
-      echo "done.";
+escape_quote() { echo "$@" | sed -e "s/'/\\\\'/g"; }
+escape_dollar() { echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"; }
+
+is_contained() {
+  local item=$1 registry=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "item registry" || return $?
+  registry=($(echo $(eval echo \$${registry})))
+  for ritem in ${registry[@]};  do
+    if [ "${ritem}" = "${item}" ]; then
+      dt_debug ${fname} "HIT: ${BOLD}Item${RESET}=${item}"
+      return 0
     fi
   done
-}
-function dt_apply_ctx() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx="$1"
-  #  if ctx is empty, it means nothing to apply
-  $ctx; exit_on_err ${fname} $? "Cannot apply context '${BOLD}${ctx}${RESET}'." || return $?
+  return 88
 }
 
-function dt_exec() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local cmd=$(echo "$@" | sed 's/^[ \t]*//')
+var_pref() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${ctx}" ]; then
+    echo "${ctx}__"
+  fi
+}
+
+# Usage: set_caller $1
+# $1: is an arg $1 of calling function
+# Vars "ctx" and "caller" are NOT local, they must be defined in caller
+set_caller() {
+  if [ -n "$1" ]; then caller=$1; else caller=${ctx}; fi && \
+  if ! is_contained ${ctx} DT_CTXES; then DT_CTXES+=(${ctx}); fi && \
+  dt_debug set_caller "caller=${BOLD}${caller}${RESET}, ctx=${BOLD}${ctx}${RESET}"
+  if [ -n "${DT_CTX}" ]; then return 0; fi
+  DT_CTX=${caller}
+}
+
+# Vars ctx and caller are not local, they must be defined in caller
+is_cached() {
+  local ctx_pair fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx caller" || return $?
+  if [ "${ctx}" != "${caller}" ]; then return 99; fi
+  ctx_pair="${caller}__${ctx}"
+  dt_debug ${fname} "ctx_pair=${BOLD}${ctx_pair}${RESET}"
+  if ! declare -p ${ctx_pair} >/dev/null 2>&1; then return 99; fi
+  dt_debug ${fname} "Ctx pair ${BOLD}${ctx_pair}${RESET} is cached"
+  DT_CTX=
+}
+
+# Vars ctx and caller are not local, they must be defined in caller
+cache_ctx() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "ctx caller" || return $?
+  dt_debug ${fname} "ctx=${ctx}, caller=${caller}"
+  if [ "${ctx}" != "${caller}" ]; then return 0; fi
+  local ctx_pair="${caller}__${ctx}"
+  if declare -p ${ctx_pair} >/dev/null 2>&1; then dt_error ${fname} "ctx_pair=${BOLD}${ctx_pair}${RESET} exists"; return 99; fi
+  dt_debug ${fname} "Caching ctx pair ${BOLD}${ctx_pair}${RESET}"
+  DT_CTX=
+  dt_debug ${fname} "DT_CTX=${DT_CTX}"
+  eval "${ctx_pair}=1"
+  DT_VARS+=(${ctx_pair})
+}
+
+switch_ctx() {
+  local dt_ctx ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "Switching to ctx ${BOLD}${ctx}${RESET}" && \
+  err_if_empty ${fname} "ctx" && \
+  DT_CTX= && \
+  ${ctx} && \
+  DT_CTX=${ctx}
+}
+
+# get value of var in some ctx
+# ovar: original var
+# octx: original ctx
+get_var() {
+  local val octx ctx var ovar="$1" octx="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
+  if [ -z "${ctx}" ]; then
+    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
+    return 99
+  fi
+  var=$(var_pref ${ctx})${ovar} || return $?
+  if declare -p ${var} >/dev/null 2>&1; then
+    val=$(eval echo \$${var})
+    echo "${val}"
+  else
+    dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist"
+    return 99
+  fi
+}
+
+# sets or resets var in some ctx
+# ovar: original var
+var() {
+  local mode val ovar ctx fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
+  ovar="$1"; shift; val="$*"
+  err_if_empty ${fname} "ovar" || return $?
+  ctx="${DT_CTX}"
+  if [ -z "${ctx}" ]; then
+    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
+    return 99
+  fi
+  var=$(var_pref ${ctx})${ovar} || return $?
+  if declare -p ${var} >/dev/null 2>&1; then
+    if [ "${mode}" != "reset" ]; then dt_info ${fname} "${var} exists, but mode != 'reset'"; return 0; fi
+  fi
+  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}, mode=${mode}"
+  eval "${var}=\"${val}\""
+  if ! is_contained ${var} DT_VARS; then DT_VARS+=(${var}); fi
+  eval "${ovar}() { get_var ${ovar} "\$1"; }"
+}
+
+drop_vars_by_pref() {
+  local var pref=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "pref" || return $?
+  dt_debug ${fname} "pref=${pref}"
+  env | awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
+}
+
+drop_vars() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "*"
+  for var in ${DT_VARS[@]}; do
+    unset ${var}
+  done
+  DT_VARS=()
+}
+
+drop_all_ctxes() {
+  local ctx var fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "*"
+  for var in ${DT_VARS[@]}; do
+    unset ${var}
+  done
+  for var in ${DT_METHODS[@]}; do
+    unset -f ${var}
+  done
+  for var in ${DT_CTXES[@]}; do
+    unset -f ${var}
+  done
+  DT_VARS=()
+  DT_METHODS=()
+  DT_CTXES=()
+}
+
+# sctx: source ctx
+load_vars() {
+  local var dt_ctx sctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift
+  if ! declare -f ${sctx} >/dev/null 2>&1; then
+    dt_error ${fname} "Context ${BOLD}${sctx}${RESET} doesn't exist"
+    return 99
+  fi
+  dt_ctx=${DT_CTX}; DT_CTX=
+  dt_debug ${fname} "Will init ctx ${BOLD}${sctx}${RESET}, DT_CTX=${DT_CTX}, previous DT_CTX=${dt_ctx}"
+  ${sctx} || return $?
+  DT_CTX=${dt_ctx}
+  dt_debug ${fname} "Begining load vars from ${BOLD}${sctx}${RESET} to ${BOLD}${DT_CTX}${RESET}"
+  for var in "$@"; do
+    if ! declare -f ${var} >/dev/null 2>&1; then
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} has not registered as function yet"
+      return 99
+    fi
+    if ! declare -p $(var_pref ${sctx})${var} >/dev/null 2>&1; then
+      dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist in source ctx=${BOLD}${sctx}${RESET}, DT_CTX=${BOLD}${DT_CTX}${RESET}"
+      return 99
+    fi
+    var ${var} "$(${var} ${sctx})" || return $?
+  done
+  dt_debug ${fname} "${BOLD}Done${RESET}"
+}
+
+## Consider function docker_build(), then the call "dt_register ctx_docker_pg_admin pg docker_methods"
+## will generate function docker_build_pg() { dt_init_and_load_ctx && docker_build_pg }
+dt_bind() {
+  local body ctx suffix methods method excluded fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx=$(echo "$1" | cut -d':' -f 1)
+  suffix=$(echo "$1" | cut -d':' -f 2)
+  methods=$(echo "$1" | cut -d':' -f 3)
+  excluded=$(echo "$1" | cut -d':' -f 4)
+  err_if_empty ${fname} "ctx suffix methods" || return $?
+  dt_debug ${fname} "ctx=${BOLD}${ctx}${RESET}, suffix=${suffix}, methods=${methods}"
+  if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
+  methods=($(echo $(${methods})| sort))
+  excluded=($(echo ${excluded}))
+  if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
+  for method in ${methods[@]}; do
+    if is_contained ${method}${suffix} excluded; then continue; fi && \
+    if [ declare -p ${method}${suffix} >/dev/null 2>&1 ] || [ declare -p ${ctx}__${method} >/dev/null 2>&1 ]; then
+      dt_error ${fname} "Duplicated method=${BOLD}${method}${suffix}${RESET}"
+      return 99
+    fi
+    dt_debug ${fname} "Registering methods: ${BOLD}${method}${suffix}${RESET} and ${BOLD}${ctx}__${method}${RESET}"
+    DT_METHODS+=(${method}${suffix})
+    DT_METHODS+=(${ctx}__${method})
+    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; local self=${ctx}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" && \
+    eval "function ${method}${suffix}() ${body}" && \
+    eval "function ${ctx}__${method}() ${body}" || return $?
+  done
+}
+
+dt_register() {
+  local binding fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_BINDINGS=($(for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done | sort))
+  for binding in ${DT_BINDINGS[@]}; do dt_bind "${binding}" || return $?; done
+}
+
+dt_bindings() {
+  local binding fname=$(fname "${FUNCNAME[0]}" "$0")
+  for binding in ${DT_BINDINGS[@]}; do echo "${binding}"; done
+}
+
+dt_methods() {
+  local method fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_METHODS=($(for method in ${DT_METHODS[@]}; do echo "${method}"; done | sort))
+  for method in ${DT_METHODS[@]}; do echo "${method}"; done
+}
+
+dt_ctxes() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_CTXES=($(for var in ${DT_CTXES[@]}; do echo "${var}"; done | sort))
+  for var in ${DT_CTXES[@]}; do echo "${var}"; done
+}
+
+dt_vars() {
+  local var fname=$(fname "${FUNCNAME[0]}" "$0")
+  DT_VARS=($(for var in ${DT_VARS[@]}; do echo "${var}"; done | sort))
+  for var in ${DT_VARS[@]}; do val="$(eval echo "\$${var}")"; echo "${var}=${val}"; done
+}
+
+function reinit_dtools() { . ${DTOOLS}/core/rc.sh; }
+
+add_deps() {
+  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0"); shift
+  local deps=($(echo "$@"))
+  err_if_empty ${fname} "ctx deps" && \
+  for dep in ${deps[@]}; do
+    dt_debug ${fname} "ctx=${ctx} dep=${dep}"
+    DT_DEPS+=("${ctx} ${dep}")
+  done
+}
+
+init_deps() {
+  tsort_deps | while read dep; do ${dep} || return $?;
+  done
+}
+
+tsort_deps() {
+  printf "%s\n" "${DT_DEPS[@]}" > "${DT_CTXES_DEPS}"
+  tsort "${DT_CTXES_DEPS}" | tac
+}
+
+list_deps(){ cat ${DT_CTXES_DEPS}; }
+set_dryrun_off() { DT_DRYRUN="n"; }
+set_dryrun_on() { DT_DRYRUN="y"; }
+
+exec_cmd () {
+  local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "${cmd}" ]; then
-    dt_error ${fname} "The command is empty cmd='${cmd}'."; return 99
+    dt_error ${fname} "The command is empty cmd='${cmd}'."
+    return 99
   fi
   if [ "${DT_DRYRUN}" = "y" ]; then
     if [ "${DT_ECHO}" = "y" ]; then
-      >&2 echo -e "${BOLD}[dtools][DRYRUN]${RESET}"
+      >&2 echo -e "${BOLD}[dtools][DT_DRYRUN]${RESET}"
       >&2 echo -e "${cmd}"
-    fi
-    if [ "${DT_ECHO_STDOUT}" = "y" ]; then
-      echo -e "${cmd}"
     fi
   else
     if [ "${DT_ECHO}" = "y" ]; then
-      >&2 echo -e "${BOLD}[dtools]${DT_ECHO_COLOR}[ECHO][EXEC]${RESET}"
+      >&2 echo -e "${BOLD}${DT_ECHO_COLOR}[dtools][DT_ECHO][exec_cmd]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
-    eval "${cmd}"; exit_on_err ${fname} $? || return $?
+    eval "$(echo -e "${cmd}")" || return $?
   fi
 }
 
-function dt_echo() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local saved_DT_DRYRUN=${DT_DRYRUN}
-  local saved_DT_ECHO=${DT_DRYRUN}
-  dt_dryrun_on
-  DT_ECHO_STDOUT="y"
-  DT_ECHO="n"
-  eval "$@"; err=$?
-  DT_ECHO_STDOUT="n"
-  DT_DRYRUN=${saved_DT_DRYRUN}
-  DT_ECHO=${saved_DT_ECHO}
-  exit_on_err ${fname} ${err} || return $?
-}
-
-function dt_exists() {
-  entity=$1
-  value=$2
-  err=$3
-  if [ "$err" = 0 ]; then
-    dt_info "${entity} ${BOLD}${value} exists${RESET}."
-    return 0
+is_var_changed(){
+  local ecode var=$1 pvar new_val prev_val fname=$(fname "${FUNCNAME[0]}" "$0")
+  pvar="PREV_${var}"
+  err_if_empty ${fname} "var" && \
+  new_val="$(eval echo "\$${var}")" && \
+  prev_val="$(eval echo "\$${pvar}")" && \
+  err_if_empty ${fname} "new_val" && \
+  if ! declare -p ${pvar} >/dev/null 2>&1; then
+    ecode=0
+  elif [ "${prev_val}" != "${new_val}" ]; then
+    ecode=0
   else
-    dt_info "${entity} ${BOLD}${value} doesn't exist${RESET}."
-    return 1
-  fi
+    ecode=99
+  fi && \
+  eval "${pvar}=${new_val}" && \
+  return ${ecode}
 }
 
-function dt_run_targets() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  if [ -z "$1" ]; then return 0; fi
-  local targets=("$@")
-  for target in $@; do
-    dt_target $target; exit_on_err ${fname} $? || return $?
-  done
-}
-
-function dt_dryrun_commands_only_on() {
-  DT_ECHO_STDOUT="y"
-  DT_ECHO="n"
-  dt_dryrun_on
-}
-
-function dt_dryrun_commands_only_off() {
-  DT_ECHO_STDOUT="n"
-  DT_ECHO="y"
-  dt_dryrun_off
-}
-
-function dt_dryrun_on() {
-  DT_DRYRUN="y"
-}
-
-function dt_dryrun_off() {
-  DT_DRYRUN="n"
-}
-
-function is_function() {
-  type "$1" | sed "s/$1//" | grep -qwi function
-}
-
-function dt_fname() {
-  if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi;
-}
-
-# Consider function docker_build()
-# dt_register ctx_conn_docker_pg_admin pg docker_methods
-# will generate function docker_build_pg() {( ctx_conn_docker_pg_admin && docker_build_pg )}
-function dt_register() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local ctx=$1; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
-  local suffix=$2; dt_err_if_empty ${fname} "ctx"; exit_on_err ${fname} $? || return $?
-  shift; shift
-  local methods=("$@"); dt_err_if_empty ${fname} "methods"; exit_on_err ${fname} $? || return $?
-  for method in ${methods[@]}; do
-    local func=${method}_${suffix}
-    eval "function ${func}() {( ${ctx} && ${method} )}"
-  done
-}
-
-# Consider example: dt_register_stand stand_host
-# It will generate all necessary functions of stand_host.
-# For example, for 'install_services' it generates
-# function stand_host_install_services() {( stand_host_steps && dt_run_targets "${install_services[@]}" )}
-function dt_register_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
-  stand_${stand}
-  for func in ${register[@]}; do
-    eval "function stand_${stand}_${func}() {( stand_${stand} && dt_run_targets "\${${func}\[\@\]}" )}"
-  done
-  eval "function stand_up_${stand}() {( dt_run_stand stand_${stand} up )}"
-  eval "function stand_down_${stand}() {( dt_run_stand stand_${stand} down )}"
-}
-
-# Example1: dt_stand_up stand_host up
-# Example2: dt_stand_up stand_host down
-function dt_run_stand() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local stand=$1; dt_err_if_empty ${fname} "stand"; exit_on_err ${fname} $? || return $?
-  local action=$2; dt_err_if_empty ${fname} "action"; exit_on_err ${fname} $? || return $?
-  local steps="${action}_steps"
-  dt_info "${action} stand ${BOLD}${stand}${RESET} ... "
-  $stand
-  for step in $(eval echo "\${${steps}[@]}"); do
-    dt_info "Running step ${BOLD}${CYAN}$step${RESET} ... "
-    for target in $(eval echo "\${${step}[@]}"); do
-      dt_target $target; exit_on_err ${fname} $? || return $?
-    done
-  done
-}
-
-function dt_sleep_5() {
-  dt_exec "sleep 5"
-}
-
-function dt_sleep_1() {
-  dt_exec "sleep 1"
-}
-
-function dt_paths() {
-  if [ -z "${DT_DTOOLS}" ]; then DT_DTOOLS="$(pwd)"; fi
-
-  # Paths that depend on DT_DTOOLS
-  export DT_PROJECT=$(realpath "${DT_DTOOLS}"/..)
-  export DT_ARTEFACTS="${DT_DTOOLS}/.artefacts"
-  export DT_CORE=${DT_DTOOLS}/core
-  export DT_LOCALS=${DT_DTOOLS}/locals
-  export DT_STANDS=${DT_DTOOLS}/stands
-  export DT_TOOLS=${DT_DTOOLS}/tools
-
+dt_paths() {
+  export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
+  # Paths that depend on DTOOLS
+  export DT_PROJECT=$(realpath "${DTOOLS}"/..)
+  export DT_ARTEFACTS="${DTOOLS}/.artefacts"
+  export DT_CORE=${DTOOLS}/core
+  export DT_LOCALS=${DTOOLS}/locals
+  export DT_STANDS=${DTOOLS}/stands
+  export DT_TOOLS=${DTOOLS}/tools
   # Paths that depend on DT_ARTEFACTS
   export DT_LOGS="${DT_ARTEFACTS}/logs"
+  export DT_CTXES_DEPS="${DT_LOGS}/ctxes_deps.txt"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
+  if [ -f "${DT_CTXES_DEPS}" ]; then rm "${DT_CTXES_DEPS}"; fi
 }
 
-function dt_defaults() {
+# DT_SEVERITY >= 4 for dumps!
+dt_defaults() {
   export DT_DRYRUN="n"
-  export DT_PROFILES=("dev")
   export DT_ECHO="y"
-  export DT_ECHO_STDOUT="n"
-  export DT_DEBUG="n"
   export DT_ECHO_COLOR="${YELLOW}"
+  export PROFILE_CI=
+  export DT_SEVERITY
+  if [ -z "${DT_SEVERITY}" ]; then DT_SEVERITY=4; fi
+  DT_BINDINGS=()
+  DT_METHODS=()
+  DT_VARS=()
+  DT_DEPS=()
+  DT_CTX=
+  DT_CTXES=()
+  DT_STAND='n'
+}
+
+function dt_rc_load() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  description=$1
+  dir=$2
+  if [ -z "${description}" ]; then return 99; fi
+  if [ -z "${dir}" ]; then return 99; fi
+  dt_info ${fname} "Loading ${BOLD}$description${RESET} ... "
+  for file in "$dir"/*.sh; do
+    if [ "$(basename "$file")" != "rc.sh"  ]; then
+      dt_info ${fname} "Sourcing "$(dirname "$file")/${BOLD}$(basename "$file")${RESET}" ..."
+      . "$file" || return 55
+      dt_info ${fname} "done.";
+    fi
+  done
 }
 
 function dt_init() {
-  dt_paths
-  . "${DT_CORE}/colors.sh"
-  dt_defaults
-  . "${DT_CORE}/rc.sh"
-  . "${DT_TOOLS}/rc.sh"
-  . "${DT_STANDS}/rc.sh"
-  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh"; fi
+  if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
+  local self_dir="$(dirname $(realpath "${self}"))"
+  . "${self_dir}/colors.sh" && \
+  . "${self_dir}/lib.sh" && \
+  drop_all_ctxes && \
+  dt_paths && \
+  dt_defaults && \
+  dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
+  . "${self_dir}/clickhouse/rc.sh" && \
+  . "${self_dir}/pg/rc.sh" && \
+  . "${self_dir}/redis/rc.sh" && \
+  . "${self_dir}/rabbitmq/rc.sh" && \
+  . "${self_dir}/cargo/rc.sh" && \
+  . "${self_dir}/python/rc.sh" && \
+  . "${DT_TOOLS}/rc.sh" && \
+  . "${DT_STANDS}/rc.sh" && \
+  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi
+  dt_register
 }

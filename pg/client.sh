@@ -1,165 +1,81 @@
-function psql_conn() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local _envs=(PGHOST PGPORT PGUSER PGDATABASE PGPASSWORD)
-  dt_err_if_empty ${fname} "PG_DIR"; exit_on_err ${fname} $? || return $?
-  local cmd=("$(dt_inline_envs "${_envs[@]}")")
-  cmd+=("${PG_DIR}/psql")
-  dt_exec "${cmd[@]}"
+pg_connurl() {
+  local vars=(PGDATABASE PGUSER PGPASSWORD PGHOST PGPORT)
+  echo "${vars[@]}"
 }
 
-function psql_create_db() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_create_db)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+pg_local_connurl() {
+  local vars=(PGUSER PGPORT PGDATABASE)
+  echo "${vars[@]}"
 }
 
-function psql_drop_db() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_drop_db)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+_psql_sudo() {
+  if [ "$(pg_mode)" = "docker" ]; then
+    echo ""
+    return 0
+  fi
+  if [ -n "$(dt_sudo)" ]; then
+    echo "$(dt_sudo) -u $(PGUSER)"
+  else
+    echo ""
+  fi
 }
 
-function psql_alter_role_password() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_alter_role_password)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="${conn} -c $'${query}'"
-  dt_exec "${cmd}"
+_psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
+_psql_local_conn() { echo "$(_psql_sudo) $(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
+
+_psql_gexec() {
+  local conn="_psql_conn" conn_ctx="$1" query="$2" conn_type="$3" fname=$(fname "${FUNCNAME[0]}" "$0") && \
+  dt_debug ${fname} "conn_ctx=${conn_ctx}, query=${query}" && \
+  err_if_empty ${fname} "conn_ctx query" && \
+  query=$(${query}) && \
+  if [ "${conn_type}" = "local" ]; then conn="_psql_local_conn"; fi && \
+  switch_ctx ${conn_ctx} && \
+  $(EXEC) "echo $'${query}' '\gexec' | $(${conn})"
 }
 
-function psql_create_user() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_create_user)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+_psql_init() {
+  local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
+  err_if_empty ${fname} "admin migrator app" && \
+  ${migrator}__psql_create_db && \
+  ${migrator}__psql_create_user && \
+  ${migrator}__psql_grant_user && \
+  ${app}__psql_create_user && \
+  ${app}__psql_grant_user
 }
 
-function psql_drop_user() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_drop_user)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+_psql_clean() {
+  local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
+  dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
+  err_if_empty ${fname} "admin migrator app" && \
+  ${migrator}__psql_drop_db && \
+  ${migrator}__psql_drop_user && \
+  ${app}__psql_drop_user
 }
 
-function psql_grant_user_app() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_grant_user_app)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
+psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
+psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
+
+psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
+psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
+psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
+psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
+psql_drop_role_password() { _psql_gexec $(CONN) sql_pg_drop_role_password; }
+psql_drop_user() { _psql_gexec $(CONN) sql_pg_drop_user; }
+psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
+psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
+
+psql_methods() {
+  local methods=()
+  methods+=(psql_alter_role_password)
+  methods+=(psql_conn)
+  methods+=(psql_local_conn)
+  methods+=(psql_create_db)
+  methods+=(psql_create_user)
+  methods+=(psql_drop_db)
+  methods+=(psql_drop_role_password)
+  methods+=(psql_drop_user)
+  methods+=(psql_grant_user)
+  methods+=(psql_revoke_user)
+  echo "${methods[@]}"
 }
-
-function psql_revoke_user_app() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_revoke_user_app)"
-  # Connect to db behalf 'migrator'!
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
-}
-
-function psql_grant_user_migrator() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_grant_user_migrator)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
-}
-
-function psql_revoke_user_migrator() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  local query_ctx=$1; dt_err_if_empty ${fname} "query_ctx"; exit_on_err ${fname} $? || return $?
-  local conn_ctx=$2; dt_err_if_empty ${fname} "conn_ctx"; exit_on_err ${fname} $? || return $?
-  local query="$(${query_ctx} && pg_sql_revoke_user_migrator)"
-  local conn="$(${conn_ctx} && dt_echo psql_conn)"
-  local cmd="echo $'${query}' '\gexec' | ${conn}"
-  dt_exec "${cmd}"
-}
-
-function _psql_init() {
-  (
-    local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; exit_on_err ${fname} $? || return $?
-    migrator=$2; dt_err_if_empty ${fname} "migrator"; exit_on_err ${fname} $? || return $?
-    app=$3; dt_err_if_empty ${fname} "app"; exit_on_err ${fname} $? || return $?
-    psql_alter_role_password $admin $admin
-    psql_create_db $migrator $admin && \
-    psql_create_user $migrator $admin && \
-    psql_grant_user_migrator $migrator $admin && \
-    psql_create_user $app $admin && \
-    # Connect to db behalf 'migrator'!
-    psql_grant_user_app $app $migrator
-  )
-}
-
-function _psql_clean() {
-  (
-    local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-    admin=$1; dt_err_if_empty ${fname} "admin"; exit_on_err ${fname} $? || return $?
-    migrator=$2; dt_err_if_empty ${fname} "migrator"; exit_on_err ${fname} $? || return $?
-    app=$3; dt_err_if_empty ${fname} "app"; exit_on_err ${fname} $? || return $?
-    psql_revoke_user_app $app $admin && \
-    psql_revoke_user_migrator $migrator $admin && \
-    psql_drop_db $migrator $admin && \
-    psql_drop_user $app $admin && \
-    psql_drop_user $migrator $admin
-  )
-}
-
-function psql_conn_local_admin() {
-  local cmd=$(
-    ctx_conn_pg_admin
-    unset PGHOST
-    sudo -u ${PGUSER} psql -d ${PGDATABASE}
-  )
-  dt_exec "${cmd}"
-}
-
-function psql_conn_admin() {( ctx_conn_pg_admin && psql_conn )}
-function psql_conn_migrator() {( ctx_conn_pg_migrator && psql_conn )}
-function psql_conn_app() {( ctx_conn_pg_app && psql_conn )}
-
-function psql_init() {(
-  _psql_init ctx_conn_pg_admin ctx_conn_pg_migrator ctx_conn_pg_app
-)}
-
-function psql_clean() {(
-  _psql_clean ctx_conn_pg_admin ctx_conn_pg_migrator ctx_conn_pg_app
-)}
-
-function psql_conn_docker_admin() {( ctx_conn_docker_pg_admin && psql_conn )}
-function psql_conn_docker_migrator() {( ctx_conn_docker_pg_migrator && psql_conn )}
-function psql_conn_docker_app() {( ctx_conn_docker_pg_app && psql_conn )}
-
-function psql_init_docker() {(
-  docker_service_check_pg && \
-  _psql_init ctx_conn_docker_pg_admin ctx_conn_docker_pg_migrator ctx_conn_docker_pg_app
-)}
-
-# it's like docker_rm_pg && docker_run_pg
-function psql_clean_docker() {(
-  _psql_clean ctx_conn_docker_pg_admin ctx_conn_docker_pg_migrator ctx_conn_docker_pg_app
-)}
-

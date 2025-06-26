@@ -1,34 +1,41 @@
-function clickhouse_sql_create_user() {
+function sql_click_create_user() {
   local query=$(
-    dt_escape_single_quotes "CREATE USER IF NOT EXISTS ${CLICKHOUSE_USER} IDENTIFIED WITH sha256_password BY '${CLICKHOUSE_PASSWORD}';"
-  )
+    escape_quote "CREATE USER IF NOT EXISTS $(CLICKHOUSE_USER) IDENTIFIED WITH sha256_password BY '$(CLICKHOUSE_PASSWORD)';"
+  ) || return $?
   echo "${query}"
 }
 
-function clickhouse_sql_drop_user() {
+function sql_click_drop_user() {
   local query=$(
-    dt_escape_single_quotes "DROP USER IF EXISTS ${CLICKHOUSE_USER};"
-  )
+    escape_quote "DROP USER IF EXISTS $(CLICKHOUSE_USER);"
+  ) || return $?
   echo "${query}"
 }
 
-function clickhouse_sql_create_db() {
+function sql_click_create_db() {
   local query=$(
-    dt_escape_single_quotes "CREATE DATABASE IF NOT EXISTS ${CLICKHOUSE_DB};"
-  )
+    escape_quote "CREATE DATABASE IF NOT EXISTS $(CLICKHOUSE_DB);"
+  ) || return $?
   echo "${query}"
 }
 
-function clickhouse_sql_drop_db() {
+function sql_click_drop_db() {
   local query=$(
-    dt_escape_single_quotes "DROP DATABASE IF EXISTS ${CLICKHOUSE_DB};"
-  )
+    escape_quote "DROP DATABASE IF EXISTS $(CLICKHOUSE_DB);"
+  ) || return $?
   echo "${query}"
 }
 
-function clickhouse_sql_grant_user() {
+function sql_click_grant_user() {
   local query=$(
-    dt_escape_single_quotes "GRANT ALL ON ${CLICKHOUSE_DB}.* TO ${CLICKHOUSE_USER}; GRANT ALL ON default.* TO ${CLICKHOUSE_USER};"
-  )
+    escape_quote "GRANT ALL ON $(CLICKHOUSE_DB).* TO $(CLICKHOUSE_USER); GRANT ALL ON default.* TO $(CLICKHOUSE_USER);"
+  ) || return $?
+  echo "${query}"
+}
+
+function sql_click_revoke_user() {
+  local query=$(
+    escape_quote "REVOKE ALL ON $(CLICKHOUSE_DB).* TO $(CLICKHOUSE_USER); GRANT ALL ON default.* TO $(CLICKHOUSE_USER);"
+  ) || return $?
   echo "${query}"
 }

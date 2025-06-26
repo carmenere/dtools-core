@@ -1,25 +1,14 @@
-function ctx_docker_rabbitmq() {
-  local fname=$(dt_fname "${FUNCNAME[0]}" "$0")
-  ctx_service_rabbitmq && \
-  ctx_docker_image && \
-  ctx_docker_container && \
-  ctx_docker_network; exit_on_err ${fname} $? || return $?
-
-  if [ "$(uname -m)" = "arm64" ]; then
-    BASE_IMAGE="arm64v8/rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"
-  else
-    BASE_IMAGE="rabbitmq:${MAJOR}.${MINOR}.${PATCH}-rc.1-management-alpine"
-  fi
-  CTX="."
-  IMAGE=${BASE_IMAGE}
-  BACKGROUND="y"
-  CONTAINER="rabbitmq"
-  RABBIT_PORT=5670
-  RABBIT_PORT_MGM=15670
-  PUBLISH=("${RABBIT_PORT}:5672/tcp")
-  PUBLISH+=("${RABBIT_PORT_MGM}:15672/tcp")
-  RESTART="always"
-  CHECK_CMD="sh -c 'rabbitmqctl status 1>/dev/null 2>&1'"
+function ctx_rmq_docker() {
+  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
+  var BASE_IMAGE "$(docker_arm64v8)rabbitmq:3.8.3-rc.1-management-alpine" && \
+  var SERVICE "rabbitmq" && \
+  var RMQ_PORT 5672 && \
+  var PORT_MGM 15672 && \
+  var PUB_RMQ_PORT 5670 && \
+  var PUB_PORT_MGM 15670 && \
+  var PUBLISH "$(PUB_RMQ_PORT):$(RMQ_PORT)/tcp $(PUB_PORT_MGM):$(PORT_MGM)/tcp" && \
+  ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_rmq_host ${caller} && \
+  cache_ctx
 }
 
-dt_register "ctx_conn_docker_rabbitmq_admin" "rabbitmq" "${docker_methods[@]}"
+DT_BINDINGS+=(ctx_rmq_docker:rmq:docker_methods)

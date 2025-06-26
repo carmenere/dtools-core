@@ -3,7 +3,6 @@ function load() {
   local self_dir="$(dirname $(realpath "${self}"))"
 
   dt_rc_load $(basename "${self_dir}") "${self_dir}"
-  . "${self_dir}/crates/rc.sh"
 }
 
 load $0
