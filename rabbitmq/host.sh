@@ -13,14 +13,14 @@ rmq_mode() {
   fi
 }
 
-set_rmq_mode_docker() {
+set_mode_rmq_docker() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   RMQ_MODE=docker
   if is_var_changed RMQ_MODE; then drop_vars; fi && \
   dt_info ${fname} "RMQ_MODE=${RMQ_MODE}"
 }
 
-set_rmq_mode_host() {
+set_mode_rmq_host() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   RMQ_MODE=host
   if is_var_changed RMQ_MODE; then drop_vars; fi && \

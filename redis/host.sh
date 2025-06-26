@@ -13,14 +13,14 @@ redis_mode() {
   fi
 }
 
-set_redis_mode_docker() {
+set_mode_redis_docker() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   REDIS_MODE=docker
   if is_var_changed REDIS_MODE; then drop_vars; fi && \
   dt_info ${fname} "REDIS_MODE=${REDIS_MODE}"
 }
 
-set_redis_mode_host() {
+set_mode_redis_host() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   REDIS_MODE=host
   if is_var_changed REDIS_MODE; then drop_vars; fi && \

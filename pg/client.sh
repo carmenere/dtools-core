@@ -8,7 +8,18 @@ pg_local_connurl() {
   echo "${vars[@]}"
 }
 
-_psql_sudo() { if [ "$(pg_mode)" = "docker" ]; then echo ""; else echo "$(dt_sudo) -u $(PGUSER)"; fi; }
+_psql_sudo() {
+  if [ "$(pg_mode)" = "docker" ]; then
+    echo ""
+    retun 0
+  fi
+  if [ -n "$(dt_sudo)" ]; then
+    echo "$(dt_sudo) -u $(PGUSER)"
+  else
+    echo ""
+  fi
+}
+
 _psql_conn() { echo "$(inline_vars "$(pg_connurl)") $(PSQL) $@"; }
 _psql_local_conn() { echo "$(_psql_sudo) $(inline_vars "$(pg_local_connurl)") $(PSQL) $@"; }
 

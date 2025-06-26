@@ -16,14 +16,14 @@ clickhouse_mode() {
   fi
 }
 
-set_clickhouse_mode_docker() {
+set_mode_clickhouse_docker() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   CLICKHOUSE_MODE=docker
   if is_var_changed CLICKHOUSE_MODE; then drop_vars; fi && \
   dt_info ${fname} "CLICKHOUSE_MODE=${CLICKHOUSE_MODE}"
 }
 
-set_clickhouse_mode_host() {
+set_mode_clickhouse_host() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   CLICKHOUSE_MODE=host
   if is_var_changed CLICKHOUSE_MODE; then drop_vars; fi && \

@@ -13,14 +13,14 @@ pg_mode() {
   fi
 }
 
-set_pg_mode_docker() {
+set_mode_pg_docker() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   PG_MODE=docker
   if is_var_changed PG_MODE; then drop_vars; fi && \
   dt_info ${fname} "PG_MODE=${PG_MODE}"
 }
 
-set_pg_mode_host() {
+set_mode_pg_host() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   PG_MODE=host
   if is_var_changed PG_MODE; then drop_vars; fi && \
@@ -162,7 +162,7 @@ function ctx_pg_host() {
     var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
     var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
   fi
-  var SERVICE_CHECK_CMD "psql_local_conn_admin -c $'select true;'" && \
+  var SERVICE_CHECK_CMD "psql_conn_admin -c $'select true;'" && \
   var SERVICE_PREPARE "pg_prepare" && \
   var SERVICE_INSTALL "pg_install" && \
   var SERVICE_LSOF "lsof_pg" && \
