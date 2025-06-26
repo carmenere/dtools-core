@@ -11,7 +11,7 @@ pg_local_connurl() {
 _psql_sudo() {
   if [ "$(pg_mode)" = "docker" ]; then
     echo ""
-    retun 0
+    return 0
   fi
   if [ -n "$(dt_sudo)" ]; then
     echo "$(dt_sudo) -u $(PGUSER)"
