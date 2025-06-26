@@ -29,6 +29,7 @@ service_check() {
   return 99
 }
 
+function service_post_install() { exec_cmd "$(SERVICE_POST_INSTALL)"; }
 function service_install() { exec_cmd "$(SERVICE_INSTALL)"; }
 function service_lsof() { exec_cmd "$(SERVICE_LSOF)"; }
 function service_prepare() { exec_cmd "$(SERVICE_PREPARE)"; }
@@ -45,6 +46,7 @@ function service_methods() {
   methods+=(service_restart)
   methods+=(service_start)
   methods+=(service_stop)
+  methods+=(service_post_install)
   echo "${methods[@]}"
 }
 

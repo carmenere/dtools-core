@@ -39,9 +39,9 @@ function pg_superuser() {
 function pg_install() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" || return $?
-    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" || return $?
-    exec_cmd "${SUDO} apt-get update" || return $?
+    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" && \
+    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" && \
+    exec_cmd "${SUDO} apt-get update" && \
     exec_cmd "${SUDO} apt-get -y install \
       postgresql-$(MAJOR) \
       postgresql-server-dev-$(MAJOR) \
@@ -50,6 +50,19 @@ function pg_install() {
     exec_cmd "brew install $(SERVICE)"
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
+  fi
+}
+
+# Drop pg cluster: sudo pg_dropcluster N main
+pg_post_install() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
+    if ! pg_lsclusters | cut -d' ' -f 1 | grep -m 1 "$(MAJOR)"; then
+      exec_cmd ${SUDO} pg_createcluster $(MAJOR) main && \
+      exec_cmd ${SUDO} pg_ctlcluster $(MAJOR) main start
+    fi && \
+    ${self}__service_prepare && \
+    ${self}__service_start
   fi
 }
 
@@ -88,7 +101,7 @@ function pg_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "postgresql@$(MAJOR)"
   else
-    echo "postgresql"
+    echo "postgresql@$(MAJOR)-main.service"
   fi
 }
 
@@ -136,7 +149,7 @@ function pg_prepare() {
   pg_hba_add_policy; err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
   pg_conf_set_port;  err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
   if [ "${changed}" != "y" ]; then return 0; fi && \
-  service_stop_pg
+  ${self}__service_stop
 }
 
 function lsof_pg() {
@@ -165,6 +178,7 @@ function ctx_pg_host() {
   var SERVICE_CHECK_CMD "psql_conn_admin -c $'select true;'" && \
   var SERVICE_PREPARE "pg_prepare" && \
   var SERVICE_INSTALL "pg_install" && \
+  var SERVICE_POST_INSTALL "pg_post_install" && \
   var SERVICE_LSOF "lsof_pg" && \
   ctx_os_service ${caller} && \
   cache_ctx
