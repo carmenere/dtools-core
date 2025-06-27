@@ -66,6 +66,7 @@ build_python() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   local BUILD_OPTS=()
   if [ -f "$(PYTHON)" ]; then dt_warning ${fname} "File ${BOLD}$(PYTHON)${RESET} exists, skip build"; return 0; fi
+  download_py_tar && \
   if [ ! -d "$(SRC)" ]; then exec_cmd tar -xf "${DL}/$(TAR)" -C "${DL}" || return $?; fi && \
   if [ ! -d "$(PREFIX)" ]; then exec_cmd mkdir -p "$(PREFIX)" || return $?; fi && \
   exec_cmd cd $(SRC) && \
@@ -82,7 +83,6 @@ vpython() {
 python_build() {
   local pwd=$(pwd) && \
   if [ "$(WITH_OPENSSL)" = "y" ]; then build_openssl || return $?; fi && \
-  download_py_tar && \
   build_python &&
   exec_cmd cd ${pwd}
 }
