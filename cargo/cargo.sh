@@ -3,12 +3,14 @@ export PROFILE_CARGO="dev"
 set_cargo_profile_dev() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   PROFILE_CARGO="dev"
+  if is_var_changed PROFILE_CARGO; then drop_vars; fi && \
   dt_info ${fname} "PROFILE_CARGO=${PROFILE_CARGO}"
 }
 
 set_cargo_profile_release() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   PROFILE_CARGO="release"
+  if is_var_changed PROFILE_CARGO; then drop_vars; fi && \
   dt_info ${fname} "PROFILE_CARGO=${PROFILE_CARGO}"
 }
 
