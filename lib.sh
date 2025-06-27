@@ -275,6 +275,10 @@ dt_bind() {
   err_if_empty ${fname} "ctx suffix methods" || return $?
   dt_debug ${fname} "ctx=${BOLD}${ctx}${RESET}, suffix=${suffix}, methods=${methods}"
   if [ -n "${suffix}" ]; then suffix="_${suffix}"; fi
+  if ! declare -f "${methods}" >/dev/null 2>&1; then
+    dt_error ${fname} "Function ${BOLD}${methods}${RESET} doesn't exist"
+    return 99
+  fi
   methods=($(echo $(${methods})| sort))
   excluded=($(echo ${excluded}))
   if [ -n "${excluded}" ]; then dt_info ${fname} "${BOLD}excluded${RESET}=${excluded[@]}"; fi
@@ -287,7 +291,7 @@ dt_bind() {
     dt_debug ${fname} "Registering methods: ${BOLD}${method}${suffix}${RESET} and ${BOLD}${ctx}__${method}${RESET}"
     DT_METHODS+=(${method}${suffix})
     DT_METHODS+=(${ctx}__${method})
-    body="{ local dtc_ctx=\${DT_CTX}; DT_CTX=\${DT_CTX}; local self=${ctx}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DTC_CTX=\${dt_ctx}; return \${err}; }" && \
+    body="{ local dt_ctx=\${DT_CTX}; local self=${ctx}; switch_ctx ${ctx} && ${method} \$@; local err=\$?; DT_CTX=\${dt_ctx}; return \${err}; }" && \
     eval "function ${method}${suffix}() ${body}" && \
     eval "function ${ctx}__${method}() ${body}" || return $?
   done
@@ -400,6 +404,7 @@ dt_paths() {
   export DT_CTXES_DEPS="${DT_LOGS}/ctxes_deps.txt"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
+  export DL="${DT_TOOLCHAIN}/dl"
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
