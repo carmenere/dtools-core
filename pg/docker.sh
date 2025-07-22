@@ -5,7 +5,6 @@ function ctx_pg_docker() {
   var PUB_PGPORT 2222 && \
   var PGPORT 5432 && \
   var PSQL psql && \
-  var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER" && \
   var PUBLISH "$(PUB_PGPORT):$(PGPORT)/tcp" && \
   ctx_docker_network ${caller} && ctx_docker_service ${caller} && ctx_pg_host ${caller} && \
   cache_ctx
@@ -13,10 +12,10 @@ function ctx_pg_docker() {
 
 docker_run_pg() {
   switch_ctx ctx_pg_docker && \
-  load_vars ctx_conn_admin_pg PGPASSWORD PGDATABASE PGUSER && \
-  var POSTGRES_PASSWORD "$(PGPASSWORD)" && \
-  var POSTGRES_DB "$(PGDATABASE)" && \
-  var POSTGRES_USER "$(PGUSER)" && \
+  var RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER" && \
+  var POSTGRES_PASSWORD "$(PGPASSWORD ctx_conn_admin_pg)" && \
+  var POSTGRES_DB "$(PGDATABASE ctx_conn_admin_pg)" && \
+  var POSTGRES_USER "$(PGUSER ctx_conn_admin_pg)" && \
   docker_run
 }
 

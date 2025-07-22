@@ -109,8 +109,10 @@ is_contained() {
 }
 
 var_pref() {
-  local ctx=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -n "${ctx}" ]; then
+  local ctx=$1 sctx=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${ctx}" ] && [ -n "${sctx}" ]; then
+    echo "${ctx}_${sctx}__"
+  elif [ -n "${ctx}" ]; then
     echo "${ctx}__"
   fi
 }
@@ -166,42 +168,80 @@ switch_ctx() {
 # ovar: original var
 # octx: original ctx
 get_var() {
-  local val octx ctx var ovar="$1" octx="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -n "${octx}" ]; then ctx="${octx}"; else ctx="${DT_CTX}"; fi
+  local val ctx var ovar="$1" octx="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
+  ctx="$(echo "${octx}" | cut -d':' -f 1)"
+  sctx="$(echo "${octx}" | cut -d':' -f 2)"
   if [ -z "${ctx}" ]; then
-    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
-    return 99
+    if [ -z "${DT_CTX}" ]; then
+      dt_error ${fname} "Current context is not set: ${BOLD}DT_CTX${RESET} is empty"
+      return 99
+    else
+      ctx=${DT_CTX}
+    fi
+  else
+    if [ "${ctx:0:4}" != "ctx_" ]; then
+      ctx="ctx_${ctx}"
+    fi
+  fi
+  if [ -z "${sctx}" ]; then
+    if [ -n "${DT_SCTX}" ]; then
+      sctx=${DT_SCTX}
+    fi
   fi
   var=$(var_pref ${ctx})${ovar} || return $?
-  if declare -p ${var} >/dev/null 2>&1; then
+  svar=$(var_pref ${ctx} ${sctx})${ovar} || return $?
+  if declare -p ${svar} >/dev/null 2>&1; then
+    val=$(eval echo \$${svar})
+    echo "${val}"
+  elif declare -p ${var} >/dev/null 2>&1; then
     val=$(eval echo \$${var})
     echo "${val}"
   else
-    dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist"
+    dt_error ${fname} "Variable ${BOLD}${var}${RESET} doesn't exist, octx=${octx}, ctx=${ctx}, sctx=${sctx}"
     return 99
   fi
 }
 
-# sets or resets var in some ctx
-# ovar: original var
+# resets variable "var" in some ctx DT_CTX
+# ovar: original name of some variable "var" without prefix
 var() {
-  local mode val ovar ctx fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ "$1" = "-r" ]; then mode="reset"; shift; else mode="set"; fi
-  ovar="$1"; shift; val="$*"
-  err_if_empty ${fname} "ovar" || return $?
-  ctx="${DT_CTX}"
-  if [ -z "${ctx}" ]; then
-    dt_error ${fname} "Context for variable ${BOLD}${var}${RESET} was not provided: ${BOLD}DT_CTX${RESET} is empty and ${BOLD}octx${RESET} is empty"
-    return 99
-  fi
-  var=$(var_pref ${ctx})${ovar} || return $?
+  local var ovar val fname=$(fname "${FUNCNAME[0]}" "$0")
+  ovar="$1"; shift
+  val="$*"
+  err_if_empty ${fname} "var DT_CTX" || return $?
+  var=$(var_pref ${DT_CTX} ${DT_SCTX})${ovar} || return $?
+  local msg="${BOLD}${var}${RESET} to value '${BOLD}${val}${RESET}'"
   if declare -p ${var} >/dev/null 2>&1; then
-    if [ "${mode}" != "reset" ]; then dt_info ${fname} "${var} exists, but mode != 'reset'"; return 0; fi
+    dt_warning ${fname} "Resetting ${msg}"
+  else
+    dt_debug ${fname} "Setting ${msg}"
+    DT_VARS+=(${var})
+    eval "${ovar}() { get_var ${ovar} \$1; }"
   fi
-  dt_debug ${fname} "Setting var ${BOLD}${var}${RESET} to val ${BOLD}${val}${RESET}, mode=${mode}"
   eval "${var}=\"${val}\""
-  if ! is_contained ${var} DT_VARS; then DT_VARS+=(${var}); fi
-  eval "${ovar}() { get_var ${ovar} "\$1"; }"
+}
+
+# merges var in parent ctx DT_PCTX and with one in ctx DT_CTX
+# ovar: original name of some variable "var" without prefix
+mvar() {
+  local var ovar pval fname=$(fname "${FUNCNAME[0]}" "$0")
+  ovar="$1"; shift
+  err_if_empty ${fname} "var DT_CTX" && \
+  var=$(var_pref ${DT_CTX} ${DT_SCTX})${ovar} || return $?
+  dt_debug ${fname} "var=${BOLD}${var}${RESET}"
+  if declare -p ${var} >/dev/null 2>&1; then
+    val="$(eval echo \$${var})" || return $?
+    dt_debug ${fname} "Skip merge for var ${BOLD}${var}${RESET}: it has already set and its value is '${BOLD}${val}${RESET}'"
+    return 0
+  fi
+  dt_debug ${fname} "Merging var ${BOLD}${var}${RESET} with parent ctx '${BOLD}${DT_PCTX}${RESET}'"
+  if [ -z "${DT_PCTX}" ]; then
+    pval="$*"
+    var ${ovar} ${pval} || return $?
+  else
+    pval=$(${ovar} "${DT_PCTX}:${DT_SCTX}")
+    var ${ovar} ${pval} || return $?
+  fi
 }
 
 drop_vars_by_pref() {

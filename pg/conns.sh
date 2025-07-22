@@ -2,7 +2,7 @@ select_service_pg() { if [ "$(pg_mode)" = "docker" ]; then echo "ctx_pg_docker";
 
 function ctx_conn_admin_pg() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var PGUSER $(pg_superuser $2) && \
+  var PGUSER $(pg_superuser) && \
   var PGPASSWORD "postgres" && \
   var PGDATABASE "postgres" && \
   var CONN ctx_conn_admin_pg && \
