@@ -199,6 +199,7 @@ mvar() {
 
 table() {
   local mergefunc table tbl=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${DT_RECORD}" ]; then dt_debug ${fname} "Will merge record ${BOLD}${DT_RECORD}${RESET}"; merge; DT_RECORD=; fi
   table=$(tbl_name "${tbl}") && \
   if ! declare -p "${table}" >/dev/null 2>&1; then
     eval "${table}=" && \

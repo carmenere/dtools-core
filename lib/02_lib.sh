@@ -252,7 +252,7 @@ function dt_init() {
   dt_defaults && \
   dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
 #  . "${self_dir}/clickhouse/rc.sh" && \
-#  . "${self_dir}/pg/rc.sh" && \
+  . "${self_dir}/pg/rc.sh" && \
 #  . "${self_dir}/redis/rc.sh" && \
 #  . "${self_dir}/rabbitmq/rc.sh" && \
 #  . "${self_dir}/cargo/rc.sh" && \
