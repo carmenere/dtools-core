@@ -237,7 +237,7 @@ dt_defaults() {
   export DT_SEVERITY=4
   DT_BINDINGS=()
   DT_METHODS=()
-  DT_VARS=()
+  DT_VARS=(DT_RECORD DT_TABLE)
   DT_DEPS=()
   DT_CTX=
   DT_CTXES=()

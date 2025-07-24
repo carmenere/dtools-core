@@ -1,3 +1,49 @@
+# autocomplete_%TBL% - custom autocomplete function
+# %TBL%_records - record names, will be used as words for autocomplete
+# %TBL%_methods - methods to be bound to autocomplete_%TBL%
+
+dt_autocomplete() {
+  local methods autocomplete
+  methods=$1_methods
+  autocomplete=autocomplete_$1
+  methods=($(echo "$(${methods})"))
+  [ -n "$2" ] && pref="$2 "
+  result=()
+  for m in ${methods[@]}; do
+    echo "complete -F ${autocomplete} ${m}"
+    complete -F ${autocomplete} ${m}
+  done
+}
+
+docker_image_autocomplete=()
+docker_image_autocomplete+=("pg")
+docker_image_autocomplete+=("pg_docker")
+docker_image_autocomplete+=("pg_tetrix")
+docker_image_autocomplete+=("pg_docker_tetrix")
+
+autocomplete_docker_image() {
+  local cur_word="${COMP_WORDS[COMP_CWORD]}"
+  local options="${docker_image_records[@]}" # Example options
+  COMPREPLY=( $(compgen -W "${options}" -- "${cur_word}") )
+}
+
+docker_build() {
+  echo "docker_build $1"
+}
+
+docker_pull() {
+  echo "docker_build $1"
+}
+
+docker_image_methods() {
+  local methods=()
+  methods+=(docker_build)
+  methods+=(docker_pull)
+  echo "${methods[@]}"
+}
+
+dt_autocomplete docker_image
+
 get_var_args() {
   local wait fname=$(fname "${FUNCNAME[0]}" "$0")
   while [ "$#" -gt 0 ];
@@ -5,12 +51,10 @@ get_var_args() {
     case $1 in
       -r|--record)
         wait=$1
-        dt_debug ${fname} "wait=${wait}"
         shift
         ;;
       -t|--table)
         wait=$1
-        dt_debug ${fname} "wait=${wait}"
         shift
         ;;
       *)
@@ -34,60 +78,59 @@ get_var_args() {
         ;;
     esac
   done
-  dt_debug ${fname} "tbl=${tbl}, rec=${rec}"
 }
 
 set_tbl() { DT_TABLE="$1"; }
 set_rec() { DT_RECORD="$1"; }
 
 tbl_name() { echo "tbl_$1"; }
-rec_name() { echo "$(echo "$1" | sed -e 's/:/_/g')"; }
-# get name of parent rec
-rec_parent() { parent=$(rec_name "$(echo "$1" | awk -F':' 'OFS=":" {NF=NF-1; print $0}')"); }
+#rec_name() { echo "$(echo "$1" | sed -e 's/:/_/g')"; }
+## get name of parent rec
+#rec_parent() { parent=$(rec_name "$(echo "$1" | awk -F':' 'OFS=":" {NF=NF-1; print $0}')"); }
 
-fqn_rec() { echo "$1__$2"; }
-fqn_var() { echo "$1__$2__$3"; }
+fqn_rec() { echo "tbl_$1__$2"; }
+fqn_var() { echo "tbl_$1__$2__$3"; }
 
+# Checks that record $rec (if $rec is empty uses $DT_RECORD) exists and returns current record back
 # rec: mandatory
 # tbl: optional
 get_rec() {
   local table record rec=$1 tbl=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -n "${rec}" ]; then
-    record=$(rec_name ${rec})
-  else
+  if [ -z "${rec}" ]; then
     if [ -z "${DT_RECORD}" ]; then
       dt_error ${fname} "Record name was not provided: arg ${BOLD}rec${RESET} and var ${BOLD}DT_RECORD${RESET} are both empty"
       return 99
     else
-      record=${DT_RECORD}
+      rec=${DT_RECORD}
     fi
-  fi
+  fi && \
   table=$(get_table ${tbl}) && \
-  fq_rec=$(fqn_rec ${table} ${record}) && \
+  fq_rec=$(fqn_rec ${table} ${rec}) && \
+  dt_debug ${fname} "rec=${rec}, fq_rec=${BOLD}${fq_rec}${RESET}, table=${table}" && \
   if ! declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} doesn't exist"
     return 99
-  fi && \
-  echo "${record}"
+  fi
+  echo "${rec}"
 }
 
+# Adds tbl_prefix to tbl checks that such table exists and returns prefixed value: tbl_${tbl}
 get_table() {
   local table tbl=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ -n "${tbl}" ]; then
-    table=$(tbl_name "${tbl}")
-  else
+  if [ -z "${tbl}" ]; then
     if [ -z "${DT_TABLE}" ]; then
       dt_error ${fname} "Table name was not provided: arg ${BOLD}tbl${RESET} and var ${BOLD}DT_TABLE${RESET} are both empty"
       return 99
     else
-      table=${DT_TABLE}
+      tbl="${DT_TABLE}"
     fi
   fi
+  table=$(tbl_name "${tbl}")
   if ! declare -p "${table}" >/dev/null 2>&1; then
     dt_error ${fname} "Table ${BOLD}${table}${RESET} doesn't exist"
     return 99
   fi
-  echo "${table}"
+  echo "${tbl}"
 }
 
 # get value of variable "var" of some record "rec" of some table "tbl"
@@ -161,7 +204,7 @@ table() {
     eval "${table}=" && \
     DT_VARS+=("${table}") || return $?
   fi && \
-  set_tbl "${table}"
+  set_tbl "${tbl}"
 }
 
 # -m and -p are mutually exclusive, so there is no need for more complex logic like in get_var_args
@@ -173,15 +216,16 @@ record_args() {
     if ! declare -f "${mergefunc}" >/dev/null 2>&1; then dt_error ${fname} "Provided merge function ${BOLD}${mergefunc}${RESET} doesn't exist"; return 99; fi
   elif [ "$1" = "-p" ]; then
     if [ -z $2 ]; then dt_error ${fname} "Parent was not provided"; return 99; fi
-    parent=$(rec_name "$2")
+    parent="$2"
     shift 2
-    if ! declare -p "${parent}" >/dev/null 2>&1; then dt_error ${fname} "Provided parent record ${BOLD}${parent}${RESET} doesn't exist"; return 99; fi
+#    if ! declare -p "${parent}" >/dev/null 2>&1; then dt_error ${fname} "Provided parent record ${BOLD}${parent}${RESET} doesn't exist"; return 99; fi
   fi
   if [ -n "$1" ]; then dt_error ${fname} "Unexpected parameter: $1"; return 99; fi
 }
 
 record() {
   local mergefunc table parent fq_rec rec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  if [ -n "${DT_RECORD}" ]; then dt_debug ${fname} "Will merge record ${BOLD}${DT_RECORD}${RESET}"; merge; fi
   err_if_empty ${fname} "rec" && \
   shift && record_args $@ && \
   table=$(get_table) && \
@@ -192,131 +236,48 @@ record() {
   fi && \
   dt_debug ${fname} "rec=${rec}, parent=${parent}, mergefunc=${mergefunc}" && \
   if [ -z "${mergefunc}" ]; then
-    if [ -z "${parent}" ]; then
-      parent=$(rec_parent "${rec}") && \
+    if [ -n "${parent}" ]; then
       parent="$(get_rec "${parent}")" || return $?
     else
-      parent="$(get_rec "${parent}")" || return $?
-    fi && \
-    if [ -z "${parent}" ]; then
       dt_error ${fname} "Nor merge function neither parent was provided"
       return 99
     fi && \
     fq_rec_parent=$(fqn_rec "${table}" "${parent}") && \
-    mergefunc="$(eval echo "\$${fq_rec_parent}_merge")" && \
+    mergefunc="$(eval echo "\$${fq_rec_parent}__merge")" && \
     if [ -z "${mergefunc}" ]; then
       dt_error ${fname} "Cannot find merge function"
       return 99
     fi
   fi && \
   DT_VARS+=("${fq_rec}") && \
-  DT_VARS+=("${fq_rec}_merge") && \
-  DT_VARS+=("${fq_rec}_parent") && \
+  DT_VARS+=("${fq_rec}__merge") && \
+  DT_VARS+=("${fq_rec}__parent") && \
   eval "${fq_rec}=" && \
-  eval "${fq_rec}_parent=${parent}" && \
-  eval "${fq_rec}_merge=${mergefunc}" && \
+  eval "${fq_rec}__parent=${parent}" && \
+  eval "${fq_rec}__merge=${mergefunc}" && \
   set_rec "${rec}"
 }
 
 merge() {
-  local DT_PARENT mergefunc table record parent fq_rec fname=$(fname "${FUNCNAME[0]}" "$0")
+  local DT_PARENT mergefunc table rec fq_rec fname=$(fname "${FUNCNAME[0]}" "$0")
   table=$(get_table) && \
   rec="$(get_rec "${DT_RECORD}")" && \
+  dt_debug ${fname} "table=${table}, DT_RECORD=${DT_RECORD}, rec=${rec}"
   fq_rec=$(fqn_rec "${table}" "${rec}") && \
-  if declare -p "${fq_rec}_merged" >/dev/null 2>&1; then
+  dt_debug ${fname} "fq_rec=${BOLD}${fq_rec}${RESET}"
+  if declare -p "${fq_rec}__merged" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} has already merged"
     return 99
   fi && \
-  DT_PARENT="$(eval echo "\$${fq_rec}_parent")" && \
-  mergefunc="$(eval echo "\$${fq_rec}_merge")" && \
+  DT_PARENT="$(eval echo "\$${fq_rec}__parent")" && \
+  mergefunc="$(eval echo "\$${fq_rec}__merge")" && \
+  dt_debug ${fname} "DT_PARENT=${DT_PARENT}, mergefunc=${mergefunc}"
   if [ -z "${DT_PARENT}" ] && [ -z "${mergefunc}" ]; then
     dt_error ${fname} "Nor merge function neither parent was provided"
     return 99
   fi && \
   dt_debug ${fname} "Merge function is ${BOLD}${mergefunc}${RESET}, parent=${DT_PARENT}" && \
   ${mergefunc} && \
-  eval "${fq_rec}_merged=yes" && \
-  DT_VARS+=("${fq_rec}_merged")
-}
-
-merge_docker_network() {
-  mvar SUBNET "192.168.111.0/24"
-  mvar BRIDGE "example"
-  mvar DRIVER "bridge"
-}
-
-merge_docker_refs() {
-  local DT_SCTX=refs
-  mvar net docker_network_default
-  mvar conn pg_conn_admin
-}
-
-merge_docker_image() {
-  local DT_SCTX=image
-  mvar BASE_IMAGE "$(docker_arm64v8)alpine:3.22.1"
-  mvar BUILD_ARGS
-  mvar BUILD_VERSION "$(git_build_version)"
-  mvar CTX "."
-  mvar DEFAULT_TAG $(docker_default_tag)
-  mvar IMAGE $(BASE_IMAGE)
-}
-
-merge_docker_service() {
-  local DT_SCTX=service
-  mvar CHECK "docker_check"
-  mvar COMMAND
-  mvar EXEC "docker_exec_i_cmd"
-  mvar FLAGS "-d"
-  mvar PUBLISH
-  mvar RESTART "always"
-  mvar RM
-  mvar RUN_ENVS
-  mvar SERVICE
-  mvar SH "/bin/sh"
-  mvar TERMINAL "docker_exec_it_cmd"
-  mvar BRIDGE $(BRIDGE $(net :refs))
-}
-
-merge_docker_publish() {
-  local DT_SCTX=publish
-  mvar PORT 5432
-  mvar PUB_PORT $(PORT $(conn :refs):docker)
-  mvar PUBLISH "$(PUB_PORT):$(PORT)/tcp"
-}
-
-merge_docker() {
-  merge_docker_refs
-  merge_docker_image
-  merge_docker_service
-  merge_docker_publish
-}
-
-
-merge_test() {
-  echo "Will merge $1 with its parent $2"
-}
-
-#merge_docker_run_envs_pg() {
-#  local DT_TABLE= DT_PCTX= prefix="ctx_docker_image" fname=$(fname "${FUNCNAME[0]}" "$0")
-#  DT_TABLE=$(set_ctx_prefix $1) && err_if_empty ${fname} "DT_TABLE"
-#  DT_PCTX=$(set_pctx_prefix $2)
-#  var pg_conn pg_conn_default
-#  mvar RUN_ENVS "POSTGRES_PASSWORD POSTGRES_DB POSTGRES_USER"
-#  mvar POSTGRES_PASSWORD "$(pg_conn PGPASSWORD )"
-#  mvar POSTGRES_DB "$(pg_conn PGDATABASE )"
-#  mvar POSTGRES_USER "$(pg_conn PGUSER )"
-#}
-
-merge_conn() {
-  mvar USER $(pg_superuser)
-  mvar PASSWORD "postgres"
-  mvar DATABASE "postgres"
-  mvar HOST "localhost"
-  mvar PORT 0
-}
-
-merge_socket() {
-  mvar PORT 0
-  mvar HOST "localhost"
-  mvar PROTO "tcp"
+  eval "${fq_rec}__merged=yes" && \
+  DT_VARS+=("${fq_rec}__merged")
 }

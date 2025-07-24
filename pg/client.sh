@@ -57,42 +57,13 @@ psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
 psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
 
 psql_alter_role_password() { _psql_gexec $(CONN) sql_pg_alter_role_password "local"; }
-psql_create_db() { _psql_gexec $(CONN) sql_pg_create_db; }
-psql_create_user() { _psql_gexec $(CONN) sql_pg_create_user; }
-psql_drop_db() { _psql_gexec $(CONN) sql_pg_drop_db; }
+psql_create_db() { _psql_gexec $(CONN) $(CREATE_DB); }
+psql_create_user() { _psql_gexec $(CONN) $(CREATE); }
+psql_drop_db() { _psql_gexec $(CONN) $(DROP_DB); }
 psql_drop_role_password() { _psql_gexec $(CONN) sql_pg_drop_role_password; }
-psql_drop_user() { _psql_gexec $(CONN) sql_pg_drop_user; }
-psql_grant_user() { _psql_gexec $(GRANT_CONN) $(GRANT); }
+psql_drop_user() { _psql_gexec $(CONN) $(DROP); }
+psql_grant_user() { _psql_gexec $(CONN) $(GRANT); }
 psql_revoke_user() { _psql_gexec $(CONN) $(REVOKE); }
-
-
-table queries
-  record pg:admin -m pg_db
-    var conn $(rec_fqn -t conns -r pg:admin)
-    var args $(rec_fqn -t conns -r pg:migrator)
-    var CREATE
-    var DROP
-
-  record pg:db:migrator -m pg_db
-    var conn $(rec_fqn -t conns -r pg:admin)
-    var args $(rec_fqn -t conns -r pg:migrator)
-    var CREATE
-    var DROP
-
-  record pg:user:migrator -m pg_init_user
-    var conn $(rec_fqn -t conns -r pg:admin)
-    var account $(rec_fqn -t conns -r pg:migrator)
-    var DB $(DB -t conns -r pg:migrator)
-    var CREATE
-    var DROP
-    var GRANT sql_pg_grant_user_migrator
-    var REVOKE sql_pg_revoke_user_migrator
-
-  record pg:db:migrator -m pg_init_db
-    var conn $(rec_fqn -t conns -r pg:admin)
-    var account $(rec_fqn -t conns -r pg:migrator)
-    var CREATE
-    var DROP
 
 psql_methods() {
   local methods=()
