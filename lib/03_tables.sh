@@ -1,12 +1,56 @@
+get_var_args() {
+  local wait fname=$(fname "${FUNCNAME[0]}" "$0")
+  while [ "$#" -gt 0 ];
+  do
+    case $1 in
+      -r|--record)
+        wait=$1
+        dt_debug ${fname} "wait=${wait}"
+        shift
+        ;;
+      -t|--table)
+        wait=$1
+        dt_debug ${fname} "wait=${wait}"
+        shift
+        ;;
+      *)
+        if [ -z "${wait}" ]; then dt_error ${fname} "Unexpected positional parameter: $1."; return 99; fi
+        if [ -z "$1" ]; then dt_error ${fname} "Empty value for option ${wait}"; return 99; fi
+        case ${wait} in
+          -r|--record)
+            rec=$1
+            wait=
+            shift
+            ;;
+          -t|--table)
+            tbl=$1
+            wait=
+            shift
+            ;;
+          *)
+            dt_error ${fname} "Invalid state of parser: wait=${wait}."; return 99;
+            ;;
+        esac
+        ;;
+    esac
+  done
+  dt_debug ${fname} "tbl=${tbl}, rec=${rec}"
+}
+
 set_tbl() { DT_TABLE="$1"; }
 set_rec() { DT_RECORD="$1"; }
 
 tbl_name() { echo "tbl_$1"; }
 rec_name() { echo "$(echo "$1" | sed -e 's/:/_/g')"; }
-rec_fqn() { echo "$1__$2"; }
-var_fqn() { echo "$1__$2__$3"; }
+# get name of parent rec
+rec_parent() { parent=$(rec_name "$(echo "$1" | awk -F':' 'OFS=":" {NF=NF-1; print $0}')"); }
 
-get_record() {
+fqn_rec() { echo "$1__$2"; }
+fqn_var() { echo "$1__$2__$3"; }
+
+# rec: mandatory
+# tbl: optional
+get_rec() {
   local table record rec=$1 tbl=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${rec}" ]; then
     record=$(rec_name ${rec})
@@ -19,7 +63,7 @@ get_record() {
     fi
   fi
   table=$(get_table ${tbl}) && \
-  fq_rec=$(rec_fqn ${table} ${record}) && \
+  fq_rec=$(fqn_rec ${table} ${record}) && \
   if ! declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} doesn't exist"
     return 99
@@ -30,7 +74,7 @@ get_record() {
 get_table() {
   local table tbl=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${tbl}" ]; then
-    table=$(tbl_name ${tbl})
+    table=$(tbl_name "${tbl}")
   else
     if [ -z "${DT_TABLE}" ]; then
       dt_error ${fname} "Table name was not provided: arg ${BOLD}tbl${RESET} and var ${BOLD}DT_TABLE${RESET} are both empty"
@@ -47,22 +91,18 @@ get_table() {
 }
 
 # get value of variable "var" of some record "rec" of some table "tbl"
+# rec: optional
+# tbl: optional
 get_var() {
   local table val rec tbl var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift
-  if [ "$1" = "-r" ]; then
-    rec="$2"
-  elif [ "$1" = "-t" ]; then
-    tbl="$2"
-  else
-    dt_error ${fname} "Unknown args"; return 99
-  fi
-  table="$(get_table ${tbl})" && \
-  record="$(rec_name ${rec})" && \
-  fq_var=$(var_fqn ${table} ${record} ${var}) || return $?
-  if declare -p ${fq_var} >/dev/null 2>&1; then
-    val=$(eval echo \$${fq_var})
-    echo "${val}"
+  shift; get_var_args $@ && \
+  dt_debug ${fname} "tbl=${tbl}, rec=${rec}" && \
+  table="$(get_table "${tbl}")" && \
+  rec="$(get_rec "${rec}")" && \
+  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
+  if declare -p "${fq_var}" >/dev/null 2>&1; then
+    val="$(eval echo "\$${fq_var}")" && \
+    echo "${val}" || return $?
   else
     dt_error ${fname} "Variable ${BOLD}${fq_var}${RESET} doesn't exist"
     return 99
@@ -72,44 +112,44 @@ get_var() {
 # resets variable "var" in some ctx DT_TABLE
 # ovar: original name of some variable "var" without prefix
 var() {
-  local var val table record var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift; val="$*"
+  local val table rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift; val="$*" && \
   table=$(get_table) && \
-  record=$(get_record) && \
+  rec=$(get_rec) && \
   err_if_empty ${fname} "var" && \
-  fq_var=$(var_fqn ${table} ${record} ${var}) || return $?
-  local msg_tmpl="${BOLD}${fq_var}${RESET} to value '${BOLD}${val}${RESET}'"
+  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
+  local msg_tmpl="${BOLD}${fq_var}${RESET} to value '${BOLD}${val}${RESET}'" && \
   if declare -p ${fq_var} >/dev/null 2>&1; then
     dt_warning ${fname} "Resetting ${msg_tmpl}"
   else
     dt_debug ${fname} "Setting ${msg_tmpl}"
     DT_VARS+=("${fq_var}")
-    eval "${var}() { get_var ${var} \$1 \$2 \$3 \$4; }"
-  fi
+    eval "${var}() { get_var ${var} \$1 \$2 \$3 \$4; }" || return $?
+  fi && \
   eval "${fq_var}=\"${val}\""
 }
 
 # merges var in parent ctx DT_PARENT and with one in ctx DT_TABLE
 # ovar: original name of some variable "var" without prefix
 mvar() {
-  local var val pval table record var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift; val="$*"
-  table=$(get_table) && \
-  record=$(get_record) && \
+  local val pval table rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift; pval="$*"
   err_if_empty ${fname} "var" && \
-  fq_var=$(var_fqn ${table} ${record} ${var}) || return $?
-  dt_debug ${fname} "fq_var=${BOLD}${fq_var}${RESET}"
+  table=$(get_table) && \
+  rec=$(get_rec) && \
+  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
+  dt_debug ${fname} "fq_var=${BOLD}${fq_var}${RESET}" && \
   if declare -p ${fq_var} >/dev/null 2>&1; then
     val="$(eval echo \$${fq_var})" || return $?
     dt_debug ${fname} "Skip merge for var ${BOLD}${fq_var}${RESET}: it has already set and its value is '${BOLD}${val}${RESET}'"
     return 0
-  fi
-  dt_debug ${fname} "Merging var ${BOLD}${fq_var}${RESET} with parent ctx '${BOLD}${DT_PARENT}${RESET}'"
+  fi && \
+  dt_debug ${fname} "Merging var ${BOLD}${fq_var}${RESET} with parent ctx '${BOLD}${DT_PARENT}${RESET}'" && \
   if [ -z "${DT_PARENT}" ]; then
-    pval="$*"
     var "${var}" "${pval}" || return $?
   else
-    pval=$(${var} -t "${table}" -r "${DT_PARENT}")
+    rec=$(get_rec "${DT_PARENT}") && \
+    pval=$(${var} -t "${table}" -r "${rec}") && \
     var "${var}" "${pval}" || return $?
   fi
 }
@@ -117,93 +157,85 @@ mvar() {
 table() {
   local mergefunc table tbl=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   table=$(tbl_name "${tbl}") && \
-  if [ "$2" = "-m" ]; then
-    if [ -z $3 ]; then dt_error ${fname} "Merge function was not provided"; return 99; fi
-    mergefunc="merge_$3"
-    if ! declare -f "${mergefunc}" >/dev/null 2>&1; then
-      dt_error ${fname} "Provided merge function ${BOLD}${mergefunc}${RESET} doesn't exist"
-      return 99
-    fi
-  else
-    dt_error ${fname} "Merge function was not provided"
-    return 99
-  fi && \
   if ! declare -p "${table}" >/dev/null 2>&1; then
-    eval "${table}="
-    eval "${table}_merge=${mergefunc}"
-    DT_VARS+=("${table}") && \
-    DT_VARS+=("${table}_merge") || return $?
+    eval "${table}=" && \
+    DT_VARS+=("${table}") || return $?
   fi && \
   set_tbl "${table}"
 }
 
+# -m and -p are mutually exclusive, so there is no need for more complex logic like in get_var_args
+record_args() {
+  if [ "$1" = "-m" ]; then
+    if [ -z $2 ]; then dt_error ${fname} "Merge function was not provided"; return 99; fi
+    mergefunc="merge_$2"
+    shift 2
+    if ! declare -f "${mergefunc}" >/dev/null 2>&1; then dt_error ${fname} "Provided merge function ${BOLD}${mergefunc}${RESET} doesn't exist"; return 99; fi
+  elif [ "$1" = "-p" ]; then
+    if [ -z $2 ]; then dt_error ${fname} "Parent was not provided"; return 99; fi
+    parent=$(rec_name "$2")
+    shift 2
+    if ! declare -p "${parent}" >/dev/null 2>&1; then dt_error ${fname} "Provided parent record ${BOLD}${parent}${RESET} doesn't exist"; return 99; fi
+  fi
+  if [ -n "$1" ]; then dt_error ${fname} "Unexpected parameter: $1"; return 99; fi
+}
+
 record() {
-  local mergefunc table record parent fq_rec rec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  local mergefunc table parent fq_rec rec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "rec" && \
+  shift && record_args $@ && \
   table=$(get_table) && \
-  record=$(rec_name "${rec}") && \
-  fq_rec=$(rec_fqn "${table}" "${record}") && \
-  if declare -p "${record}" >/dev/null 2>&1; then
+  fq_rec=$(fqn_rec "${table}" "${rec}") || return $?
+  if declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} already exists"
     return 99
   fi && \
-  if [ "$2" = "-m" ]; then
-    if [ -z $3 ]; then dt_error ${fname} "Merge function was not provided"; return 99; fi
-    mergefunc="merge_$3"
-    if ! declare -f "${mergefunc}" >/dev/null 2>&1; then dt_error ${fname} "Provided merge function ${BOLD}${mergefunc}${RESET} doesn't exist"; return 99; fi
-  elif [ "$2" = "-p" ]; then
-    if [ -z $3 ]; then dt_error ${fname} "Parent was not provided"; return 99; fi
-    parent=$(rec_name "$3")
-    if ! declare -p "${parent}" >/dev/null 2>&1; then dt_error ${fname} "Provided parent record ${BOLD}${parent}${RESET} doesn't exist"; return 99; fi
-  else
-    parent=$(rec_name "$(echo "${rec}" | awk -F':' 'OFS=":" {NF=NF-1; print $0}')")
-  fi && \
   dt_debug ${fname} "rec=${rec}, parent=${parent}, mergefunc=${mergefunc}" && \
-  if [ -z "${mergefunc}" ]; then mergefunc="$(eval echo "\$${table}_merge")"; fi && \
-  if [ -z "${parent}" ] && [ -z "${mergefunc}" ]; then
-    dt_error ${fname} "Nor merge function neither parent was provided"
-    return 99
-  fi && \
-  if [ -n "${parent}" ]; then
-    parent="$(get_record "${parent}")" || return $?
+  if [ -z "${mergefunc}" ]; then
+    if [ -z "${parent}" ]; then
+      parent=$(rec_parent "${rec}") && \
+      parent="$(get_rec "${parent}")" || return $?
+    else
+      parent="$(get_rec "${parent}")" || return $?
+    fi && \
+    if [ -z "${parent}" ]; then
+      dt_error ${fname} "Nor merge function neither parent was provided"
+      return 99
+    fi && \
+    fq_rec_parent=$(fqn_rec "${table}" "${parent}") && \
+    mergefunc="$(eval echo "\$${fq_rec_parent}_merge")" && \
+    if [ -z "${mergefunc}" ]; then
+      dt_error ${fname} "Cannot find merge function"
+      return 99
+    fi
   fi && \
   DT_VARS+=("${fq_rec}") && \
   DT_VARS+=("${fq_rec}_merge") && \
-  DT_VARS+=("${fq_rec}_parent") || return $?
-  eval "${fq_rec}="
-  eval "${fq_rec}_parent=${parent}"
-  eval "${fq_rec}_merge=${mergefunc}"
-  set_rec "${record}"
-}
-
-get_merge() {
-  local ctx=$1 pctx="$2" fname=$(fname "${FUNCNAME[0]}" "$0")
-  if declare -p "${ctx}_merge" >/dev/null 2>&1; then
-    echo "$(eval echo "\$${record}_merge")"
-  elif declare -p "${pctx}_merge" >/dev/null 2>&1; then
-    echo "$(eval echo "\$${pctx}_merge")"
-  else
-    dt_error ${fname} "Cannot find merge function"
-  fi
+  DT_VARS+=("${fq_rec}_parent") && \
+  eval "${fq_rec}=" && \
+  eval "${fq_rec}_parent=${parent}" && \
+  eval "${fq_rec}_merge=${mergefunc}" && \
+  set_rec "${rec}"
 }
 
 merge() {
   local DT_PARENT mergefunc table record parent fq_rec fname=$(fname "${FUNCNAME[0]}" "$0")
   table=$(get_table) && \
-  record="$(get_record "${DT_RECORD}")" && \
-  fq_rec=$(rec_fqn "${table}" "${record}") && \
+  rec="$(get_rec "${DT_RECORD}")" && \
+  fq_rec=$(fqn_rec "${table}" "${rec}") && \
   if declare -p "${fq_rec}_merged" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} has already merged"
     return 99
-  fi
-  DT_PARENT="$(eval echo "\$${fq_rec}_parent")"
-  mergefunc="$(eval echo "\$${fq_rec}_merge")"
+  fi && \
+  DT_PARENT="$(eval echo "\$${fq_rec}_parent")" && \
+  mergefunc="$(eval echo "\$${fq_rec}_merge")" && \
   if [ -z "${DT_PARENT}" ] && [ -z "${mergefunc}" ]; then
     dt_error ${fname} "Nor merge function neither parent was provided"
     return 99
   fi && \
-  dt_debug ${fname} "Merge function is ${BOLD}${mergefunc}${RESET}, parent=${DT_PARENT}"
-  ${mergefunc}
-  eval "${fq_rec}_merged=yes"
+  dt_debug ${fname} "Merge function is ${BOLD}${mergefunc}${RESET}, parent=${DT_PARENT}" && \
+  ${mergefunc} && \
+  eval "${fq_rec}_merged=yes" && \
   DT_VARS+=("${fq_rec}_merged")
 }
 
