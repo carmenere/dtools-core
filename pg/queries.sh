@@ -4,45 +4,56 @@ dquote() {
   if [ "$(pg_mode)" = "docker" ]; then
     echo '\$\$'
   else
-    echo '$$'
+    echo '\$\$'
   fi
 }
 
 function sql_pg_alter_role_password() {
-  local conn=$1 user=$(USER ${conn}) password=$(PASSWORD ${conn})
+  local user password conn=$1
+  user=$(USER "${conn}")
+  password=$(PASSWORD "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} password=${password}"
   local query=$(escape_quote "
     SELECT
       $(dquote) ALTER ROLE \"${user}\" WITH PASSWORD '${password}' $(dquote)
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '${user}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_drop_role_password() {
-  local conn=$1 user=$(USER ${conn}) password=$(PASSWORD ${conn})
+  local user password conn=$1
+  user=$(USER "${conn}")
+  password=$(PASSWORD "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} password=${password}"
   local query=$(escape_quote "
     SELECT
       $(dquote) ALTER ROLE \"${user}\" WITH PASSWORD '${password}' $(dquote)
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '${user}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_create_user() {
-  local conn=$1 user=$(USER ${conn}) password=$(PASSWORD ${conn})
+  local user password conn=$1
+  user=$(USER "${conn}")
+  password=$(PASSWORD "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} password=${password}"
   local query=$(escape_quote "
     SELECT
       $(dquote) CREATE USER ${user} WITH ENCRYPTED PASSWORD '${password}' $(dquote)
     WHERE
       NOT EXISTS (SELECT true FROM pg_roles WHERE rolname = '${user}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_drop_user() {
-  local conn=$1 user=$(USER ${conn})
+  local user conn=$1
+  local user=$(USER "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user}"
   local query=$(escape_quote "
     SELECT
       'DROP OWNED BY ${user}',
@@ -50,33 +61,40 @@ function sql_pg_drop_user() {
     WHERE
       EXISTS (SELECT true FROM pg_roles WHERE rolname = '${user}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_create_db() {
-  local conn=$1 database=$(DATABASE ${conn})
+  local database conn=$1
+  database=$(DATABASE "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} database=${database}"
   local query=$(escape_quote "
     SELECT
       'CREATE DATABASE ${database}'
     WHERE
       NOT EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_drop_db() {
-  local conn=$1 database=$(DATABASE ${conn})
+  local database conn=$1
+  database=$(DATABASE "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} database=${database}"
   local query=$(escape_quote "
     SELECT
       'DROP DATABASE IF EXISTS ${database}'
     WHERE
       EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_grant_user_migrator() {
-  local conn=$1 database=$(DATABASE ${conn}) user=$(USER ${conn})
+  local database user conn=$1
+  database=$(DATABASE "${conn}")
+  user=$(USER "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} database=${database}"
   local query=$(escape_quote "
     SELECT
       'ALTER ROLE ${user} WITH SUPERUSER CREATEDB',
@@ -86,11 +104,14 @@ function sql_pg_grant_user_migrator() {
     AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_revoke_user_migrator() {
-  local conn=$1 database=$(DATABASE ${conn}) user=$(USER ${conn})
+  local database user conn=$1
+  database=$(DATABASE "${conn}")
+  user=$(USER "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} database=${database}"
   local query=$(escape_quote "
     SELECT
       'ALTER ROLE ${user} WITH NOSUPERUSER NOCREATEDB',
@@ -100,11 +121,14 @@ function sql_pg_revoke_user_migrator() {
     AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_grant_user_app() {
-  local conn=$1 database=$(DATABASE ${conn}) user=$(USER ${conn})
+  local database user conn=$1
+  database=$(DATABASE "${conn}")
+  user=$(USER "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} database=${database}"
   local query=$(escape_quote "
     SELECT
       'GRANT USAGE ON SCHEMA public TO ${user}',
@@ -117,11 +141,14 @@ function sql_pg_grant_user_app() {
     AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 function sql_pg_revoke_user_app() {
-  local conn=$1 database=$(DATABASE ${conn}) user=$(USER ${conn})
+  local database user conn=$1
+  database=$(DATABASE "${conn}")
+  user=$(USER "${conn}")
+  dt_debug sql_pg_create_user "conn=${conn} user=${user} database=${database}"
   local query=$(escape_quote "
     SELECT
       'REVOKE SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public FROM ${user}',
@@ -135,7 +162,7 @@ function sql_pg_revoke_user_app() {
     AND
       EXISTS (SELECT true FROM pg_database WHERE datname = '${database}')
   ") || return $?
-  echo "${query}"
+  echo $'${query}'
 }
 
 # Grant syntax with ALL PRIVILEGES and DEFAULT PRIVILEGES

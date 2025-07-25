@@ -136,7 +136,7 @@ var() {
 # merges var in parent record DT_PARENT and with one in current DT_TABLE
 mvar() {
   local val pval tbl rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift; val="$*" && \
+  shift; pval="$*" && \
   err_if_empty ${fname} "var" && \
   tbl=$(get_table) && \
   rec=$(get_rec) && \
