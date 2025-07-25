@@ -208,7 +208,7 @@ is_var_changed(){
 }
 
 dt_paths() {
-  export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..)
+  export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..) && \
   # Paths that depend on DTOOLS
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
@@ -248,10 +248,11 @@ dt_defaults() {
 }
 
 function dt_init() {
-  if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
-  local self_dir="$(dirname $(realpath "${self}"))" && \
-  drop_all && \
+  local self_dir self
+  if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi && \
   dt_paths && \
+  self_dir="$(dirname $(realpath "${self}"))" && \
+  drop_all && \
   dt_defaults && \
   dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
 #  . "${self_dir}/clickhouse/rc.sh" && \
@@ -263,21 +264,6 @@ function dt_init() {
 #  . "${DT_TOOLS}/rc.sh" && \
 #  . "${DT_STANDS}/rc.sh" && \
   if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi && \
-#  dt_autocomplete
+  . ${DTOOLS}/vars/vars.sh && \
+  dt_autocomplete
 }
-
-autocomplete_docker_images () {
-	local cur_word=${COMP_WORDS[COMP_CWORD]}
-	local options="${records_docker_images[@]}"
-	COMPREPLY=($(compgen -W "${options}" -- "${cur_word}"))
-}
-
-autocomplete_docker_images2 () {
-	local cur_word=${COMP_WORDS[COMP_CWORD]} local options="${records_docker_images[@]}" COMPREPLY=($(compgen -W "${options}" -- "${cur_word}"))
-}
-
-xxx() { "echo $1"; }
-complete -F autocomplete_docker_images xxx
-
-yyy() { "echo $1"; }
-complete -F autocomplete_docker_images2 yyy

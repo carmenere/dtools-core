@@ -53,6 +53,16 @@ _psql_clean() {
   ${app}__psql_drop_user
 }
 
+function psql_init() {
+  switch_ctx $(select_service_pg) && $(CHECK) && \
+  _psql_init ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
+}
+
+function psql_clean() {
+  switch_ctx $(select_service_pg) && $(CHECK) && \
+  _psql_clean ctx_conn_admin_pg ctx_conn_migrator_pg ctx_conn_app_pg
+}
+
 psql_local_conn() { $(TERMINAL) "$(_psql_local_conn $@)"; }
 psql_conn() { $(TERMINAL) "$(_psql_conn $@)"; }
 

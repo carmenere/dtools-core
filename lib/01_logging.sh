@@ -1,15 +1,18 @@
-rst_err_cnt() { ERR_COUNTER=0; }
-inc_err_cnt() { ERR_COUNTER=$((${ERR_COUNTER}+1)); }
-get_err_cnt() { echo ${ERR_COUNTER}; }
+ERR_COUNTER_PATH="/tmp/dt_err_counter"
+
+save_err_cnt() { echo "ERR_COUNTER=${ERR_COUNTER}" > ${ERR_COUNTER_PATH}; }
+rst_err_cnt() { ERR_COUNTER=0; $(save_err_cnt); }
+inc_err_cnt() { ERR_COUNTER=$(($(get_err_cnt)+1)); $(save_err_cnt); }
+get_err_cnt() { echo "$(. "${ERR_COUNTER_PATH}" && echo "${ERR_COUNTER}")"; }
 
 # All functions "error", "warning", "dt_info" and "debug" have the same signature:
 #   $1: must contain $0 of caller
 #   $2: must contain err message
 dt_error() {
-  inc_err_cnt
   if [ "${DT_SEVERITY}" -ge 1 ]; then
     >&2 echo -e "${RED}${BOLD}[dtools][ERROR][$1]${RESET} $2"
   fi
+  inc_err_cnt
 }
 
 dt_warning() {
@@ -53,3 +56,6 @@ err_if_empty() {
     fi
   done
 }
+
+
+rst_err_cnt

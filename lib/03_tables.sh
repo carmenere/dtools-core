@@ -70,6 +70,7 @@ get_rec() {
   dt_debug ${fname} "rec=${rec}, fq_rec=${BOLD}${fq_rec}${RESET}, tbl=${tbl}" && \
   if ! declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} doesn't exist"
+    dt_error ${fname}  "get_err_cnt=$(get_err_cnt)"
     return 99
   fi
   echo "${rec}"
@@ -88,7 +89,9 @@ get_table() {
   fi
   table=$(tbl_name "${tbl}")
   if ! declare -p "${table}" >/dev/null 2>&1; then
+    dt_error ${fname} "get_err_cnt=$(get_err_cnt)"
     dt_error ${fname} "Table ${BOLD}${table}${RESET} doesn't exist"
+    dt_error ${fname} "get_err_cnt=$(get_err_cnt)"
     return 99
   fi
   echo "${tbl}"
