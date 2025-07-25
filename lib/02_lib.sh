@@ -237,8 +237,11 @@ dt_defaults() {
   export DT_SEVERITY=4
   DT_BINDINGS=()
   DT_METHODS=()
+  DT_RECORD=
+  DT_TABLE=
   DT_VARS=(DT_RECORD DT_TABLE)
   DT_DEPS=()
+  DT_TABLES=()
   DT_CTX=
   DT_CTXES=()
   DT_STAND='n'
@@ -246,7 +249,7 @@ dt_defaults() {
 
 function dt_init() {
   if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
-  local self_dir="$(dirname $(realpath "${self}"))"
+  local self_dir="$(dirname $(realpath "${self}"))" && \
   drop_all && \
   dt_paths && \
   dt_defaults && \
@@ -259,6 +262,22 @@ function dt_init() {
 #  . "${self_dir}/python/rc.sh" && \
 #  . "${DT_TOOLS}/rc.sh" && \
 #  . "${DT_STANDS}/rc.sh" && \
-  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi
-#  dt_register
+  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi && \
+#  dt_autocomplete
 }
+
+autocomplete_docker_images () {
+	local cur_word=${COMP_WORDS[COMP_CWORD]}
+	local options="${records_docker_images[@]}"
+	COMPREPLY=($(compgen -W "${options}" -- "${cur_word}"))
+}
+
+autocomplete_docker_images2 () {
+	local cur_word=${COMP_WORDS[COMP_CWORD]} local options="${records_docker_images[@]}" COMPREPLY=($(compgen -W "${options}" -- "${cur_word}"))
+}
+
+xxx() { "echo $1"; }
+complete -F autocomplete_docker_images xxx
+
+yyy() { "echo $1"; }
+complete -F autocomplete_docker_images2 yyy

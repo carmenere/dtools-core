@@ -1,5 +1,46 @@
 # FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 
+merge_docker_publish() {
+  mvar PUBLISH "$(PORT $(SOCK)):$(PORT $(SOCK_INNER))/tcp"
+}
+
+merge_docker_network() {
+  mvar SUBNET "192.168.111.0/24"
+  mvar BRIDGE "example"
+  mvar DRIVER "bridge"
+}
+
+merge_docker_image() {
+  mvar BASE_IMAGE "$(docker_arm64v8)alpine:3.22.1"
+  mvar DOCKERFILE
+  mvar BUILD_VERSION "$(git_build_version)"
+  mvar CTX "."
+  mvar DEFAULT_TAG $(docker_default_tag)
+  mvar IMAGE $(BASE_IMAGE)
+}
+
+merge_docker_service() {
+  local tbl_sockets=sockets tbl_networks=docker_networks tbl_images=docker_images
+  mvar publish merge_docker_publish
+  mref bridge "${tbl_networks}" "default"
+  mref image "${tbl_images}" "default"
+  mvar CHECK "docker_check"
+  mvar COMMAND
+  mvar EXEC "docker_exec_i_cmd"
+  mvar FLAGS "-d"
+  mvar PUBLISH
+  mvar RESTART "always"
+  mvar RM
+  mvar RUN_ENVS
+  mvar SERVICE
+  mvar SH "/bin/sh"
+  mvar TERMINAL "docker_exec_it_cmd"
+  mvar BRIDGE $(BRIDGE $(bridge))
+  mvar IMAGE $(IMAGE $(image))
+  mref SOCK_INNER "${tbl_sockets}" "default"
+  mref SOCK "${tbl_sockets}" "default"
+}
+
 docker_install() {
   SUDO=sudo
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -43,11 +84,11 @@ docker_default_tag() {
   fi
 }
 
-docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
-docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
-docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
+_docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
+_docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
+_docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
 
-docker_build() { exec_cmd docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
+docker_build() { exec_cmd docker build $(_docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
 docker_check() { service_check; }
 docker_exec_i_cmd() { exec_cmd "docker exec -i $(SERVICE) /bin/sh << EOF\n$@\nEOF"; }
 docker_exec_it_cmd() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh -c \"$@\""; }
@@ -76,7 +117,6 @@ function docker_network_create() {
 
 docker_run() {
   local id fname=$(fname "${FUNCNAME[0]}" "$0")
-  docker_network_create || return $?
   id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=running")" || return $?
   if [ -n "${id}" ]; then
     dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' is running, skip run."
@@ -84,11 +124,11 @@ docker_run() {
   fi
   id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=exited --filter status=created")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' was created but is stopped now, so start it."
+    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' was created but it is stopped now, so just start it."
     exec_cmd docker start $(SERVICE) || return $?
     return 0
   fi
-  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(docker_run_envs) $(docker_run_publish) $(RM) --restart $(RESTART) \
+  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(_docker_run_envs) $(_docker_run_publish) $(RM) --restart $(RESTART) \
       --network $(BRIDGE) $(IMAGE) "$(COMMAND)"
 }
 
@@ -118,17 +158,22 @@ docker_purge() {
   exec_cmd "docker builder prune --force --all"
 }
 
-function docker_methods() {
+methods_docker_images() {
   local methods=()
   methods+=(docker_build)
+  methods+=(docker_pull)
+  methods+=(docker_rmi)
+  echo "${methods[@]}"
+}
+
+function methods_docker_services() {
+  local methods=()
   methods+=(docker_check)
   methods+=(docker_exec_i_cmd)
   methods+=(docker_exec_it_cmd)
   methods+=(docker_exec_sh)
   methods+=(docker_logs)
-  methods+=(docker_pull)
   methods+=(docker_rm)
-  methods+=(docker_rmi)
   methods+=(docker_run)
   methods+=(docker_start)
   methods+=(docker_status)
@@ -136,7 +181,7 @@ function docker_methods() {
   echo "${methods[@]}"
 }
 
-function docker_network_methods() {
+function methods_docker_networks() {
   local methods=()
   methods+=(docker_network_create)
   methods+=(docker_network_rm)
@@ -144,36 +189,3 @@ function docker_network_methods() {
   echo "${methods[@]}"
 }
 
-ctx_docker_service() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var BASE_IMAGE && \
-  var BUILDER_IMAGE && \
-  var BUILDER $(BUILDER_IMAGE) && \
-  var BUILD_ARGS && \
-  var BUILD_VERSION "$(git_build_version)" && \
-  var CHECK "docker_check" && \
-  var COMMAND && \
-  var CTX "." && \
-  var DEFAULT_TAG $(docker_default_tag) && \
-  var EXEC "docker_exec_i_cmd" && \
-  var FLAGS "-d" && \
-  var IMAGE $(BASE_IMAGE) && \
-  var PUBLISH && \
-  var RESTART "always" && \
-  var RM && \
-  var RUN_ENVS && \
-  var SERVICE && \
-  var SH "/bin/sh" && \
-  var TERMINAL "docker_exec_it_cmd" && \
-  cache_ctx
-}
-
-ctx_docker_network() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var SUBNET "192.168.111.0/24" && \
-  var BRIDGE "example" && \
-  var DRIVER "bridge" && \
-  cache_ctx
-}
-
-DT_BINDINGS+=(ctx_docker_network:example:docker_network_methods)

@@ -1,51 +1,6 @@
-# autocomplete_%TBL% - custom autocomplete function
-# %TBL%_records - record names, will be used as words for autocomplete
-# %TBL%_methods - methods to be bound to autocomplete_%TBL%
-
-dt_autocomplete() {
-  local methods autocomplete
-  methods=$1_methods
-  autocomplete=autocomplete_$1
-  methods=($(echo "$(${methods})"))
-  [ -n "$2" ] && pref="$2 "
-  result=()
-  for m in ${methods[@]}; do
-    echo "complete -F ${autocomplete} ${m}"
-    complete -F ${autocomplete} ${m}
-  done
-}
-
-docker_image_autocomplete=()
-docker_image_autocomplete+=("pg")
-docker_image_autocomplete+=("pg_docker")
-docker_image_autocomplete+=("pg_tetrix")
-docker_image_autocomplete+=("pg_docker_tetrix")
-
-autocomplete_docker_image() {
-  local cur_word="${COMP_WORDS[COMP_CWORD]}"
-  local options="${docker_image_records[@]}" # Example options
-  COMPREPLY=( $(compgen -W "${options}" -- "${cur_word}") )
-}
-
-docker_build() {
-  echo "docker_build $1"
-}
-
-docker_pull() {
-  echo "docker_build $1"
-}
-
-docker_image_methods() {
-  local methods=()
-  methods+=(docker_build)
-  methods+=(docker_pull)
-  echo "${methods[@]}"
-}
-
-dt_autocomplete docker_image
-
+# wait="fq" - here "fq" means fully qualified, e.g. table_name:record_name
 get_var_args() {
-  local wait fname=$(fname "${FUNCNAME[0]}" "$0")
+  local wait="fq" fname=$(fname "${FUNCNAME[0]}" "$0")
   while [ "$#" -gt 0 ];
   do
     case $1 in
@@ -71,6 +26,12 @@ get_var_args() {
             wait=
             shift
             ;;
+          fq)
+            tbl=$(echo "$1" | awk -F':' '{print $1}')
+            rec=$(echo "$1" | awk -F':' '{print $2}')
+            wait=
+            shift
+            ;;
           *)
             dt_error ${fname} "Invalid state of parser: wait=${wait}."; return 99;
             ;;
@@ -85,8 +46,8 @@ set_rec() { DT_RECORD="$1"; }
 
 tbl_name() { echo "tbl_$1"; }
 #rec_name() { echo "$(echo "$1" | sed -e 's/:/_/g')"; }
-## get name of parent rec
-#rec_parent() { parent=$(rec_name "$(echo "$1" | awk -F':' 'OFS=":" {NF=NF-1; print $0}')"); }
+# remove last item in line
+#echo "$1" | awk -F':' 'OFS=":" {NF=NF-1; print $0}'
 
 fqn_rec() { echo "tbl_$1__$2"; }
 fqn_var() { echo "tbl_$1__$2__$3"; }
@@ -95,7 +56,7 @@ fqn_var() { echo "tbl_$1__$2__$3"; }
 # rec: mandatory
 # tbl: optional
 get_rec() {
-  local table record rec=$1 tbl=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local record rec=$1 tbl=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "${rec}" ]; then
     if [ -z "${DT_RECORD}" ]; then
       dt_error ${fname} "Record name was not provided: arg ${BOLD}rec${RESET} and var ${BOLD}DT_RECORD${RESET} are both empty"
@@ -104,9 +65,9 @@ get_rec() {
       rec=${DT_RECORD}
     fi
   fi && \
-  table=$(get_table ${tbl}) && \
-  fq_rec=$(fqn_rec ${table} ${rec}) && \
-  dt_debug ${fname} "rec=${rec}, fq_rec=${BOLD}${fq_rec}${RESET}, table=${table}" && \
+  tbl=$(get_table ${tbl}) && \
+  fq_rec=$(fqn_rec ${tbl} ${rec}) && \
+  dt_debug ${fname} "rec=${rec}, fq_rec=${BOLD}${fq_rec}${RESET}, tbl=${tbl}" && \
   if ! declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} doesn't exist"
     return 99
@@ -137,12 +98,12 @@ get_table() {
 # rec: optional
 # tbl: optional
 get_var() {
-  local table val rec tbl var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local tbl val rec var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift; get_var_args $@ && \
   dt_debug ${fname} "tbl=${tbl}, rec=${rec}" && \
-  table="$(get_table "${tbl}")" && \
-  rec="$(get_rec "${rec}")" && \
-  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
+  tbl="$(get_table "${tbl}")" && \
+  rec="$(get_rec "${rec}" "${tbl}")" && \
+  fq_var=$(fqn_var "${tbl}" "${rec}" "${var}") && \
   if declare -p "${fq_var}" >/dev/null 2>&1; then
     val="$(eval echo "\$${fq_var}")" && \
     echo "${val}" || return $?
@@ -155,12 +116,12 @@ get_var() {
 # resets variable "var" in some ctx DT_TABLE
 # ovar: original name of some variable "var" without prefix
 var() {
-  local val table rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local val tbl rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   shift; val="$*" && \
-  table=$(get_table) && \
+  tbl=$(get_table) && \
   rec=$(get_rec) && \
   err_if_empty ${fname} "var" && \
-  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
+  fq_var=$(fqn_var "${tbl}" "${rec}" "${var}") && \
   local msg_tmpl="${BOLD}${fq_var}${RESET} to value '${BOLD}${val}${RESET}'" && \
   if declare -p ${fq_var} >/dev/null 2>&1; then
     dt_warning ${fname} "Resetting ${msg_tmpl}"
@@ -172,16 +133,14 @@ var() {
   eval "${fq_var}=\"${val}\""
 }
 
-# merges var in parent ctx DT_PARENT and with one in ctx DT_TABLE
-# ovar: original name of some variable "var" without prefix
+# merges var in parent record DT_PARENT and with one in current DT_TABLE
 mvar() {
-  local val pval table rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  shift; pval="$*"
+  local val pval tbl rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift; val="$*" && \
   err_if_empty ${fname} "var" && \
-  table=$(get_table) && \
+  tbl=$(get_table) && \
   rec=$(get_rec) && \
-  fq_var=$(fqn_var "${table}" "${rec}" "${var}") && \
-  dt_debug ${fname} "fq_var=${BOLD}${fq_var}${RESET}" && \
+  fq_var=$(fqn_var "${tbl}" "${rec}" "${var}") && \
   if declare -p ${fq_var} >/dev/null 2>&1; then
     val="$(eval echo \$${fq_var})" || return $?
     dt_debug ${fname} "Skip merge for var ${BOLD}${fq_var}${RESET}: it has already set and its value is '${BOLD}${val}${RESET}'"
@@ -192,7 +151,32 @@ mvar() {
     var "${var}" "${pval}" || return $?
   else
     rec=$(get_rec "${DT_PARENT}") && \
-    pval=$(${var} -t "${table}" -r "${rec}") && \
+    pval=$(${var} -t "${tbl}" -r "${rec}") && \
+    var "${var}" "${pval}" || return $?
+  fi
+}
+
+# merges ref in parent record DT_PARENT and with one in current DT_TABLE
+mref() {
+  local val pval tbl parent_rec rec fq_var var=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
+  shift; ref_tbl=$1 ref_rec="$2"
+  err_if_empty ${fname} "var" && \
+  tbl=$(get_table) && \
+  rec=$(get_rec) && \
+  fq_var=$(fqn_var "${tbl}" "${rec}" "${var}") && \
+  dt_debug ${fname} "fq_var=${BOLD}${fq_var}${RESET}" && \
+  if declare -p ${fq_var} >/dev/null 2>&1; then
+    val="$(eval echo \$${fq_var})" || return $?
+    dt_debug ${fname} "Adding prefix ${ref_tbl} to record ${BOLD}${val}${RESET}, fq_var=${BOLD}${fq_var}${RESET}"
+    var "${var}" "${ref_tbl}:${val}" || return $?
+    return 0
+  fi && \
+  dt_debug ${fname} "Merging var ${BOLD}${fq_var}${RESET} with parent ctx '${BOLD}${DT_PARENT}${RESET}'" && \
+  if [ -z "${DT_PARENT}" ]; then
+    var "${var}" "${ref_tbl}:${ref_rec}" || return $?
+  else
+    parent_rec=$(get_rec "${DT_PARENT}") && \
+    pval=$(${var} -t "${tbl}" -r "${parent_rec}") && \
     var "${var}" "${pval}" || return $?
   fi
 }
@@ -201,11 +185,16 @@ table() {
   local mergefunc table tbl=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${DT_RECORD}" ]; then dt_debug ${fname} "Will merge record ${BOLD}${DT_RECORD}${RESET}"; merge; DT_RECORD=; fi
   table=$(tbl_name "${tbl}") && \
+  dt_debug ${fname} "${BOLD}New table=${table}${RESET}" && \
   if ! declare -p "${table}" >/dev/null 2>&1; then
     eval "${table}=" && \
-    DT_VARS+=("${table}") || return $?
-  fi && \
-  set_tbl "${tbl}"
+    set_tbl "${tbl}" && \
+    DT_TABLES+=("${tbl}") && \
+    DT_VARS+=("${table}") && \
+    DT_VARS+=("records_${tbl}") || return $?
+  else
+    set_tbl "${tbl}"
+  fi
 }
 
 # -m and -p are mutually exclusive, so there is no need for more complex logic like in get_var_args
@@ -225,12 +214,13 @@ record_args() {
 }
 
 record() {
-  local mergefunc table parent fq_rec rec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
+  local mergefunc tbl parent fq_rec rec="$1" fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -n "${DT_RECORD}" ]; then dt_debug ${fname} "Will merge record ${BOLD}${DT_RECORD}${RESET}"; merge; fi
+  dt_debug ${fname} "${BOLD}New record=${rec}${RESET}" && \
   err_if_empty ${fname} "rec" && \
   shift && record_args $@ && \
-  table=$(get_table) && \
-  fq_rec=$(fqn_rec "${table}" "${rec}") || return $?
+  tbl=$(get_table) && \
+  fq_rec=$(fqn_rec "${tbl}" "${rec}") || return $?
   if declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} already exists"
     return 99
@@ -243,7 +233,7 @@ record() {
       dt_error ${fname} "Nor merge function neither parent was provided"
       return 99
     fi && \
-    fq_rec_parent=$(fqn_rec "${table}" "${parent}") && \
+    fq_rec_parent=$(fqn_rec "${tbl}" "${parent}") && \
     mergefunc="$(eval echo "\$${fq_rec_parent}__merge")" && \
     if [ -z "${mergefunc}" ]; then
       dt_error ${fname} "Cannot find merge function"
@@ -256,23 +246,24 @@ record() {
   eval "${fq_rec}=" && \
   eval "${fq_rec}__parent=${parent}" && \
   eval "${fq_rec}__merge=${mergefunc}" && \
+  eval "records_${tbl}+=(${rec})" && \
   set_rec "${rec}"
 }
 
 merge() {
-  local DT_PARENT mergefunc table rec fq_rec fname=$(fname "${FUNCNAME[0]}" "$0")
-  table=$(get_table) && \
+  local DT_PARENT mergefunc tbl rec fq_rec fname=$(fname "${FUNCNAME[0]}" "$0")
+  tbl=$(get_table) && \
   rec="$(get_rec "${DT_RECORD}")" && \
-  dt_debug ${fname} "table=${table}, DT_RECORD=${DT_RECORD}, rec=${rec}"
-  fq_rec=$(fqn_rec "${table}" "${rec}") && \
-  dt_debug ${fname} "fq_rec=${BOLD}${fq_rec}${RESET}"
+  dt_debug ${fname} "tbl=${tbl}, rec=${rec}" && \
+  fq_rec=$(fqn_rec "${tbl}" "${rec}") && \
+  dt_debug ${fname} "fq_rec=${BOLD}${fq_rec}${RESET}" && \
   if declare -p "${fq_rec}__merged" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} has already merged"
     return 99
   fi && \
   DT_PARENT="$(eval echo "\$${fq_rec}__parent")" && \
   mergefunc="$(eval echo "\$${fq_rec}__merge")" && \
-  dt_debug ${fname} "DT_PARENT=${DT_PARENT}, mergefunc=${mergefunc}"
+  dt_debug ${fname} "rec=${BOLD}${rec}${RESET} parent_rec=${BOLD}${DT_PARENT}${RESET}, mergefunc=${BOLD}${mergefunc}${RESET}" && \
   if [ -z "${DT_PARENT}" ] && [ -z "${mergefunc}" ]; then
     dt_error ${fname} "Nor merge function neither parent was provided"
     return 99
