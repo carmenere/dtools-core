@@ -1,7 +1,7 @@
 # FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 
 merge_docker_publish() {
-  mvar PUBLISH "$(PORT $(SOCK)):$(PORT $(SOCK_INNER))/tcp"
+  mvar PUBLISH "$(PORT $(SOCK)):$(PORT $(SOCK_PUB))/tcp"
 }
 
 merge_docker_network() {
@@ -37,8 +37,9 @@ merge_docker_service() {
   mvar TERMINAL "docker_exec_it_cmd"
   mvar BRIDGE $(BRIDGE $(bridge))
   mvar IMAGE $(IMAGE $(image))
-  mref SOCK_INNER "${tbl_sockets}" "default"
+  mref SOCK_PUB "${tbl_sockets}" "default"
   mref SOCK "${tbl_sockets}" "default"
+  mvar CLIENT
 }
 
 docker_install() {
@@ -87,22 +88,23 @@ docker_default_tag() {
 _docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
 _docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
 _docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
+_docker_srv() { set_tbl "docker_services" && set_rec "$1"; }
 
-docker_build() { exec_cmd docker build $(_docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
+docker_build() { _docker_srv $1 && exec_cmd docker build $(_docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
 docker_check() { service_check; }
-docker_exec_i_cmd() { exec_cmd "docker exec -i $(SERVICE) /bin/sh << EOF\n$@\nEOF"; }
-docker_exec_it_cmd() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh -c \"$@\""; }
-docker_exec_sh() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh"; }
-docker_logs() { exec_cmd docker logs "$(SERVICE)"; }
-docker_logs_save_to_logfile() { exec_cmd docker logs "$(SERVICE)" '>' "${DT_LOGS}/container-$(SERVICE).log" '2>&1'; }
-docker_network_create() { exec_cmd docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
-docker_network_rm() { exec_cmd docker network rm $(BRIDGE); }
-docker_pull() { exec_cmd docker pull $(IMAGE); }
-docker_rm() { exec_cmd docker rm --force $(SERVICE); }
-docker_rmi() { exec_cmd docker rmi $(IMAGE); }
-docker_start() { exec_cmd docker start $(SERVICE); }
-docker_status() { exec_cmd docker ps -a --filter name="^$(SERVICE)$"; }
-docker_stop() { exec_cmd docker stop $(SERVICE); }
+docker_exec_i_cmd() { _docker_srv $1 && shift && exec_cmd "docker exec -i $(SERVICE) /bin/sh << EOF\n$@\nEOF"; }
+docker_exec_it_cmd() { _docker_srv $1 && shift && exec_cmd "docker exec -ti $(SERVICE) /bin/sh -c \"$@\""; }
+docker_exec_sh() { _docker_srv $1 && shift && exec_cmd "docker exec -ti $(SERVICE) /bin/sh"; }
+docker_logs() { _docker_srv $1 && exec_cmd docker logs "$(SERVICE)"; }
+docker_logs_save_to_logfile() { _docker_srv $1 && exec_cmd docker logs "$(SERVICE)" '>' "${DT_LOGS}/container-$(SERVICE).log" '2>&1'; }
+docker_network_create() { _docker_srv $1 && exec_cmd docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
+docker_network_rm() { _docker_srv $1 && exec_cmd docker network rm $(BRIDGE); }
+docker_pull() { _docker_srv $1 && exec_cmd docker pull $(IMAGE); }
+docker_rm() { _docker_srv $1 && exec_cmd docker rm --force $(SERVICE); }
+docker_rmi() { _docker_srv $1 && exec_cmd docker rmi $(IMAGE); }
+docker_start() { _docker_srv $1 && exec_cmd docker start $(SERVICE); }
+docker_status() { _docker_srv $1 && exec_cmd docker ps -a --filter name="^$(SERVICE)$"; }
+docker_stop() { _docker_srv $1 && exec_cmd docker stop $(SERVICE); }
 
 function docker_network_create() {
   local id fname=$(fname "${FUNCNAME[0]}" "$0")
@@ -117,6 +119,7 @@ function docker_network_create() {
 
 docker_run() {
   local id fname=$(fname "${FUNCNAME[0]}" "$0")
+  _docker_srv $1 && \
   id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=running")" || return $?
   if [ -n "${id}" ]; then
     dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' is running, skip run."

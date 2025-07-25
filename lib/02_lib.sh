@@ -163,12 +163,14 @@ dt_ctxes() {
 dt_vars() {
   local var fname=$(fname "${FUNCNAME[0]}" "$0")
   DT_VARS=($(for var in ${DT_VARS[@]}; do echo "${var}"; done | sort))
-  for var in ${DT_VARS[@]}; do val="$(eval echo "\$${var}")"; echo "${var}=${val}"; done
+  for var in ${DT_VARS[@]}; do val=$(escape_quote "$(eval echo "\$${var}")"); echo "${var}=$'${val}'"; done
+  echo "DT_VARS=$'${DT_VARS[@]}'"
 }
 
 set_dryrun_off() { DT_DRYRUN="n"; }
 set_dryrun_on() { DT_DRYRUN="y"; }
 
+# First arg for docker exec signature compatability
 exec_cmd () {
   local cmd="$@" fname=$(fname "${FUNCNAME[0]}" "$0")
   if [ -z "${cmd}" ]; then

@@ -133,8 +133,9 @@ function pg_hba_add_policy() {
 
 function pg_conf_set_port() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local port=$(PORT $(SOCK)) && \
   old_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) && \
-  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = $(PGPORT)/; t; \$a port = $(PGPORT)' $(POSTGRESQL_CONF)" && \
+  exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*(port\s*=\s*[0-9]+)\s*$/port = ${port}/; t; \$a port = ${port}' $(POSTGRESQL_CONF)" && \
   new_hash=$(${SUDO} sha256sum "$(POSTGRESQL_CONF)" | cut -d' ' -f 1) && \
   if [ "${old_hash}" != "${new_hash}" ]; then
     dt_info ${fname} "$(POSTGRESQL_CONF) is ${BOLD}is changed${RESET}"; return 77
@@ -149,39 +150,5 @@ function pg_prepare() {
   pg_hba_add_policy; err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
   pg_conf_set_port;  err=$?; if [ "${err}" = 77 ]; then changed="y"; elif [ "${err}" != "0" ]; then return ${err}; fi && \
   if [ "${changed}" != "y" ]; then return 0; fi && \
-  ${self}__service_stop
+  service_stop ${DT_RECORD}
 }
-
-function lsof_pg() {
-  PORT=$(PGPORT); HOST=$(PGHOST)
-  lsof_tcp
-}
-
-function ctx_pg_host() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var MAJOR 17 && \
-  var MINOR 5 && \
-  var PGHOST "localhost" && \
-  var PGPORT 5555 && \
-  var SERVICE $(pg_service) && \
-  var BIN_DIR $(bin_dir) && \
-  var PG_HBA_CONF $(pg_hba_conf) && \
-  var POSTGRESQL_CONF $(postgresql_conf) && \
-  var PSQL "$(BIN_DIR)/psql" && \
-  var PG_CONFIG "$(BIN_DIR)/pg_config" && \
-  if [ ! -x "$(PG_CONFIG)" ]; then
-    dt_warning ${fname} "The binary '$(PG_CONFIG)' doesn't exist" || return $?
-  else
-    var CONFIG_SHAREDIR "$($(PG_CONFIG) --sharedir)"  && \
-    var CONFIG_LIBDIR "$($(PG_CONFIG) --pkglibdir)" || return $?
-  fi
-  var SERVICE_CHECK_CMD "psql_conn_admin -c $'select true;'" && \
-  var SERVICE_PREPARE "pg_prepare" && \
-  var SERVICE_INSTALL "pg_install" && \
-  var SERVICE_POST_INSTALL "pg_post_install" && \
-  var SERVICE_LSOF "lsof_pg" && \
-  ctx_os_service ${caller} && \
-  cache_ctx
-}
-
-DT_BINDINGS+=(ctx_pg_host:pg:service_methods)

@@ -70,7 +70,6 @@ get_rec() {
   dt_debug ${fname} "rec=${rec}, fq_rec=${BOLD}${fq_rec}${RESET}, tbl=${tbl}" && \
   if ! declare -p "${fq_rec}" >/dev/null 2>&1; then
     dt_error ${fname} "Record ${BOLD}${fq_rec}${RESET} doesn't exist"
-    dt_error ${fname}  "get_err_cnt=$(get_err_cnt)"
     return 99
   fi
   echo "${rec}"
@@ -89,9 +88,7 @@ get_table() {
   fi
   table=$(tbl_name "${tbl}")
   if ! declare -p "${table}" >/dev/null 2>&1; then
-    dt_error ${fname} "get_err_cnt=$(get_err_cnt)"
     dt_error ${fname} "Table ${BOLD}${table}${RESET} doesn't exist"
-    dt_error ${fname} "get_err_cnt=$(get_err_cnt)"
     return 99
   fi
   echo "${tbl}"
@@ -133,7 +130,8 @@ var() {
     DT_VARS+=("${fq_var}")
     eval "${var}() { get_var ${var} \$1 \$2 \$3 \$4; }" || return $?
   fi && \
-  eval "${fq_var}=\"${val}\""
+  local nval="$(escape_quote "${val}")" && \
+  eval "${fq_var}=$'${nval}'"
 }
 
 # merges var in parent record DT_PARENT and with one in current DT_TABLE
@@ -154,7 +152,7 @@ mvar() {
     var "${var}" "${pval}" || return $?
   else
     rec=$(get_rec "${DT_PARENT}") && \
-    pval=$(${var} -t "${tbl}" -r "${rec}") && \
+    pval="$(${var} -t "${tbl}" -r "${rec}")" && \
     var "${var}" "${pval}" || return $?
   fi
 }
