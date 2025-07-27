@@ -33,7 +33,6 @@ function dt_init() {
   dt_paths && \
   dt_defaults && \
   logging_init && \
-
   dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
 #  . "${self_dir}/clickhouse/rc.sh" && \
   . "${self_dir}/pg/rc.sh" && \

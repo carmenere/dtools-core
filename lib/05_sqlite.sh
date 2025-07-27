@@ -1,6 +1,6 @@
 sqlite_init() {
-  sqlite_drop_db && \
   sqlite_paths && \
+  sqlite_drop_db && \
   . ${DT_VARS}/vars.sh
 }
 
@@ -37,7 +37,7 @@ sqlite_drop_db() {
   if [ -f "${DT_VARS_DB}" ]; then
     exec_cmd rm "${DT_VARS_DB}"
   else
-    dt_warning ${fname} "Database ${BOLD}${DT_VARS_DB}${RESET} doesn't exist"
+    dt_warning ${fname} "Database '${BOLD}${DT_VARS_DB}${RESET}' doesn't exist"
   fi
 }
 
