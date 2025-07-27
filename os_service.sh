@@ -33,7 +33,7 @@ merge_os_service() {
   mvar SERVICE_START $(service) start $(SERVICE)
 
   mvar CHECK "service_check"
-  mvar EXEC "exec_cmd"
+  mvar EXEC "host_exec"
   mvar TERMINAL "exec_cmd"
 }
 

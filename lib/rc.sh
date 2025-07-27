@@ -2,9 +2,9 @@ fname() {
   if [ -n "$1" ]; then echo "$1"; else echo "$2"; fi
 }
 
-dt_info() {
-  DT_SEVERITY=4
-  >&2 echo -e "${GREEN}${BOLD}[dtools][INFO][$1]${RESET} $2"
+# It doesn't depend on DT_SEVERITY: if DT_SEVERITY=0 only "dt_log" messages are printed out
+dt_log() {
+  >&2 echo -e "${BOLD}[dtools][LOG][$1]${RESET} $2"
 }
 
 function dt_rc_load() {
@@ -13,12 +13,12 @@ function dt_rc_load() {
   dir=$2
   if [ -z "${description}" ]; then return 99; fi
   if [ -z "${dir}" ]; then return 99; fi
-  dt_info ${fname} "Loading ${BOLD}$description${RESET} ... "
+  dt_log ${fname} "Loading ${BOLD}$description${RESET} ... "
   for file in $(ls "${dir}"/*.sh | sort); do
-    if [ "$(basename "${file}")" != "rc.sh"  ]; then
-      dt_info ${fname} "Sourcing "$(dirname "${file}")/${BOLD}$(basename "${file}")${RESET}" ..."
+    if [ "$(basename "${file}")" != "rc.sh"  ] && [ "$(basename "${file}")" != "03_tables.sh"  ]; then
+      dt_log ${fname} "Sourcing "$(dirname "${file}")/${BOLD}$(basename "${file}")${RESET}" ..."
       . "${file}" || return 55
-      dt_info ${fname} "done.";
+      dt_log ${fname} "done.";
     fi
   done
 }
@@ -32,4 +32,4 @@ function load() {
 
 load $0 || return $?
 
-reinit_dtools() { . ${DTOOLS}/core/rc.sh; }
+if [ -f "${DTOOLS}/core/rc.sh" ]; then reinit_dtools() { . ${DTOOLS}/core/rc.sh; }; fi

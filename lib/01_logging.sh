@@ -1,13 +1,22 @@
-ERR_COUNTER_PATH="/tmp/dt_err_counter"
+logging_init() {
+  logging_paths
+  reset_err_cnt
+}
 
-save_err_cnt() { echo "ERR_COUNTER=${ERR_COUNTER}" > ${ERR_COUNTER_PATH}; }
-rst_err_cnt() { ERR_COUNTER=0; $(save_err_cnt); }
-inc_err_cnt() { ERR_COUNTER=$(($(get_err_cnt)+1)); $(save_err_cnt); }
-get_err_cnt() { echo "$(. "${ERR_COUNTER_PATH}" && echo "${ERR_COUNTER}")"; }
+logging_paths() {
+  export DT_ERR_COUNTER_PATH="/tmp/dt_err_counter"
+  export DT_ERR_COUNTER=0
+}
 
-# All functions "error", "warning", "dt_info" and "debug" have the same signature:
+get_err_cnt() { echo "$(. "${DT_ERR_COUNTER_PATH}" && echo "${DT_ERR_COUNTER}")"; }
+inc_err_cnt() { DT_ERR_COUNTER=$(($(get_err_cnt)+1)); $(save_err_cnt); }
+reset_err_cnt() { DT_ERR_COUNTER=0; $(save_err_cnt); }
+save_err_cnt() { echo "DT_ERR_COUNTER=${DT_ERR_COUNTER}" > ${DT_ERR_COUNTER_PATH}; }
+
+# All functions "dt_log", "error", "warning", "dt_info" and "debug" have the same signature:
 #   $1: must contain $0 of caller
 #   $2: must contain err message
+
 dt_error() {
   if [ "${DT_SEVERITY}" -ge 1 ]; then
     >&2 echo -e "${RED}${BOLD}[dtools][ERROR][$1]${RESET} $2"
@@ -33,10 +42,6 @@ dt_debug () {
   fi
 }
 
-dt_log() {
-  >&2 echo -e "${BOLD}[dtools][LOG][$1]${RESET} $2"
-}
-
 set_severity_error() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=1; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
 set_severity_warning() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=2; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
 set_severity_info() { local fname=$(fname "${FUNCNAME[0]}" "$0"); DT_SEVERITY=3; dt_log ${fname} "DT_SEVERITY=${DT_SEVERITY}"; }
@@ -56,6 +61,3 @@ err_if_empty() {
     fi
   done
 }
-
-
-rst_err_cnt
