@@ -4,6 +4,15 @@ sqlite_init() {
   . ${DT_VARS}/vars.sh
 }
 
+sqlite_reset_id() {
+  DT_ROWID=0
+}
+
+sqlite_next_id() {
+  DT_ROWID=$((${DT_ROWID}+1));
+  echo ${DT_ROWID}
+}
+
 sqlite_paths() {
   export DT_VARS_DB="${DT_VARS}/vars.db"
   export DT_SCHEMA="${DT_VARS}/schema.sql"

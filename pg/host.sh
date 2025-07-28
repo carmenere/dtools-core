@@ -120,6 +120,7 @@ function pg_add_path() {
 }
 
 function pg_hba_add_policy() {
+  DEFAULT_POLICY="host all all 0.0.0.0/0 md5"
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   old_hash=$(${SUDO} sha256sum "$(PG_HBA_CONF)" | cut -d' ' -f 1) && \
   exec_cmd "${SUDO} sed -i -E -e 's/^\s*#?\s*host\s+all\s+all\s+0.0.0.0\/0\s+md5\s*$/host all all 0.0.0.0\/0 md5/; t; \$a host all all 0.0.0.0\/0 md5' $(PG_HBA_CONF)" && \
