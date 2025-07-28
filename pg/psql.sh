@@ -10,7 +10,7 @@ _psql_sudo() {
   fi
 }
 
-_psql_host() { local host=$(HOST $(SOCK $(${connurl}))); if [ -n "${host}" ]; then echo "PGHOST=${host}"; fi; }
+_psql_host() { local host=$(HOST $(SOCK $(${connurl}))); if [ -n "${PGHOST}" ]; then echo "PGHOST=${host}"; fi; }
 _psql_port() { local port=$(PORT $(SOCK $(${connurl}))); if [ -n "${port}" ]; then echo "PGPORT=${port}"; fi; }
 _psql_user() { local user=$(USER $(${connurl})); if [ -n "${user}" ]; then echo "PGUSER=${user}"; fi; }
 _psql_password() { local passwd=$(PASSWORD $(${connurl})); if [ -n "${passwd}" ]; then echo "PGPASSWORD=${passwd}"; fi }
@@ -48,9 +48,27 @@ psql_drop_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(DROP)" }
 psql_create_db() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(CREATE_DB)" }
 psql_drop_db() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(DROP_DB)" }
 psql_grant_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(GRANT)" "$(DATABASE $(ACCOUNT))"; }
-psql_revoke_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(REVOKE)" }
+psql_revoke_user() {
+1) retrive conn by pg_foo__admin_dbfoo2
+id  autocomplete_id       service_id  account_id  db_id  service  mode  spec  tag    protocol  port  address    user   password     db
+--  --------------------  ----------  ----------  -----  -------  ----  ----  -----  --------  ----  ---------  -----  -----------  ------
+8   pg_foo__admin_dbfoo2  2           4           3      pg       host  foo   inner  tcp       1111  localhost  admin  _1234567890  dbfoo2
 
-methods_psql_queries() {
+2) retrive psql_init for account_id
+id  account_id  query_id  id:1  service_id  conn_id  user      password     id:2  tfile                     tvars    tdir
+--  ----------  --------  ----  ----------  -------  --------  -----------  ----  ------------------------  -------  ------------------------------------------------------------
+1   1           1         1     1           1        admin     _1234567890  1     alter_role_password.sql   vars.m4  /Users/an.romanov/Projects/carmenere/tetrix/dtools/core/pg/m
+                                                                                                                     4/sql
+
+m4 tdir/tvars tdir/tfile > /gen_files/psql_init.account_id.sql
+
+3) retrive conn_id for account_id
+set PGVARS directly FRON read SQL query
+call _psql
+
+}
+
+methods_conns() {
   local methods=()
   methods+=(psql_alter_role_password)
   methods+=(psql_conn)
