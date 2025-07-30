@@ -7,7 +7,7 @@ function dt_init() {
   logging_init && \
   dt_rc_load $(basename "${self_dir}") "${self_dir}" && \
 #  . "${self_dir}/clickhouse/rc.sh" && \
-  . "${self_dir}/pg/rc.sh" && \
+  . "${self_dir}/commands/rc.sh" && \
 #  . "${self_dir}/redis/rc.sh" && \
 #  . "${self_dir}/rabbitmq/rc.sh" && \
 #  . "${self_dir}/cargo/rc.sh" && \
