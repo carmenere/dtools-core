@@ -1,7 +1,7 @@
 sqlite_init() {
   sqlite_paths && \
   sqlite_drop_db && \
-  . ${DT_VARS}/vars.sh
+  sqlite_migrate
 }
 
 sqlite_reset_id() {
