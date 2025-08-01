@@ -75,7 +75,7 @@ function brew_start() { exec_cmd brew services start $1; }
 function brew_stop() { exec_cmd brew services stop $1; }
 
 # Linux, systemd
-function systemctl_list_services() { systemctl list-units --type service | cat; }
+function systemctl_list_services() { systemctl list-units --type service --all | cat; }
 # lists all installed unit files
 function systemctl_list_unit_files() { systemctl list-unit-files | cat; }
 # lists units that systemd currently has in memory
