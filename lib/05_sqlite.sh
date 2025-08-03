@@ -15,7 +15,7 @@ sqlite_next_id() {
 
 sqlite_paths() {
   export DT_VARS_DB="${DT_VARS}/vars.db"
-  export DT_SCHEMA="${DT_VARS}/schema.sql"
+  export DT_SCHEMA="${DT_VARS}/schema-2.sql"
 }
 
 sqlite_conn() {
