@@ -1,0 +1,5 @@
+SELECT
+    'DROP DATABASE IF EXISTS M4_DATABASE'
+WHERE
+    EXISTS (SELECT true FROM pg_database WHERE datname = 'M4_DATABASE')
+\gexec

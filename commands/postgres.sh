@@ -1,8 +1,14 @@
+PG_SUPERUSER="postgres"
+
 m4_postgresql.conf() {
   ( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )
 }
 
-function pg_service() {
+m4_pg_hba.conf() {
+  ( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )
+}
+
+pg_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "postgresql@${MAJOR}"
   else
@@ -10,7 +16,7 @@ function pg_service() {
   fi
 }
 
-postgresql_conf() {
+pg_postgresql.conf() {
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/var/${SERVICE}/postgresql.conf"
   else
@@ -18,15 +24,23 @@ postgresql_conf() {
   fi
 }
 
-function pg_superuser() {
-  if [ "$(os_name)" = "macos" ] && [ "$(mode)" = "host" ]; then
-    echo "${USER}"
+pg_pg_hba.conf() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/var/${SERVICE}/pg_hba.conf"
   else
-    echo "postgres"
+    echo "/etc/postgresql/${MAJOR}/main/pg_hba.conf"
   fi
 }
 
-function bin_dir() {
+pg_superuser() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "${USER}"
+  else
+    echo ${PG_SUPERUSER}
+  fi
+}
+
+pg_bin_dir() {
   local fname=bin_dir
   if [ "$(os_name)" = "macos" ]; then
     bind_dir="$(brew_prefix)/opt/postgresql@${MAJOR}/bin"
@@ -41,24 +55,24 @@ function bin_dir() {
   echo "${bind_dir}"
 }
 
-mode() {
-  local fname=mode
-  if [ "${MODE}" = "docker" ]; then
-    echo "docker"
-  elif [ "${MODE}" = "host" ]; then
-    echo "host"
+pg_add_path() {
+  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  path="${PATH}"
+  echo "${path}" | grep -E -s "^$(bin_dir)" 1>/dev/null 2>&1
+  if [ $? != 0 ] && [ -n "$(bin_dir)" ]; then
+    # Cut all duplicates of $(bin_dir) from path
+    path="$(echo "${path}" | sed -E -e ":label; s|(.*):$(bin_dir)(.*)|\1\2|g; t label;")"
+    # Prepend $(bin_dir)
+    dt_debug ${fname} "$(bin_dir):${path}"
   else
-    dt_error ${fname} "Unknown pg mode: MODE=${MODE}"
-    return 99
+    dt_debug ${fname} "${path}"
   fi
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
-function methods_m4() {
+methods_m4_pg() {
   local methods=()
   methods+=(m4_postgresql.conf)
+  methods+=(m4_pg_hba.conf)
   echo "${methods[@]}"
 }
-
-DT_AUTOCOMPLETE+=(methods_m4)
-DT_AUTOCOMPLETIONS["methods_m4"]="pg"

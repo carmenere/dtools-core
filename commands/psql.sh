@@ -93,4 +93,4 @@ function methods_psql() {
 }
 
 DT_AUTOCOMPLETE+=(methods_psql)
-DT_AUTOCOMPLETIONS["methods_psql"]="app migrator"
+DT_AUTOCOMPLETIONS["methods_psql"]=""

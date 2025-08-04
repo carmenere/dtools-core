@@ -123,6 +123,23 @@ function brew_prefix() {
   echo $(brew --prefix)
 }
 
+add_env() {
+  envs["$1"]="$2"
+  ENVS+=("$2")
+}
+
+service_mode() {
+  local fname=mode
+  if [ "${MODE}" = "docker" ]; then
+    echo "docker"
+  elif [ "${MODE}" = "host" ]; then
+    echo "host"
+  else
+    dt_error ${fname} "Unknown mode: MODE=${MODE}"
+    return 99
+  fi
+}
+
 function dt_sudo() {
   if [ "$(os_kernel)" = "Linux" ]; then
     echo "sudo"

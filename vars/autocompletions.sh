@@ -1,0 +1,5 @@
+DT_AUTOCOMPLETIONS["methods_docker_image"]="pg"
+DT_AUTOCOMPLETIONS["methods_docker_network"]="example"
+DT_AUTOCOMPLETIONS["methods_docker_service"]="pg"
+DT_AUTOCOMPLETIONS["methods_m4"]="pg"
+DT_AUTOCOMPLETIONS["methods_psql"]="admin migrator app"

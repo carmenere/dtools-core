@@ -11,6 +11,7 @@ dt_paths() {
   export DT_LOGS="${DT_ARTEFACTS}/logs"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
+  export DT_M4=${DTOOLS}/core/m4
   export DL="${DT_TOOLCHAIN}/dl"
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi

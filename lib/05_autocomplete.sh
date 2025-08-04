@@ -39,6 +39,7 @@ dt_autocomplete() {
 }
 
 dt_autocomplete_all() {
+  . ${DT_VARS}/autocompletions.sh && \
   for f in ${DT_AUTOCOMPLETE[@]}; do
     dt_autocomplete ${f} || return $?
   done

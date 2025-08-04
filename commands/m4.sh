@@ -13,9 +13,9 @@ _m4() {
 ##################################################### AUTOCOMPLETE #####################################################
 function methods_m4() {
   local methods=()
-  methods+=(m4_postgresql.conf)
+  methods+=("$(methods_m4_pg)")
   echo "${methods[@]}"
 }
 
 DT_AUTOCOMPLETE+=(methods_m4)
-DT_AUTOCOMPLETIONS["methods_m4"]="postgresql.conf"
+DT_AUTOCOMPLETIONS["methods_m4"]=""

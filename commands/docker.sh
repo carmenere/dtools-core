@@ -1,7 +1,38 @@
 # FULL NAME: REGISTRY[:PORT]/[r|_]/NAMESPACE/REPO[:TAG]
 add_run_env() {
   run_envs["$1"]="$2"
-  RUN_ENVS+=("$2")
+  RUN_ENVS+=("$1")
+}
+
+add_build_args() {
+  build_args["$1"]="$2"
+  BUILD_ARGS+=("$1")
+}
+
+add_publish() { if [ -z "${PUBLISH}" ]; then PUBLISH="--publish"; fi; PUBLISH="${PUBLISH} $1"; }
+
+ser_build_args() {
+  local result var val fname=ser_build_args
+  result=()
+  for var in ${BUILD_ARGS[@]}; do
+    val=${build_args["${var}"]}
+    dt_debug ${fname} "var=${var}; val=${val}"
+    val=$(ser_val "${val}")
+    result+=("--build-arg ${var}=${val}")
+  done
+  echo "${result[@]}"
+}
+
+ser_run_envs() {
+  local result var val fname=ser_run_envs
+  result=()
+  for var in ${RUN_ENVS[@]}; do
+    val=${run_envs["${var}"]}
+    dt_debug ${fname} "var=${var}; val=${val}"
+    val=$(ser_val "${val}")
+    result+=("--env ${var}=${val}")
+  done
+  echo "${result[@]}"
 }
 
 docker_install() {
@@ -47,66 +78,81 @@ docker_default_tag() {
   fi
 }
 
-docker_build_args() { echo "$(inline_vars "$(BUILD_ARGS)" --build-arg)"; }
-docker_run_publish() { echo "$(inline_vals "$(PUBLISH)" --publish)"; }
-docker_run_envs() { echo "$(inline_vars "$(RUN_ENVS)" --env)"; }
+DOCKER_IMAGES=${DT_VARS}/docker_images
+DOCKER_BRIDGES=${DT_VARS}/docker_bridges
+DOCKER_SERVICES=${DT_VARS}/docker_services
 
-_docker_build() { exec_cmd docker build $(docker_build_args) -t $(IMAGE) -f "$(DOCKERFILE)" "$(CTX)"; }
-_docker_check() { service_check; }
-_docker_exec_i_cmd() { exec_cmd "docker exec -i $(SERVICE) /bin/sh << EOF\n$@\nEOF"; }
-_docker_exec_it_cmd() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh -c \"$@\""; }
-_docker_exec_sh() { exec_cmd "docker exec -ti $(SERVICE) /bin/sh"; }
-_docker_logs() { exec_cmd docker logs "$(SERVICE)"; }
-_docker_logs_save_to_logfile() { exec_cmd docker logs "$(SERVICE)" '>' "${DT_LOGS}/container-$(SERVICE).log" '2>&1'; }
-_docker_network_create() { exec_cmd docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE); }
-_docker_network_rm() { exec_cmd docker network rm $(BRIDGE); }
-_docker_pull() { exec_cmd docker pull ${IMAGE}; }
-_docker_rm() { exec_cmd docker rm --force $(SERVICE); }
-_docker_rmi() { exec_cmd docker rmi $(IMAGE); }
-_docker_start() { exec_cmd docker start $(SERVICE); }
-_docker_status() { exec_cmd docker ps -a --filter name="^$(SERVICE)$"; }
-_docker_stop() { exec_cmd docker stop $(SERVICE); }
-
-docker_pull() {
-  (set-eu; . "${DTOOLS}/core/vars/docker_images/$1.sh" && _docker_pull)
-}
-
-function docker_network_create() {
-  local id fname=$(fname "${FUNCNAME[0]}" "$0")
-  id="$(exec_cmd "docker network ls -q --filter name="^$(BRIDGE)$"")" || return $?
+# DOCKER_BRIDGES
+docker_network_create() {(
+  set -eu
+  local id fname=docker_network_create
+  . "${DOCKER_BRIDGES}/$1.sh"
+  id="$(exec_cmd "docker network ls -q --filter name="^${BRIDGE}$"")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Bridge ${BOLD}$(BRIDGE)${RESET} with id='${id}' exists, skip create."
+    dt_info ${fname} "Bridge ${BOLD}${BRIDGE}${RESET} with id='${id}' exists, skip create."
     return 0
   fi
-  if [ -z "$(BRIDGE)" ]; then dt_error ${fname} "Parameter BRIDGE is empty. Cannot create bridge."; return 99; fi
-  exec_cmd docker network create --driver=$(DRIVER) --subnet=$(SUBNET) $(BRIDGE)
-}
+  if [ -z "${BRIDGE}" ]; then dt_error ${fname} "Parameter BRIDGE is empty. Cannot create bridge."; return 99; fi
+  exec_cmd docker network create --driver=${DRIVER} --subnet=${SUBNET} ${BRIDGE}
+)}
+docker_network_rm() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker network rm ${BRIDGE} )}
 
-docker_run() {
-  local id fname=$(fname "${FUNCNAME[0]}" "$0")
-  docker_network_create || return $?
-  id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=running")" || return $?
+# DOCKER_IMAGES
+docker_pull() {( set -eu; . "${DOCKER_IMAGES}/$1.sh" && exec_cmd docker pull ${IMAGE} )}
+docker_rmi() {( set -eu; . "${DOCKER_IMAGES}/$1.sh" && exec_cmd docker rmi ${IMAGE} )}
+docker_build() {(
+  set -eu; . "${DOCKER_IMAGES}/$1.sh"
+  exec_cmd docker build $(ser_build_args) -t ${IMAGE} -f "${DOCKERFILE}" "${CTX}"
+)}
+
+# DOCKER_SERVICES
+docker_check() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && service_check )}
+docker_exec_i_cmd() {(
+  set -eu; . "${DOCKER_SERVICES}/$1.sh"
+  exec_cmd "docker exec -i ${SERVICE} /bin/sh << EOF\n$@\nEOF"
+)}
+docker_exec_it_cmd() {(
+  set -eu; . "${DOCKER_SERVICES}/$1.sh"
+  exec_cmd "docker exec -ti ${SERVICE} /bin/sh -c \"$@\""
+)}
+docker_exec_sh() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd "docker exec -ti ${SERVICE} /bin/sh" )}
+docker_logs() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker logs "${SERVICE}" )}
+docker_logs_save_to_logfile() {(
+  set -eu; . "${DOCKER_SERVICES}/$1.sh"
+  exec_cmd docker logs "${SERVICE}" '>' "${DT_LOGS}/container-${SERVICE}.log" '2>&1'
+)}
+docker_rm() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker rm --force ${SERVICE} )}
+docker_start() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker start ${SERVICE} )}
+docker_status() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker ps -a --filter name="^${SERVICE}$" )}
+docker_stop() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker stop ${SERVICE} )}
+docker_ps() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd "docker ps -a --filter name="^${SERVICE}$"" )}
+docker_run() {(
+  set -eu
+  local id fname=docker_run
+  . "${DOCKER_SERVICES}/$1.sh" || return $?
+  docker_network_create ${BRIDGE} || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^${SERVICE}$" --filter status=running")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' is running, skip run."
+    dt_info ${fname} "Container ${BOLD}${SERVICE}${RESET} with id='${id}' is running, skip run."
     return 0
   fi
-  id="$(exec_cmd "docker ps -aq --filter name="^$(SERVICE)$" --filter status=exited --filter status=created")" || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^${SERVICE}$" --filter status=exited --filter status=created")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}$(SERVICE)${RESET} with id='${id}' was created but is stopped now, so start it."
-    exec_cmd docker start $(SERVICE) || return $?
+    dt_info ${fname} "Container ${BOLD}${SERVICE}${RESET} with id='${id}' was created but is stopped now, so start it."
+    exec_cmd docker start ${SERVICE} || return $?
     return 0
   fi
-  exec_cmd docker run $(FLAGS) --name $(SERVICE) $(docker_run_envs) $(docker_run_publish) $(RM) --restart $(RESTART) \
-      --network $(BRIDGE) $(IMAGE) "$(COMMAND)"
-}
+  exec_cmd docker run ${FLAGS} --name ${SERVICE} $(ser_run_envs) ${PUBLISH} ${RM} --restart ${RESTART} \
+      --network ${BRIDGE} ${IMAGE} "${COMMAND}"
+)}
 
 # Don't depend on Vars
-docker_ps() { docker ps -a; }
+docker_ps_all() { docker ps -a; }
 docker_network_ls() { exec_cmd docker network ls; }
 docker_is_running() { if ! docker ps 1>/dev/null; then error $0 "${BOLD}Dockerd is not run!${RESET}"; return 99; fi; }
 
 docker_rm_all() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
+  local fname=docker_rm_all
   if [ -z "$(exec_cmd docker ps -lq)" ]; then dt_info ${fname} "docker_rm_all: nothing to delete."; return 0; fi
   exec_cmd docker rm --force $(docker ps -aq)
 }
@@ -127,13 +173,14 @@ docker_purge() {
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
-function methods_docker_service() {
+methods_docker_service() {
   local methods=()
   methods+=(docker_check)
   methods+=(docker_exec_i)
   methods+=(docker_exec_it)
   methods+=(docker_exec_sh)
   methods+=(docker_logs)
+  methods+=(docker_ps)
   methods+=(docker_rm)
   methods+=(docker_run)
   methods+=(docker_start)
@@ -142,7 +189,7 @@ function methods_docker_service() {
   echo "${methods[@]}"
 }
 
-function methods_docker_network() {
+methods_docker_network() {
   local methods=()
   methods+=(docker_network_create)
   methods+=(docker_network_rm)
@@ -150,7 +197,7 @@ function methods_docker_network() {
   echo "${methods[@]}"
 }
 
-function methods_docker_image() {
+methods_docker_image() {
   local methods=()
   methods+=(docker_build)
   methods+=(docker_rmi)
@@ -161,5 +208,7 @@ function methods_docker_image() {
 DT_AUTOCOMPLETE+=(methods_docker_network)
 DT_AUTOCOMPLETE+=(methods_docker_service)
 DT_AUTOCOMPLETE+=(methods_docker_image)
-DT_AUTOCOMPLETIONS["methods_docker_network"]="foo"
-DT_AUTOCOMPLETIONS["methods_docker_image"]="pg"
+
+DT_AUTOCOMPLETIONS["methods_docker_network"]=""
+DT_AUTOCOMPLETIONS["methods_docker_service"]=""
+DT_AUTOCOMPLETIONS["methods_docker_image"]=""
