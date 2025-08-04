@@ -107,15 +107,17 @@ docker_build() {(
 
 # DOCKER_SERVICES
 docker_check() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && service_check )}
-docker_exec_i_cmd() {(
+docker_exec_i() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
+  shift
   exec_cmd "docker exec -i ${SERVICE} /bin/sh << EOF\n$@\nEOF"
 )}
-docker_exec_it_cmd() {(
+docker_exec_it() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
+  shift
   exec_cmd "docker exec -ti ${SERVICE} /bin/sh -c \"$@\""
 )}
-docker_exec_sh() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd "docker exec -ti ${SERVICE} /bin/sh" )}
+docker_exec_sh() { docker_exec_it $1 }
 docker_logs() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker logs "${SERVICE}" )}
 docker_logs_save_to_logfile() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"

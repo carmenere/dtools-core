@@ -1,67 +1,97 @@
 _psql_sudo() {
-  if [ "$(pg_mode)" = "docker" ]; then
+  if [ "$(service_mode)" = "docker" ]; then
     echo ""
     return 0
   fi
   if [ -n "$(dt_sudo)" ]; then
-    echo "$(dt_sudo) -u $(PGUSER)"
+    echo "$(dt_sudo) -u ${user}"
   else
     echo ""
   fi
 }
 
-psql_conn() { ( set -eu; . "${DT_VARS}/connurls/pg/$1.sh" && _psql_conn ) }
-_psql_conn() { . "${ACCOUNT}" && ${TERMINAL} $(_pg_connurl) ${PSQL}; }
-
-
 _psql_host() { if [ -n "${host}" ]; then echo "PGHOST=${host}"; fi; }
-_psql_port() { if [ -n "${port}" ]; then echo "PGPORT=${port}"; fi; }
+_psql_port() { if [ -n "${port_psql}" ]; then echo "PGPORT=${port_psql}"; fi; }
 _psql_user() { if [ -n "${user}" ]; then echo "PGUSER=${user}"; fi; }
 _psql_password() { if [ -n "${password}" ]; then echo "PGPASSWORD=${password}"; fi }
 _psql_db() { if [ -n "${database}" ]; then echo "PGDATABASE=${database}"; fi }
 _pg_connurl() { echo "$(_psql_host) $(_psql_port) $(_psql_db) $(_psql_user) $(_psql_password)" }
+_pg_local_connurl() { echo "$(_psql_port) $(_psql_db) $(_psql_user) $@"; }
 
-#_psql_rec() { set_tbl "psql_queries" && set_rec "$1"; }
+psql_conn() {(
+  set -eu
+  . "${DT_VARS}/conns/pg/$1.sh"
+  . "${ACCOUNT}"
+  echo "$(_pg_connurl)"
+  ${TERMINAL} ${SERVICE_ID} $(_pg_connurl) ${PSQL}
+)}
 
-#_pg_local_connurl() { echo "$(_psql_port) $(_psql_db $1) $(_psql_user) $@"; }
-#_psql_conn() { local db=$1; echo "$(_pg_connurl ${db}) $(CLIENT $(SERVICE $(CONN))) $@"; }
-#_psql_local_conn() { local db=$1; echo "$(_psql_sudo) $(_pg_local_connurl ${db}) $(CLIENT $(SERVICE $(CONN))) $@"; }
-#
-#_psql_gexec() {
-#  local q db=$2 _conn=${_conn}
-#  q=$(escape_quote $1) && \
-#  if [ -z "${_conn}" ]; then _conn=_psql_conn; fi
-#  $(EXEC $(SERVICE $(CONN))) "echo $'${q}' '\gexec' | $(${_conn})"
-#}
-#_psql_gexec_local() { local _conn=_psql_local_conn; _psql_gexec $@; }
-#
-#psql_local_conn() { local connurl=ACCOUNT; _psql_rec $1 && $(TERMINAL $(SERVICE $(CONN))) "$(_psql_local_conn)"; }
-#psql_conn() { local connurl=ACCOUNT; _psql_rec $1 && $(TERMINAL $(SERVICE $(CONN))) "$(_psql_conn)"; }
-#
-#psql_alter_role_password() { local connurl=CONN && _psql_rec $1 && _psql_gexec_local "$(ALTER_PASSWORD)" }
-#psql_drop_role_password() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(DROP_PASSWORD)" }
-#psql_create_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(CREATE)" }
-#psql_drop_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(DROP)" }
-#psql_create_db() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(CREATE_DB)" }
-#psql_drop_db() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(DROP_DB)" }
-#psql_grant_user() { local connurl=CONN && _psql_rec $1 && _psql_gexec "$(GRANT)" "$(DATABASE $(ACCOUNT))"; }
-#psql_revoke_user() {}
-#
-#methods_conns() {
-#  local methods=()
-#  methods+=(psql_alter_role_password)
-#  methods+=(psql_conn)
-#  methods+=(psql_local_conn)
-#  methods+=(psql_create_db)
-#  methods+=(psql_create_user)
-#  methods+=(psql_drop_db)
-#  methods+=(psql_drop_role_password)
-#  methods+=(psql_drop_user)
-#  methods+=(psql_grant_user)
-#  methods+=(psql_revoke_user)
-#  echo "${methods[@]}"
-#}
-#
+psql_local_conn() {(
+  set -eu
+  . "${DT_VARS}/conns/pg/$1.sh"
+  . "${ACCOUNT}"
+  echo "$(_pg_connurl)"
+  ${TERMINAL} ${SERVICE_ID} $(_psql_sudo) $(_pg_local_connurl) ${PSQL}
+)}
+
+_m4_psql_query() {
+  (set -eu; . "${ACCOUNT}" &&
+    M4_TVARS=${DT_M4}/pg/sql/vars.m4
+    M4_IN=$1
+    export M4_USER=${user}
+    export M4_PASSWORD=${password}
+    export M4_PASSWORD=${password}
+    export M4_DATABASE=${database}
+    _m4
+  )
+}
+
+_psql_gexec_local() {
+  local M4_OUT=${DT_M4_OUT}/query.sql
+  _m4_psql_query $1
+  local query=$(escape_dollar $(escape_quote "$(cat ${M4_OUT})"))
+  . "${CONN}"
+  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_psql_sudo) $(_pg_local_connurl) ${PSQL}"
+}
+
+psql_alter_role_password() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/alter_role_password.sql"
+)}
+psql_drop_role_password() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/drop_role_password.sql"
+)}
+psql_create_user() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/create_user.sql"
+)}
+psql_drop_user() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/drop_user.sql"
+)}
+psql_create_db() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/create_db.sql"
+)}
+psql_drop_db() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local "${DT_M4}/pg/sql/drop_db.sql"
+)}
+psql_grant_user() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  local M4_OUT=${DT_M4_OUT}/query.sql
+  _m4_psql_query $(. "${ACCOUNT}" && echo ${GRANT})
+  local query=$(escape_dollar $(escape_quote "$(cat ${M4_OUT})"))
+  . "${CONN}"
+  database=$(. "${ACCOUNT}" && echo ${database})
+  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_psql_sudo) $(_pg_local_connurl) ${PSQL}"
+)}
+psql_revoke_user() {(
+  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
+  _psql_gexec_local $(. "${ACCOUNT}" && echo ${REVOKE})
+)}
+
 #_psql_init() {
 #  local admin="$1" migrator="$2" app="$3" fname=$(fname "${FUNCNAME[0]}" "$0")
 #  dt_debug ${fname} "admin=${admin}, migrator=${migrator}, app=${app}" && \
@@ -88,7 +118,16 @@ _pg_connurl() { echo "$(_psql_host) $(_psql_port) $(_psql_db) $(_psql_user) $(_p
 ##################################################### AUTOCOMPLETE #####################################################
 function methods_psql() {
   local methods=()
+  methods+=(psql_alter_role_password)
   methods+=(psql_conn)
+  methods+=(psql_local_conn)
+  methods+=(psql_create_db)
+  methods+=(psql_create_user)
+  methods+=(psql_drop_db)
+  methods+=(psql_drop_role_password)
+  methods+=(psql_drop_user)
+  methods+=(psql_grant_user)
+  methods+=(psql_revoke_user)
   echo "${methods[@]}"
 }
 

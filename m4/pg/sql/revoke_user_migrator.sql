@@ -5,4 +5,3 @@ WHERE
     EXISTS (SELECT true FROM pg_roles WHERE rolname = 'M4_USER')
   AND
     EXISTS (SELECT true FROM pg_database WHERE datname = 'M4_DATABASE')
-\gexec

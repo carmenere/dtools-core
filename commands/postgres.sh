@@ -1,5 +1,3 @@
-PG_SUPERUSER="postgres"
-
 m4_postgresql.conf() {
   ( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )
 }
@@ -36,7 +34,7 @@ pg_superuser() {
   if [ "$(os_name)" = "macos" ]; then
     echo "${USER}"
   else
-    echo ${PG_SUPERUSER}
+    echo "postgres"
   fi
 }
 

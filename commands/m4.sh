@@ -2,13 +2,14 @@ _m4() {
   exec_cmd "m4 ${M4_TVARS} ${M4_IN} > ${M4_OUT}"
 }
 
-#m4_drop_user() {
-#  OUT="/tmp/templates/m4/pg/sql/drop_user.sql" && \
-#  exec_cmd "m4 ${DTOOLS}/core/templates/m4/pg/sql/vars.m4 ${DTOOLS}/core/templates/m4/pg/sql/drop_user.sql > ${OUT}" && \
-#  if [ -z "$(tail -c 1 ${OUT})" ]; then echo "" >> ${OUT}; fi && \
-#  exec_cmd "cat ${OUT}" && \
-#  exec_cmd PGPORT=1111 PGDATABASE=postgres psql -f ${OUT}
-#}
+m4_query() {
+  local M4_OUT=${DT_M4_OUT}/sql/${SERVICE_ID}/$1
+  mkdir -p "$(dirname "${DT_M4_OUT}")"
+  M4_TVARS=${DT_M4}/m4/$2
+  M4_IN=${DT_M4}/m4/$1
+  _m4
+  if [ -z "$(tail -c 1 ${OUT})" ]; then echo "" >> ${OUT}; fi
+}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function methods_m4() {

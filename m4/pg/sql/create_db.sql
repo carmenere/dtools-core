@@ -2,4 +2,3 @@ SELECT
     'CREATE DATABASE M4_DATABASE'
 WHERE
     NOT EXISTS (SELECT true FROM pg_database WHERE datname = 'M4_DATABASE')
-\gexec

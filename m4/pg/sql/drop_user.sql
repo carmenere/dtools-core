@@ -3,4 +3,3 @@ SELECT
     'DROP USER IF EXISTS "M4_USER"'
 WHERE
     EXISTS (SELECT true FROM pg_roles WHERE rolname = 'M4_USER')
-\gexec
