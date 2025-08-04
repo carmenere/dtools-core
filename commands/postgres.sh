@@ -1,6 +1,8 @@
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
+pg_conn_url() { echo "postgres://${user}:${password}@${host}:${port}/${database}"; }
+
 pg_service() {
   if [ "$(os_name)" = "macos" ]; then
     echo "postgresql@${MAJOR}"

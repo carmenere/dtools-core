@@ -3,10 +3,10 @@ sleep_5() { exec_cmd "sleep 5"; }
 
 ser_val() {
   local val=$1
-  if $(echo "${val}" | grep "'" >/dev/null 2>&1); then
+  if echo "${val}" | grep "'" >/dev/null 2>&1; then
     val="$(escape_quote "${val}")"
     val="$'${val}'"
-  elif $(echo "${val}" | grep ' ' >/dev/null 2>&1); then
+  elif echo "${val}" | grep ' ' >/dev/null 2>&1; then
     val="\"${val}\""
   fi
   echo "${val}"
@@ -125,7 +125,19 @@ function brew_prefix() {
 
 add_env() {
   envs["$1"]="$2"
-  ENVS+=("$2")
+  ENVS+=("$1")
+}
+
+inline_envs() {
+  local result var val fname=inline_envs
+  result=()
+  for var in ${ENVS[@]}; do
+    val=${envs["${var}"]}
+    dt_debug ${fname} "var=${var}; val=${val}"
+    val=$(ser_val "${val}")
+    result+=("${var}=${val}")
+  done
+  echo "${result[@]}"
 }
 
 service_mode() {
