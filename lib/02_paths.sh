@@ -1,9 +1,9 @@
 dt_paths() {
-  export DTOOLS=$(realpath $(dirname "$(realpath $self)")/..) && \
+  export DT_CORE="$1"
+  export DTOOLS=$(realpath "${DT_CORE}/..") || return $?
   # Paths that depend on DTOOLS
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
-  export DT_CORE=${DTOOLS}/core
   export DT_LOCALS=${DTOOLS}/locals
   export DT_STANDS=${DTOOLS}/stands
   export DT_VARS=${DTOOLS}/core/vars

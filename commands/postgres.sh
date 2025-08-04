@@ -1,10 +1,5 @@
-m4_postgresql.conf() {
-  ( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )
-}
-
-m4_pg_hba.conf() {
-  ( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )
-}
+m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
+m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
 pg_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -68,9 +63,12 @@ pg_add_path() {
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
-methods_m4_pg() {
+function methods_m4_pg() {
   local methods=()
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)
   echo "${methods[@]}"
 }
+
+DT_AUTOCOMPLETE+=(methods_m4_pg)
+DT_AUTOCOMPLETIONS["methods_m4_pg"]=""

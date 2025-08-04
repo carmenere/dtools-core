@@ -11,20 +11,20 @@ autocomplete_init() {
 }
 
 dt_gen_autocomplete() {
-  local func autocomplete=$1 methods=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  local func autocomplete=$1 methods=$2 fname=dt_gen_autocomplete
   if [ -z "${methods}" ]; then dt_error ${fname} "Methods for autocomplete binding was not provided"; return 99; fi && \
   if [ -z "${autocomplete}" ]; then dt_error ${fname} "Name for autocomplete function was not provided"; return 99; fi && \
   func="${autocomplete}() {
   local cur_word="\${COMP_WORDS\[COMP_CWORD\]}"
   local options=\"\${DT_AUTOCOMPLETIONS[\"${methods}\"]}\"
-  COMPREPLY=( \$(compgen -W \"\${options}\" -- \"\${cur_word}\") ) }" && \
+  COMPREPLY=( \$(compgen -W \"\${options}\" -- \"\${cur_word}\") ); }" && \
   dt_debug ${fname} "Generating autocomplete function ${BOLD}${autocomplete}${RESET} ..." && \
   eval "$(echo -e "${func}")" && \
   dt_debug ${fname} "done"
 }
 
 dt_autocomplete() {
-  local methods autocomplete fname=$(fname "${FUNCNAME[0]}" "$0")
+  local methods autocomplete fname=dt_gen_autocomplete
   methods="$1" && \
   if [ -z "${methods}" ]; then dt_error ${fname} "Methods for autocomplete binding was not provided"; return 99; fi && \
   autocomplete="autocomplete_${methods}" && \
@@ -41,6 +41,6 @@ dt_autocomplete() {
 dt_autocomplete_all() {
   . ${DT_VARS}/autocompletions.sh && \
   for f in ${DT_AUTOCOMPLETE[@]}; do
-    dt_autocomplete ${f} || return $?
+    dt_autocomplete "${f}" || return $?
   done
 }

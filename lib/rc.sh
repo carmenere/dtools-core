@@ -7,7 +7,7 @@ dt_log() {
   >&2 echo -e "${BOLD}[dtools][LOG][$1]${RESET} $2"
 }
 
-function dt_rc_load() {
+dt_rc_load() {
   local fname=$(fname "${FUNCNAME[0]}" "$0")
   description=$1
   dir=$2
@@ -23,13 +23,13 @@ function dt_rc_load() {
   done
 }
 
-function load() {
+load() {
   if [ -n "${BASH_SOURCE}" ]; then local self="${BASH_SOURCE[0]}"; else local self="$1"; fi
   local self_dir="$(dirname $(realpath "${self}"))"
 
   dt_rc_load $(basename "${self_dir}") "${self_dir}"
 }
 
-load $0 || return $?
+load "$0" || return $?
 
 if [ -f "${DTOOLS}/core/rc.sh" ]; then reinit_dtools() { . ${DTOOLS}/core/rc.sh; }; fi
