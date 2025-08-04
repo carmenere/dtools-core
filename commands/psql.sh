@@ -46,8 +46,17 @@ _m4_psql_query() {
   )
 }
 
+_psql_gexec() {
+  local M4_OUT=${DT_M4_OUT}/$(basename $1)
+  _m4_psql_query $1
+  local query=$(echo "$(cat ${M4_OUT})")
+  local query="$(escape_dollar "$(escape_quote "${query}")")"
+  . "${CONN}"
+  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
+}
+
 _psql_gexec_local() {
-  local M4_OUT=${DT_M4_OUT}/query.sql
+  local M4_OUT=${DT_M4_OUT}/$(basename $1)
   _m4_psql_query $1
   local query=$(echo "$(cat ${M4_OUT})")
   local query="$(escape_dollar "$(escape_quote "${query}")")"
@@ -65,33 +74,34 @@ psql_drop_role_password() {(
 )}
 psql_create_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/create_user.sql"
+  _psql_gexec "${DT_M4}/pg/sql/create_user.sql"
 )}
 psql_drop_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/drop_user.sql"
+  _psql_gexec "${DT_M4}/pg/sql/drop_user.sql"
 )}
 psql_create_db() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/create_db.sql"
+  _psql_gexec "${DT_M4}/pg/sql/create_db.sql"
 )}
 psql_drop_db() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/drop_db.sql"
+  _psql_gexec "${DT_M4}/pg/sql/drop_db.sql"
 )}
 psql_grant_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  local M4_OUT=${DT_M4_OUT}/query.sql
-  _m4_psql_query $(. "${ACCOUNT}" && echo ${GRANT})
+  local GRANT=$(. "${ACCOUNT}" && echo ${GRANT})
+  local M4_OUT=${DT_M4_OUT}/$(basename ${GRANT})
+  _m4_psql_query ${GRANT}
   local query=$(echo "$(cat ${M4_OUT})")
   local query="$(escape_dollar "$(escape_quote "${query}")")"
   . "${CONN}"
   database=$(. "${ACCOUNT}" && echo ${database})
-  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_psql_sudo) $(_pg_local_connurl) ${PSQL}"
+  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
 )}
 psql_revoke_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local $(. "${ACCOUNT}" && echo ${REVOKE})
+  _psql_gexec $(. "${ACCOUNT}" && echo ${REVOKE})
 )}
 
 psql_init() {(

@@ -17,6 +17,7 @@ dt_paths() {
   if [ ! -d "${DT_LOGS}" ]; then mkdir -p ${DT_LOGS}; fi
   if [ ! -d "${DT_REPORTS}" ]; then mkdir -p ${DT_REPORTS}; fi
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
+  if [ ! -d "${DT_M4_OUT}" ]; then mkdir -p ${DT_M4_OUT}; fi
 }
 
 #dt_defaults() {
