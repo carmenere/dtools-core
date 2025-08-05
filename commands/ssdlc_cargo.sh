@@ -1,16 +1,33 @@
+cyclonedx_msg_format() { if [ -n "${MESSAGE_FORMAT}" ]; then echo "--format ${MESSAGE_FORMAT}"; fi; }
 
+function cargo_audit() {(
+  set -eu
+  . "${DT_VARS}/cargo/ssdlc/$1.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo audit --${MESSAGE_FORMAT} '>' "${AUDIT_REPORT}"
+)}
 
-function ctx_cargo_ssdlc() {
-  local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
-  var CLIPPY_REPORT "${DT_REPORTS}/clippy-report.json" && \
-  var AUDIT_REPORT "${DT_REPORTS}/audit-report.json" && \
-  var DENY_REPORT "${DT_REPORTS}/deny-report.json" && \
-  var SONAR_REPORT "${DT_REPORTS}/sonar-report.json" && \
-  var MESSAGE_FORMAT "json" && \
-  cache_ctx
-}
+function cargo_cyclonedx() {(
+  set -eu
+  . "${DT_VARS}/cargo/ssdlc/$1.sh"
+  exec_cmd cd "${DT_REPORTS}"
+  exec_cmd "$(inline_envs)" cargo cyclonedx --all $(cg_manifest) $(cyclonedx_msg_format)
+)}
 
+function cargo_deny() {(
+  set -eu
+  . "${DT_VARS}/cargo/ssdlc/$1.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo deny $(cyclonedx_msg_format) '2>' "${DENY_REPORT} check"
+)}
 
+function cargo_sonar() {(
+  set -eu
+  . "${DT_VARS}/cargo/ssdlc/$1.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo sonar --clippy-path "${CLIPPY_REPORT}" --audit-path "${AUDIT_REPORT}" \
+      --deny-path "${DENY_REPORT}" --sonar-path "${SONAR_REPORT}"
+)}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_cargo_ssdlc() {

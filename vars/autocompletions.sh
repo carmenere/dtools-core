@@ -15,7 +15,7 @@ autocomplete_add cmd_family_brew \
 autocomplete_add cmd_family_systemctl \
   "pg"
 autocomplete_add cmd_family_sqlx \
-  "tetrix_api"
+  "tetrix"
 autocomplete_add cmd_family_cargo_crates \
   "sqlx" "cargo_audit" "cargo_cyclonedx" "cargo_deny" "cargo_sonar"
 autocomplete_add cmd_family_cargo_workspace \
@@ -25,4 +25,6 @@ autocomplete_add cmd_family_cargo_package \
 autocomplete_add cmd_family_rustup \
   "1.86"
 autocomplete_add cmd_family_app \
+  "tetrix"
+autocomplete_add cmd_family_cargo_ssdlc \
   "tetrix"

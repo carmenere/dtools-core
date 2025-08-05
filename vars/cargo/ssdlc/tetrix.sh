@@ -1,3 +1,5 @@
+. ${DT_VARS}/cargo/package/tetrix.sh
+
 CLIPPY_REPORT="${DT_REPORTS}/clippy-report.json"
 AUDIT_REPORT="${DT_REPORTS}/audit-report.json"
 DENY_REPORT="${DT_REPORTS}/deny-report.json"
