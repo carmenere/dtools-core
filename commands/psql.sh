@@ -120,7 +120,7 @@ psql_clean() {(
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
-methods_psql() {
+cmd_family_psql() {
   local methods=()
   methods+=(psql_alter_role_password)
   methods+=(psql_conn)
@@ -135,15 +135,12 @@ methods_psql() {
   echo "${methods[@]}"
 }
 
-methods_psql_batch() {
+cmd_family_psql_batch() {
   local methods=()
   methods+=(psql_init)
   methods+=(psql_clean)
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_psql)
-DT_AUTOCOMPLETIONS["methods_psql"]=""
-
-DT_AUTOCOMPLETE+=(methods_psql_batch)
-DT_AUTOCOMPLETIONS["methods_psql_batch"]=""
+autocomplete_reg_family "cmd_family_psql"
+autocomplete_reg_family "cmd_family_psql_batch"

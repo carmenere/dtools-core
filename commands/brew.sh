@@ -21,7 +21,7 @@ brew_show() {(
 brew_show_all() { exec_cmd brew services list; }
 
 ##################################################### AUTOCOMPLETE #####################################################
-methods_brew() {
+cmd_family_brew() {
   local methods=()
   methods+=(brew_start)
   methods+=(brew_stop)
@@ -31,5 +31,4 @@ methods_brew() {
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_brew)
-DT_AUTOCOMPLETIONS["methods_brew"]=""
+autocomplete_reg_family "cmd_family_brew"

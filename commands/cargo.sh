@@ -1,9 +1,21 @@
 ####################################### CARGO BUILD|TEST|CLIPPY|FMT|DOC|CLEAN ##########################################
-# By default: --bins --lib
-# When no target selection options are given, cargo build will build all binary and library targets of the selected packages.
-# Binaries are skipped if they have required-features that are missing.
-cg_add_bin() { BINS="${BINS} --bin $1"; }
-cg_add_exclude() { EXCLUDE="${EXCLUDE} --exclude $1"; }
+cg_inline_exclude() {
+  local result exclude
+  result=()
+  for exclude in ${EXCLUDE[@]}; do
+    result+=(--exclude "${exclude}")
+  done
+  echo "${result[@]}"
+}
+
+cg_inline_bins() {
+  local result bin
+  result=()
+  for bin in ${BINS[@]}; do
+    result+=(--bin "${bin}")
+  done
+  echo "${result[@]}"
+}
 
 cg_set_manifest() { if [ -n "${MANIFEST_DIR}" ] && [ -n "${MANIFEST}" ]; then echo "${MANIFEST_DIR}/${MANIFEST}"; fi; }
 cg_build_mode() { if [ "${PROFILE}" = "release" ]; then echo "release"; else echo "debug"; fi; }
@@ -30,7 +42,7 @@ cg_bin_dir() {
 
 cg_package() {
   if [ "${BUILD_AS}" = "workspace" ]; then
-    echo "--workspace ${EXCLUDE}"
+    echo "--workspace $(cg_inline_exclude)"
   else
     echo "--package ${PACKAGE}"
   fi
@@ -40,7 +52,7 @@ cg_targets() {
   # By default: --bins --lib
   # When no target selection options are given, cargo build will build all binary and library targets of the selected packages.
   # Binaries are skipped if they have required-features that are missing.
-  echo "$(cg_package) ${BINS}"
+  echo "$(cg_package) $(cg_inline_bins)"
 }
 
 cargo_build() {(
@@ -93,24 +105,6 @@ cargo_test() {(
   exec_cmd "$(inline_envs)" cargo test $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest)
 )}
 
-##################################################### AUTOCOMPLETE #####################################################
-methods_cargo() {
-  local methods=()
-  methods+=(cargo_build)
-  methods+=(cargo_clean)
-  methods+=(cargo_clippy)
-  methods+=(cargo_clippy_fix)
-  methods+=(cargo_doc)
-  methods+=(cargo_doc_open)
-  methods+=(cargo_fmt)
-  methods+=(cargo_fmt_fix)
-  methods+=(cargo_test)
-  echo "${methods[@]}"
-}
-
-DT_AUTOCOMPLETE+=(methods_cargo)
-DT_AUTOCOMPLETIONS["methods_cargo"]=""
-
 ############################################### CARGO INSTALL|UNINSTALL ################################################
 
 cargo_uninstall() {(
@@ -128,12 +122,26 @@ cargo_install() {(
 cargo_cache_clean() { exec_cmd cargo cache -r all; }
 
 ##################################################### AUTOCOMPLETE #####################################################
-methods_cargo_crates() {
+cmd_family_cargo() {
+  local methods=()
+  methods+=(cargo_build)
+  methods+=(cargo_clean)
+  methods+=(cargo_clippy)
+  methods+=(cargo_clippy_fix)
+  methods+=(cargo_doc)
+  methods+=(cargo_doc_open)
+  methods+=(cargo_fmt)
+  methods+=(cargo_fmt_fix)
+  methods+=(cargo_test)
+  echo "${methods[@]}"
+}
+
+cmd_family_cargo_crates() {
   local methods=()
   methods+=(cargo_install)
   methods+=(cargo_uninstall)
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_cargo_crates)
-DT_AUTOCOMPLETIONS["methods_cargo_crates"]=""
+autocomplete_reg_family "cmd_family_cargo"
+autocomplete_reg_family "cmd_family_cargo_crates"

@@ -18,7 +18,7 @@ function sqlx_prepare() {(
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
-function methods_sqlx() {
+function cmd_family_sqlx() {
   local methods=()
   methods+=(sqlx_pre_run)
   methods+=(sqlx_run)
@@ -26,5 +26,4 @@ function methods_sqlx() {
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_sqlx)
-DT_AUTOCOMPLETIONS["methods_sqlx"]=""
+autocomplete_reg_family "cmd_family_sqlx"

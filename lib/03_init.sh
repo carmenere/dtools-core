@@ -14,5 +14,5 @@ function dt_init() {
 #  . "${DT_STANDS}/rc.sh" && \
 #  if [ -f "${DT_LOCALS}/rc.sh" ]; then . "${DT_LOCALS}/rc.sh" || return $?; fi && \
 #  . ${DTOOLS}/vars/vars.sh && \
-  dt_autocomplete_all
+  dt_autocomplete
 }

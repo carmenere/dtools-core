@@ -1,6 +1,12 @@
 # PROFILE = { release | dev }, by default "dev"
 # BUILD_AS = { package | workspace}, by default "package"
 
+# rustup vars
+. <(. ${DT_VARS}/rustup/1.86.sh
+  echo "RUSTUP_TOOLCHAIN=${RUSTUP_TOOLCHAIN}"
+  echo "NIGHTLY_VERSION=${NIGHTLY_VERSION}"
+)
+
 declare -A envs
 ENVS=()
 

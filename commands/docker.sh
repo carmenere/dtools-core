@@ -179,7 +179,7 @@ docker_purge() {
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
-methods_docker_service() {
+cmd_family_docker_service() {
   local methods=()
   methods+=(docker_check)
   methods+=(docker_exec_i)
@@ -195,7 +195,7 @@ methods_docker_service() {
   echo "${methods[@]}"
 }
 
-methods_docker_network() {
+cmd_family_docker_network() {
   local methods=()
   methods+=(docker_network_create)
   methods+=(docker_network_rm)
@@ -203,7 +203,7 @@ methods_docker_network() {
   echo "${methods[@]}"
 }
 
-methods_docker_image() {
+cmd_family_docker_image() {
   local methods=()
   methods+=(docker_build)
   methods+=(docker_rmi)
@@ -211,10 +211,6 @@ methods_docker_image() {
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_docker_network)
-DT_AUTOCOMPLETE+=(methods_docker_service)
-DT_AUTOCOMPLETE+=(methods_docker_image)
-
-DT_AUTOCOMPLETIONS["methods_docker_network"]=""
-DT_AUTOCOMPLETIONS["methods_docker_service"]=""
-DT_AUTOCOMPLETIONS["methods_docker_image"]=""
+autocomplete_reg_family "cmd_family_docker_network"
+autocomplete_reg_family "cmd_family_docker_service"
+autocomplete_reg_family "cmd_family_docker_image"

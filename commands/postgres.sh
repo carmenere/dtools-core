@@ -65,12 +65,11 @@ pg_add_path() {
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
-function methods_m4_pg() {
+function cmd_family_m4_pg() {
   local methods=()
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)
   echo "${methods[@]}"
 }
 
-DT_AUTOCOMPLETE+=(methods_m4_pg)
-DT_AUTOCOMPLETIONS["methods_m4_pg"]=""
+autocomplete_reg_family "cmd_family_m4_pg"
