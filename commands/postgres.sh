@@ -1,6 +1,8 @@
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
+# For example, vars/conns/pg/admin.sh contains both ${port} and ${port_psql}, but ${port_psql} is for psql_XXX commands
+# The ${port} is for application
 pg_conn_url() { echo "postgres://${user}:${password}@${host}:${port}/${database}"; }
 
 pg_service() {

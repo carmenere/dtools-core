@@ -1,9 +1,9 @@
-. ${DT_VARS}/cargo/apps/defaults.sh
+. ${DT_VARS}/cargo/package/defaults.sh
 
-BINS+=("tetrix-api")
-BUILD_AS="package"
+BINS+=(tetrix-api)
+
 PACKAGE="tetrix"
-#CLIPPY_LINTS="-Dwarnings"
+#CLIPPY_LINTS+=("-Dwarnings")
 MANIFEST_DIR="${DT_PROJECT}"
 
 add_env DATABASE_URL "$(. "${DT_VARS}/conns/pg/migrator.sh" && . "${ACCOUNT}" && echo "$(pg_conn_url)")"

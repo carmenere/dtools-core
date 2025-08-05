@@ -51,4 +51,4 @@ function cmd_family_systemctl() {
   echo "${methods[@]}"
 }
 
-autocomplete_reg_family "cmd_family_rustup"
+autocomplete_reg_family "cmd_family_systemctl"

@@ -19,24 +19,29 @@ cg_inline_bins() {
 
 cg_set_manifest() { if [ -n "${MANIFEST_DIR}" ] && [ -n "${MANIFEST}" ]; then echo "${MANIFEST_DIR}/${MANIFEST}"; fi; }
 cg_build_mode() { if [ "${PROFILE}" = "release" ]; then echo "release"; else echo "debug"; fi; }
-cg_features() { if [ -n "${FEATURES}" ]; then echo "--features '${FEATURES}'"; fi; }
+cg_features() { if [ -n "${FEATURES}" ]; then echo "--features '${FEATURES[@]}'"; fi; }
 cg_manifest() { if [ -n "${MANIFEST_PATH}" ]; then echo "--manifest-path ${MANIFEST_PATH}"; fi;}
 cg_msg_format() { if [ -n "${MESSAGE_FORMAT}" ]; then echo "--message-format ${MESSAGE_FORMAT}"; fi; }
 cg_nightly() { if [ -n "${NIGHTLY_VERSION}" ]; then echo "+${NIGHTLY_VERSION}"; fi; }
 cg_profile() { if [ -n "${PROFILE}" ]; then echo "--profile ${PROFILE}"; fi; }
-clippy_report() { if [ -n "${CLIPPY_REPORT}" ]; then echo ">${CLIPPY_REPORT}"; fi; }
+cg_clippy_lints() { if [ -n "${CLIPPY_LINTS}" ]; then echo "${CLIPPY_LINTS[@]}"; fi; }
+cg_clippy_report() { if [ -n "${CLIPPY_REPORT}" ]; then echo ">${CLIPPY_REPORT}"; fi; }
 
 # bin_dir can be:
 #   ${CARGO_TARGET_DIR}/${CARGO_BUILD_TARGET}/${BUILD_MODE}
 #   ${CARGO_TARGET_DIR}/${BUILD_MODE}
 cg_bin_dir() {
   local bin_dir
-  if [ -n "${CARGO_TARGET_DIR}" ]; then bin_dir="${CARGO_TARGET_DIR}"; else bin_dir="$(pwd)/target"; fi
-  if [ -n "${CARGO_BUILD_TARGET}" ] && [ -n "${bin_dir}" ]; then
-    bin_dir="${bin_dir}/${CARGO_BUILD_TARGET}"
+  dt_debug cg_bin_dir "CARGO_TARGET_DIR=${CARGO_TARGET_DIR}"
+  if [ -n "${CARGO_TARGET_DIR}" ]; then
+    bin_dir="${CARGO_TARGET_DIR}"
   else
-    bin_dir="${CARGO_BUILD_TARGET}"
+    bin_dir="$(pwd)/target"
   fi
+  if [ -n "${CARGO_BUILD_TARGET}" ]; then
+    bin_dir="${bin_dir}/${CARGO_BUILD_TARGET}"
+  fi
+  dt_debug cg_bin_dir "\${bin_dir}/\${BUILD_MODE}=${bin_dir}/${BUILD_MODE}"
   echo "${bin_dir}/${BUILD_MODE}"
 }
 
@@ -57,56 +62,71 @@ cg_targets() {
 
 cargo_build() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo build $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest)
 )}
+
 cargo_clean() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo clean $(cg_profile) $(cg_manifest)
 )}
+
 cargo_clippy() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo clippy $(cg_targets) $(cg_features) $(cg_profile) $(cg_msg_format) $(cg_manifest) \
-    -- ${CLIPPY_LINTS} $(clippy_report)
+    -- $(cg_clippy_lints) $(cg_clippy_report)
 )}
+
 cargo_clippy_fix() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo clippy $(cg_targets) $(cg_features) $(cg_profile) --fix --allow-staged \
-    $(cg_msg_format) $(cg_manifest) -- ${CLIPPY_LINTS} $(clippy_report)
+    $(cg_msg_format) $(cg_manifest) -- $(cg_clippy_lints) $(cg_clippy_report)
 )}
+
 cargo_doc() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
     --no-deps --document-private-items
 )}
+
 cargo_doc_open() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
     --no-deps --document-private-items --open
 )}
+
 cargo_fmt() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest) -- --check
 )}
+
 cargo_fmt_fix() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest)
 )}
+
 cargo_test() {(
   set -eu
-  . "${DT_VARS}/cargo/apps/$1.sh"
+  . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd "$(inline_envs)" cargo test $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest)
 )}
 
-############################################### CARGO INSTALL|UNINSTALL ################################################
+################################################# CARGO SQLX PREPARE ###################################################
+function cargo_sqlx_prepare() {(
+  set -eu
+  . "${DT_VARS}/cargo/$1/$2.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo sqlx prepare
+)}
 
+############################################### CARGO INSTALL|UNINSTALL ################################################
 cargo_uninstall() {(
   set -eu
   . "${DT_VARS}/cargo/crates/$1.sh"
@@ -133,6 +153,7 @@ cmd_family_cargo() {
   methods+=(cargo_fmt)
   methods+=(cargo_fmt_fix)
   methods+=(cargo_test)
+  methods+=(cargo_sqlx_prepare)
   echo "${methods[@]}"
 }
 
@@ -141,6 +162,33 @@ cmd_family_cargo_crates() {
   methods+=(cargo_install)
   methods+=(cargo_uninstall)
   echo "${methods[@]}"
+}
+
+autocomplete_cmd_family_cargo() {
+  local cur prev
+  local options
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prev=${COMP_WORDS[COMP_CWORD-1]}
+  case ${COMP_CWORD} in
+    1)
+      COMPREPLY=($(compgen -W "workspace package" -- ${cur}))
+      ;;
+    2)
+      case ${prev} in
+        workspace)
+          options="${DT_AUTOCOMPLETIONS[cmd_family_cargo_workspace]}"
+          COMPREPLY=( $(compgen -W "${options}" -- "${cur_word}") )
+          ;;
+        package)
+          options="${DT_AUTOCOMPLETIONS[cmd_family_cargo_package]}"
+          COMPREPLY=( $(compgen -W "${options}" -- "${cur_word}") )
+          ;;
+      esac
+      ;;
+    *)
+      COMPREPLY=()
+      ;;
+  esac
 }
 
 autocomplete_reg_family "cmd_family_cargo"

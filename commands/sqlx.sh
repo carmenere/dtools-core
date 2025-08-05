@@ -10,19 +10,11 @@ function sqlx_run() {(
   exec_cmd "$(inline_envs)" sqlx migrate run --source "'${TMP_SCHEMAS}'"
 )}
 
-function sqlx_prepare() {(
-  set -eu
-  . "${DT_VARS}/sqlx/$1.sh"
-  exec_cmd cd "${MANIFEST_DIR}"
-  exec_cmd "$(inline_envs)" cargo sqlx prepare #--workspace
-)}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_sqlx() {
   local methods=()
-  methods+=(sqlx_pre_run)
   methods+=(sqlx_run)
-  methods+=(sqlx_prepare)
   echo "${methods[@]}"
 }
 

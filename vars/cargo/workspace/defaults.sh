@@ -7,21 +7,21 @@
   echo "NIGHTLY_VERSION=${NIGHTLY_VERSION}"
 )
 
+# envs is a special array for "env name" and "env value" pairs, e.g. envs[ABC]=10
 declare -A envs
-ENVS=()
 
-BINS=
-#BUILD_AS
+ENVS=()
+BINS=()
+BUILD_AS="workspace"
 CARGO_BUILD_TARGET=
 CARGO_TARGET_DIR="${DT_PROJECT}/target"
-CLIPPY_LINTS=
+CLIPPY_LINTS=()
 CLIPPY_REPORT=
-EXCLUDE=
-FEATURES=
+EXCLUDE=()
+FEATURES=()
 MANIFEST="Cargo.toml"
 MANIFEST_DIR=
 MESSAGE_FORMAT=
-PACKAGE=
 PROFILE="dev"
 RUSTFLAGS=
 

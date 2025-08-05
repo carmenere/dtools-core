@@ -1,12 +1,4 @@
-function cargo_ssdlc_methods() {
-  local methods=()
-  methods+=(cargo_audit)
-  methods+=(cargo_clippy)
-  methods+=(cargo_cyclonedx)
-  methods+=(cargo_deny)
-  methods+=(cargo_sonar)
-  echo "${methods[@]}"
-}
+
 
 function ctx_cargo_ssdlc() {
   local caller ctx=$(fname "${FUNCNAME[0]}" "$0"); set_caller $1; if is_cached; then return 0; fi
@@ -18,9 +10,17 @@ function ctx_cargo_ssdlc() {
   cache_ctx
 }
 
-function cargo_ssdlc() {
-  local methods=($(echo "$(cargo_ssdlc_methods)")) suffix=$1
-  for method in ${methods[@]}; do
-    ${method}_${suffix}
-  done
+
+
+##################################################### AUTOCOMPLETE #####################################################
+function cmd_family_cargo_ssdlc() {
+  local methods=()
+  methods+=(cargo_audit)
+  methods+=(cargo_clippy)
+  methods+=(cargo_cyclonedx)
+  methods+=(cargo_deny)
+  methods+=(cargo_sonar)
+  echo "${methods[@]}"
 }
+
+autocomplete_reg_family "cmd_family_cargo_ssdlc"
