@@ -3,7 +3,7 @@ autocomplete_add cmd_family_docker_image \
 autocomplete_add cmd_family_docker_network \
   "example"
 autocomplete_add cmd_family_docker_service \
-  "pg"
+  "pg" "clickhouse"
 autocomplete_add cmd_family_psql \
   "admin" "migrator" "app"
 autocomplete_add cmd_family_psql_batch \
@@ -28,3 +28,15 @@ autocomplete_add cmd_family_app \
   "tetrix"
 autocomplete_add cmd_family_cargo_ssdlc \
   "tetrix"
+autocomplete_add cmd_family_m4_psql_query \
+  "alter_role_password.sql" "drop_role_password.sql" "create_user.sql" "drop_user.sql" "create_db.sql" "drop_db.sql" \
+  "grant_user_migrator.sql" "revoke_user_migrator.sql" "grant_user_app.sql" "revoke_user_app.sql"
+
+autocomplete_add cmd_family_m4_clickhouse_query \
+  "create_user.sql" "drop_user.sql" "create_db.sql" "drop_db.sql" "grant_user_migrator.sql" "revoke_user_migrator.sql"
+autocomplete_add cmd_family_clickhouse_batch \
+  "clickhouse"
+autocomplete_add cmd_family_clickhouse \
+  "admin" "migrator" "app"
+autocomplete_add cmd_family_m4_clickhouse \
+  "clickhouse"

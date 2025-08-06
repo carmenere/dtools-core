@@ -9,9 +9,9 @@
         <default>
             <access_management>1</access_management>
         </default>
-        <M4_CLICKHOUSE_USER>
-            <password>M4_CLICKHOUSE_PASSWORD</password>
+        <M4_USER>
+            <password>M4_PASSWORD</password>
             <access_management>1</access_management>
-        </M4_CLICKHOUSE_USER>
+        </M4_USER>
     </users>
 </yandex>

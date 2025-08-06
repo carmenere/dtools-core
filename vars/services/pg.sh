@@ -1,7 +1,7 @@
 . ${DT_VARS}/services/defaults.sh
 
 MODE=docker
-MODE=host
+#MODE=host
 MAJOR=17
 MINOR=5
 SERVICE_ID=pg

@@ -35,23 +35,7 @@ function pg_superuser() {
   fi
 }
 
-# ctx_pg_host && pg_install
-function pg_install() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" && \
-    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" && \
-    exec_cmd "${SUDO} apt-get update" && \
-    exec_cmd "${SUDO} apt-get -y install \
-      postgresql-$(MAJOR) \
-      postgresql-server-dev-$(MAJOR) \
-      libpq-dev" || return $?
-  elif [ "$(os_kernel)" = "Darwin" ]; then
-    exec_cmd "brew install $(SERVICE)"
-  else
-    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
-  fi
-}
+
 
 # Drop pg cluster: sudo pg_dropcluster N main
 pg_post_install() {

@@ -25,4 +25,3 @@ add_publish "${PORT_CONN}:${PORT_BIND}/tcp"
   echo "add_run_env POSTGRES_DB \"${database}\""
   echo "add_run_env POSTGRES_PASSWORD \"${password}\""
 )
-echo err=$?

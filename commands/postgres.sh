@@ -1,5 +1,19 @@
-m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
-m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
+function pg_install() {
+  local fname=pg_install
+  if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
+    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" && \
+    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" && \
+    exec_cmd "${SUDO} apt-get update" && \
+    exec_cmd "${SUDO} apt-get -y install \
+      postgresql-${MAJOR} \
+      postgresql-server-dev-${MAJOR} \
+      libpq-dev" || return $?
+  elif [ "$(os_kernel)" = "Darwin" ]; then
+    exec_cmd "brew install ${SERVICE}"
+  else
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
+  fi
+}
 
 # For example, vars/conns/pg/admin.sh contains both ${port} and ${port_psql}, but ${port_psql} is for psql_XXX commands
 # The ${port} is for application
@@ -65,6 +79,9 @@ pg_add_path() {
     dt_debug ${fname} "${path}"
   fi
 }
+
+m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
+m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_m4_pg() {

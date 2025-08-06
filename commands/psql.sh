@@ -15,8 +15,9 @@ _psql_port() { if [ -n "${port_psql}" ]; then echo "PGPORT=${port_psql}"; fi; }
 _psql_user() { if [ -n "${user}" ]; then echo "PGUSER=${user}"; fi; }
 _psql_password() { if [ -n "${password}" ]; then echo "PGPASSWORD=${password}"; fi }
 _psql_db() { if [ -n "${database}" ]; then echo "PGDATABASE=${database}"; fi }
+
 _pg_connurl() { echo "$(_psql_host) $(_psql_port) $(_psql_db) $(_psql_user) $(_psql_password)"; }
-_pg_local_connurl() { echo "$(_psql_port) $(_psql_db) $(_psql_user) $@"; }
+_pg_local_connurl() { echo "$(_psql_port) $(_psql_db) $(_psql_user)"; }
 
 psql_conn() {(
   set -eu
@@ -34,78 +35,56 @@ psql_local_conn() {(
   ${TERMINAL} ${SERVICE_ID} $(_psql_sudo) $(_pg_local_connurl) ${PSQL}
 )}
 
-_m4_psql_query() {
-  (set -eu; . "${ACCOUNT}" &&
+m4_psql_query() {
+  (set -eu; . "${DT_VARS}/conns/accounts/pg/$2.sh" &&
     M4_TVARS=${DT_M4}/pg/sql/vars.m4
-    M4_IN=$1
-    export M4_USER=${user}
-    export M4_PASSWORD=${password}
-    export M4_PASSWORD=${password}
-    export M4_DATABASE=${database}
+    M4_IN="${DT_M4}/pg/sql/$1"
+    M4_OUT=
+    declare -A envs
+    ENVS=()
+    add_env M4_USER ${user}
+    add_env M4_PASSWORD ${password}
+    add_env M4_DATABASE ${database}
     _m4
   )
 }
 
 _psql_gexec() {
-  local M4_OUT=${DT_M4_OUT}/$(basename $1)
-  _m4_psql_query $1
-  local query=$(echo "$(cat ${M4_OUT})")
-  local query="$(escape_dollar "$(escape_quote "${query}")")"
-  . "${CONN}"
+  local query=$(echo "$(m4_psql_query $1 $2)")
+  local query=$(escape_dollar "$(escape_quote "${query}")")
+  . "${DT_VARS}/conns/pg/$2.sh" && . "${CONN}"
   ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
 }
 
 _psql_gexec_local() {
-  local M4_OUT=${DT_M4_OUT}/$(basename $1)
-  _m4_psql_query $1
-  local query=$(echo "$(cat ${M4_OUT})")
-  local query="$(escape_dollar "$(escape_quote "${query}")")"
-  . "${CONN}"
+  local query=$(echo "$(m4_psql_query $1 $2)")
+  local query=$(escape_dollar "$(escape_quote "${query}")")
+  . "${DT_VARS}/conns/pg/$2.sh" && . "${CONN}"
   ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_psql_sudo) $(_pg_local_connurl) ${PSQL}"
 }
 
-psql_alter_role_password() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/alter_role_password.sql"
-)}
-psql_drop_role_password() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec_local "${DT_M4}/pg/sql/drop_role_password.sql"
-)}
-psql_create_user() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec "${DT_M4}/pg/sql/create_user.sql"
-)}
-psql_drop_user() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec "${DT_M4}/pg/sql/drop_user.sql"
-)}
-psql_create_db() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec "${DT_M4}/pg/sql/create_db.sql"
-)}
-psql_drop_db() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec "${DT_M4}/pg/sql/drop_db.sql"
-)}
+psql_alter_role_password() {( set -eu; _psql_gexec_local "alter_role_password.sql" $1 )}
+psql_drop_role_password() {( set -eu; _psql_gexec "drop_role_password.sql" $1 )}
+psql_create_user() {( set -eu; _psql_gexec "create_user.sql" $1 )}
+psql_drop_user() {( set -eu; _psql_gexec "drop_user.sql" $1 )}
+psql_create_db() {( set -eu; _psql_gexec "create_db.sql" $1 )}
+psql_drop_db() {( set -eu; _psql_gexec "drop_db.sql" $1 )}
+
 psql_grant_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  local GRANT=$(. "${ACCOUNT}" && echo ${GRANT})
-  local M4_OUT=${DT_M4_OUT}/$(basename ${GRANT})
-  _m4_psql_query ${GRANT}
-  local query=$(echo "$(cat ${M4_OUT})")
-  local query="$(escape_dollar "$(escape_quote "${query}")")"
-  . "${CONN}"
-  database=$(. "${ACCOUNT}" && echo ${database})
+  local query=$(echo "$(m4_psql_query $(. "${ACCOUNT}" && echo ${GRANT}) $1)")
+  local query=$(escape_dollar "$(escape_quote "${query}")")
+  . "${CONN}" && database=$(. "${ACCOUNT}" && echo ${database})
   ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
 )}
+
 psql_revoke_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec $(. "${ACCOUNT}" && echo ${REVOKE})
+  _psql_gexec $(. "${ACCOUNT}" && echo ${REVOKE}) $1
 )}
 
 psql_init() {(
-  set -eu; . "${DT_VARS}/conns/$1/psql_batch.sh"
+  set -eu; . "${DT_VARS}/conns/$1/batch.sh"
   psql_create_db ${MIGRATOR}
   psql_create_user ${MIGRATOR}
   psql_grant_user ${MIGRATOR}
@@ -113,7 +92,7 @@ psql_init() {(
   psql_grant_user ${APP}
 )}
 psql_clean() {(
-  set -eu; . "${DT_VARS}/conns/$1/psql_batch.sh"
+  set -eu; . "${DT_VARS}/conns/$1/batch.sh"
   psql_drop_db ${MIGRATOR}
   psql_drop_user ${MIGRATOR}
   psql_drop_user ${APP}
@@ -144,3 +123,30 @@ cmd_family_psql_batch() {
 
 autocomplete_reg_family "cmd_family_psql"
 autocomplete_reg_family "cmd_family_psql_batch"
+
+##################################################### AUTOCOMPLETE #####################################################
+cmd_family_m4_psql_query() {
+  local methods=()
+  methods+=(m4_psql_query)
+  echo "${methods[@]}"
+}
+
+autocomplete_reg_family "cmd_family_m4_psql_query"
+
+autocomplete_cmd_family_m4_psql_query() {
+  local cur prev
+  local options
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prev=${COMP_WORDS[COMP_CWORD-1]}
+  case ${COMP_CWORD} in
+    1)
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_m4_psql_query]}" -- ${cur}))
+      ;;
+    2)
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_psql]}" -- ${cur}))
+      ;;
+    *)
+      COMPREPLY=()
+      ;;
+  esac
+}

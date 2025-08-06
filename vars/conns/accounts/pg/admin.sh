@@ -4,4 +4,5 @@
 user="$(pg_superuser)"
 password="postgres"
 database="postgres"
-CONN=
+GRANT=
+REVOKE=
