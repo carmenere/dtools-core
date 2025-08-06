@@ -13,7 +13,7 @@ clickhouse_conn() {(
   . "${DT_VARS}/conns/clickhouse/$1.sh"
   . "${ACCOUNT}"
   echo "$(_clickhouse_connurl)"
-  ${TERMINAL} ${SERVICE_ID} ${CLIENT} $(_clickhouse_connurl) ${PSQL}
+  ${TERMINAL} ${SERVICE_ID} ${CLIENT} $(_clickhouse_connurl)
 )}
 
 m4_clickhouse_query() {
@@ -44,10 +44,7 @@ clickhouse_drop_db() {( set -eu; _clickhouse_exec "drop_db.sql" $1 )}
 
 clickhouse_grant_user() {(
   set -eu; . "${DT_VARS}/conns/clickhouse/$1.sh"
-  local query=$(echo "$(m4_clickhouse_query $(. "${ACCOUNT}" && echo ${GRANT}) $1)")
-  local query=$(escape_dollar "$(escape_quote "${query}")")
-  . "${CONN}" && database=$(. "${ACCOUNT}" && echo ${database})
-  ${EXEC} ${SERVICE_ID} ${CLIENT} "$(_clickhouse_connurl) --multiquery $'${query}'"
+  _clickhouse_exec $(. "${ACCOUNT}" && echo ${GRANT}) $1
 )}
 
 clickhouse_revoke_user() {(

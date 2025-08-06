@@ -4,7 +4,7 @@ MAJOR=23
 MINOR=5
 
 MODE=docker
-#MODE=host
+MODE=host
 SERVICE_ID=clickhouse
 SERVICE=$(ch_service)
 
