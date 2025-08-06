@@ -2,7 +2,6 @@ declare -A envs
 ENVS=()
 
 . <(. "${DT_VARS}/cargo/package/tetrix.sh"
-  echo "APP=\"${BINS}\""
   echo "BINS_DIR=\"${BINS_DIR}\""
 )
 
@@ -15,6 +14,7 @@ ENVS=()
   echo "add_env TTX_PGUSER ${user}"
 )
 
+APP="tetrix-api"
 OPTS=
 BINARY="${BINS_DIR}/${APP}"
 PKILL_PATTERN="${BINARY}"

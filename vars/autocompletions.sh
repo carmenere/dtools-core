@@ -1,3 +1,10 @@
+autocomplete_add cmd_family_tmux \
+  "tetrix"
+
+autocomplete_add cmd_family_pg_install \
+  "pg"
+autocomplete_add cmd_family_clickhouse_install \
+  "clickhouse"
 autocomplete_add cmd_family_docker_image \
   "pg"
 autocomplete_add cmd_family_docker_network \

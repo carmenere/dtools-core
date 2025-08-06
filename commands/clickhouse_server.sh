@@ -1,5 +1,6 @@
-ch_install() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
+clickhouse_install() {(
+  local fname=clickhouse_install
+  set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
     exec_cmd "curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | ${SUDO} gpg --batch --yes --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg" || return $?
@@ -8,12 +9,12 @@ ch_install() {
     exec_cmd "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    exec_cmd "brew install '$(clickhouse_service)'"
+    exec_cmd "brew install '${SERVICE}'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99
   fi
-}
+)}
 
 ch_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -49,3 +50,12 @@ function cmd_family_m4_clickhouse() {
 }
 
 autocomplete_reg_family "cmd_family_m4_clickhouse"
+
+##################################################### AUTOCOMPLETE #####################################################
+function cmd_family_clickhouse_install() {
+  local methods=()
+  methods+=(clickhouse_install)
+  echo "${methods[@]}"
+}
+
+autocomplete_reg_family "cmd_family_clickhouse_install"

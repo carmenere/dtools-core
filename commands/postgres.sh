@@ -1,5 +1,6 @@
-function pg_install() {
+function pg_install() {(
   local fname=pg_install
+  set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" && \
     exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" && \
@@ -13,7 +14,7 @@ function pg_install() {
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
-}
+)}
 
 # For example, vars/conns/pg/admin.sh contains both ${port} and ${port_psql}, but ${port_psql} is for psql_XXX commands
 # The ${port} is for application
@@ -92,3 +93,12 @@ function cmd_family_m4_pg() {
 }
 
 autocomplete_reg_family "cmd_family_m4_pg"
+
+##################################################### AUTOCOMPLETE #####################################################
+function cmd_family_pg_install() {
+  local methods=()
+  methods+=(pg_install)
+  echo "${methods[@]}"
+}
+
+autocomplete_reg_family "cmd_family_pg_install"
