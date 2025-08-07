@@ -9,7 +9,7 @@ clickhouse_install() {(
     exec_cmd "${SUDO} apt-get install -y clickhouse-server clickhouse-client" || return $?
 
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    exec_cmd "brew install '${SERVICE}'"
+    exec_cmd "brew install '${OS_SERVICE}'"
 
   else
     echo "Unsupported OS: '$(os_kernel)'"; return 99

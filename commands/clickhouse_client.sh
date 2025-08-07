@@ -1,40 +1,44 @@
-_clickhouse_host() { if [ -n "${host}" ]; then echo "--host ${host}"; fi; }
-_clickhouse_port() { if [ -n "${port_client}" ]; then echo "--port ${port_client}"; fi; }
-_clickhouse_db() { if [ -n "${database}" ]; then echo "--database ${database}"; fi; }
-_clickhouse_user() { if [ -n "${user}" ]; then echo "--user ${user}"; fi; }
-_clickhouse_password() { if [ -n "${password}" ]; then echo "--password ${password}"; fi; }
-
 _clickhouse_connurl() {
-  echo "$(_clickhouse_host) $(_clickhouse_port) $(_clickhouse_db) $(_clickhouse_user) $(_clickhouse_password)"
+  host="--host ${host}"
+  port_client="--port ${port_client}"
+  database="--database ${database}"
+  user="--user ${user}"
+  password="--password ${password}"
+  echo "${host} ${port_client} ${database} ${user} ${password}"
 }
 
 clickhouse_conn() {(
   set -eu
   . "${DT_VARS}/conns/clickhouse/$1.sh"
   . "${ACCOUNT}"
-  echo "$(_clickhouse_connurl)"
-  ${TERMINAL} ${SERVICE_ID} ${CLIENT} $(_clickhouse_connurl)
+  connurl="$(_clickhouse_connurl)"
+  ${TERMINAL} ${SERVICE} ${CLIENT} ${connurl}
 )}
 
-m4_clickhouse_query() {
-  (set -eu; . "${DT_VARS}/conns/accounts/clickhouse/$2.sh" &&
-    M4_TVARS=${DT_M4}/clickhouse/ql/vars.m4
-    M4_IN="${DT_M4}/clickhouse/ql/$1"
-    M4_OUT=
-    declare -A envs
-    ENVS=()
-    add_env M4_USER ${user}
-    add_env M4_PASSWORD ${password}
-    add_env M4_DATABASE ${database}
-    _m4
-  )
+m4_clickhouse_query() {(
+  set -eu; . "${DT_VARS}/conns/clickhouse/$2.sh"
+  _m4_clickhouse_query $1
+)}
+
+_m4_clickhouse_query() {
+  M4_TVARS=${DT_M4}/clickhouse/ql/vars.m4
+  M4_IN="${DT_M4}/clickhouse/ql/$1"
+  M4_OUT=
+  declare -A envs
+  ENVS=()
+  add_env M4_USER ${user}
+  add_env M4_PASSWORD ${password}
+  add_env M4_DATABASE ${database}
+  _m4
 }
 
 _clickhouse_exec() {
-  local query=$(echo "$(m4_clickhouse_query $1 $2)")
+  . "${DT_VARS}/conns/clickhouse/$2.sh"
+  local query=$(echo "$(_m4_clickhouse_query $1)")
   local query=$(escape_dollar "$(escape_quote "${query}")")
-  . "${DT_VARS}/conns/clickhouse/$2.sh" && . "${CONN}"
-  ${EXEC} ${SERVICE_ID} ${CLIENT} "$(_clickhouse_connurl) --multiquery $'${query}'"
+  . "${AUX_CONN}"
+  connurl="$(_clickhouse_connurl)"
+  ${EXEC} ${SERVICE} ${CLIENT} "${connurl} --multiquery $'${query}'"
 }
 
 clickhouse_create_user() {( set -eu; _clickhouse_exec "create_user.sql" $1 )}
@@ -44,12 +48,12 @@ clickhouse_drop_db() {( set -eu; _clickhouse_exec "drop_db.sql" $1 )}
 
 clickhouse_grant_user() {(
   set -eu; . "${DT_VARS}/conns/clickhouse/$1.sh"
-  _clickhouse_exec $(. "${ACCOUNT}" && echo ${GRANT}) $1
+  _clickhouse_exec ${GRANT} $1
 )}
 
 clickhouse_revoke_user() {(
   set -eu; . "${DT_VARS}/conns/clickhouse/$1.sh"
-  _clickhouse_exec $(. "${ACCOUNT}" && echo ${REVOKE}) $1
+  _clickhouse_exec ${REVOKE} $1
 )}
 
 clickhouse_init() {(
@@ -64,6 +68,10 @@ clickhouse_clean() {(
   clickhouse_drop_db ${MIGRATOR}
   clickhouse_drop_user ${MIGRATOR}
 )}
+
+clickhouse_reinit() {
+  clickhouse_init $1 && clickhouse_clean $1
+}
 
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_clickhouse() {
@@ -82,6 +90,7 @@ cmd_family_clickhouse_batch() {
   local methods=()
   methods+=(clickhouse_init)
   methods+=(clickhouse_clean)
+  methods+=(clickhouse_reinit)
   echo "${methods[@]}"
 }
 

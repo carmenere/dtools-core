@@ -1,21 +1,21 @@
 brew_start() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd brew services start "${SERVICE}"
+  exec_cmd brew services start "${OS_SERVICE}"
 )}
 
 brew_stop() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd brew services stop "${SERVICE}"
+  exec_cmd brew services stop "${OS_SERVICE}"
 )}
 
 brew_restart() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd brew services restart "${SERVICE}"
+  exec_cmd brew services restart "${OS_SERVICE}"
 )}
 
 brew_show() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd brew services info "${SERVICE}" --json
+  exec_cmd brew services info "${OS_SERVICE}" --json
 )}
 
 brew_show_all() { exec_cmd brew services list; }

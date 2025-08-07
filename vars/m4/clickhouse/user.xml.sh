@@ -4,7 +4,7 @@
 )
 
 . <(
-  . ${DT_VARS}/conns/accounts/clickhouse/admin.sh
+  . ${DT_VARS}/conns/clickhouse/admin.sh
   echo "M4_OUT=$(ch_user.xml)"
   echo "M4_PASSWORD=${password}"
   echo "M4_USER=${user}"

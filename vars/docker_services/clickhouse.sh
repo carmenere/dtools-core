@@ -1,7 +1,9 @@
 . ${DT_VARS}/docker_services/defaults.sh
 
-# It will be name of container
+# Docker service and OS service must share the same SERVICE, because it is used in conns
 SERVICE="clickhouse"
+# By default, SERVICE is a name of container
+CONTAINER="${SERVICE}"
 
 . <(set -ue; . ${DT_VARS}/docker_images/clickhouse.sh
   echo "IMAGE=${IMAGE}"
@@ -22,7 +24,7 @@ CLIENT="clickhouse-client"
 
 add_publish "${PORT_CONN_HTTP}:${PORT_BIND_HTTP}/tcp"
 
-. <(set -ue; . ${DT_VARS}/conns/accounts/clickhouse/admin.sh
+. <(set -ue; . ${DT_VARS}/conns/clickhouse/_admin.sh
   echo "add_run_env CLICKHOUSE_DB ${database}"
   echo "add_run_env CLICKHOUSE_PASSWORD ${password}"
   echo "add_run_env CLICKHOUSE_USER ${user}"

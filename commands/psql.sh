@@ -10,57 +10,69 @@ _psql_sudo() {
   fi
 }
 
-_psql_host() { if [ -n "${host}" ]; then echo "PGHOST=${host}"; fi; }
-_psql_port() { if [ -n "${port_psql}" ]; then echo "PGPORT=${port_psql}"; fi; }
-_psql_user() { if [ -n "${user}" ]; then echo "PGUSER=${user}"; fi; }
-_psql_password() { if [ -n "${password}" ]; then echo "PGPASSWORD=${password}"; fi }
-_psql_db() { if [ -n "${database}" ]; then echo "PGDATABASE=${database}"; fi }
-
-_pg_connurl() { echo "$(_psql_host) $(_psql_port) $(_psql_db) $(_psql_user) $(_psql_password)"; }
-_pg_local_connurl() { echo "$(_psql_port) $(_psql_db) $(_psql_user)"; }
+_pg_connurl() {
+  declare -A envs && ENVS=()
+  add_env PGHOST ${host} && add_env PGPORT ${port_psql} && add_env PGDATABASE ${database} && \
+  add_env PGUSER ${user} && add_env PGPASSWORD ${password} && \
+  echo "$(inline_envs)"
+}
+_pg_local_connurl() {
+  declare -A envs && ENVS=()
+  add_env PGPORT ${port_psql} && add_env PGUSER ${user} && add_env PGDATABASE ${database} && \
+  echo "$(inline_envs)"
+}
 
 psql_conn() {(
   set -eu
   . "${DT_VARS}/conns/pg/$1.sh"
-  . "${ACCOUNT}"
-  echo "$(_pg_connurl)"
-  ${TERMINAL} ${SERVICE_ID} $(_pg_connurl) ${PSQL}
+  connurl=$(_pg_connurl)
+  ${TERMINAL} ${SERVICE} ${connurl} ${PSQL}
 )}
 
 psql_local_conn() {(
   set -eu
   . "${DT_VARS}/conns/pg/$1.sh"
-  . "${ACCOUNT}"
-  echo "$(_pg_connurl)"
-  ${TERMINAL} ${SERVICE_ID} $(_psql_sudo) $(_pg_local_connurl) ${PSQL}
+  connurl=$(_pg_local_connurl)
+  sudo=$(_psql_sudo)
+  ${TERMINAL} ${SERVICE} ${sudo} ${connurl} ${PSQL}
 )}
 
-m4_psql_query() {
-  (set -eu; . "${DT_VARS}/conns/accounts/pg/$2.sh" &&
-    M4_TVARS=${DT_M4}/pg/sql/vars.m4
-    M4_IN="${DT_M4}/pg/sql/$1"
-    M4_OUT=
-    declare -A envs
-    ENVS=()
-    add_env M4_USER ${user}
-    add_env M4_PASSWORD ${password}
-    add_env M4_DATABASE ${database}
-    _m4
-  )
+m4_psql_query() {(
+  set -eu; . "${DT_VARS}/conns/pg/$2.sh"
+  _m4_psql_query $1
+)}
+
+_m4_psql_query() {
+  M4_TVARS=${DT_M4}/pg/sql/vars.m4
+  M4_IN="${DT_M4}/pg/sql/$1"
+  M4_OUT=
+  declare -A envs
+  ENVS=()
+  add_env M4_USER ${user}
+  add_env M4_PASSWORD ${password}
+  add_env M4_DATABASE ${database}
+  _m4
 }
 
 _psql_gexec() {
-  local query=$(echo "$(m4_psql_query $1 $2)")
+  . "${DT_VARS}/conns/pg/$2.sh"
+  local query=$(echo "$(_m4_psql_query $1)")
   local query=$(escape_dollar "$(escape_quote "${query}")")
-  . "${DT_VARS}/conns/pg/$2.sh" && . "${CONN}"
-  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
+  if [ -z "${AUX_CONN}" ]; then dt_error "_psql_gexec" "The variable ${BOLD}AUX_CONN${RESET} doesn't set for account $2"; return 99; fi
+  . "${AUX_CONN}"
+  connurl=$(_pg_connurl)
+  ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | ${connurl} ${PSQL}"
 }
 
 _psql_gexec_local() {
-  local query=$(echo "$(m4_psql_query $1 $2)")
+  . "${DT_VARS}/conns/pg/$2.sh"
+  local query=$(echo "$(_m4_psql_query $1)")
   local query=$(escape_dollar "$(escape_quote "${query}")")
-  . "${DT_VARS}/conns/pg/$2.sh" && . "${CONN}"
-  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_psql_sudo) $(_pg_local_connurl) ${PSQL}"
+  # admin has no AUX_CONN, and we connect to db behalf admin itself
+  if [ -n "${AUX_CONN}" ]; then . "${AUX_CONN}"; fi
+  connurl=$(_pg_local_connurl)
+  sudo=$(_psql_sudo)
+  ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | ${sudo} ${connurl} ${PSQL}"
 }
 
 psql_alter_role_password() {( set -eu; _psql_gexec_local "alter_role_password.sql" $1 )}
@@ -72,15 +84,18 @@ psql_drop_db() {( set -eu; _psql_gexec "drop_db.sql" $1 )}
 
 psql_grant_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  local query=$(echo "$(m4_psql_query $(. "${ACCOUNT}" && echo ${GRANT}) $1)")
+  local query=$(echo "$(m4_psql_query "${GRANT}" $1)")
   local query=$(escape_dollar "$(escape_quote "${query}")")
-  . "${CONN}" && database=$(. "${ACCOUNT}" && echo ${database})
-  ${EXEC} ${SERVICE_ID} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
+  local _database=${database}
+  . "${AUX_CONN}"
+  # during connection we must use db (${_database}) from actual account (conns/pg/$1.sh), not from AUX_CONN
+  local database=${_database}
+  ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | $(_pg_connurl) ${PSQL}"
 )}
 
 psql_revoke_user() {(
   set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_gexec $(. "${ACCOUNT}" && echo ${REVOKE}) $1
+  _psql_gexec "${REVOKE}" $1
 )}
 
 psql_init() {(
@@ -91,12 +106,17 @@ psql_init() {(
   psql_create_user ${APP}
   psql_grant_user ${APP}
 )}
+
 psql_clean() {(
   set -eu; . "${DT_VARS}/conns/$1/batch.sh"
   psql_drop_db ${MIGRATOR}
   psql_drop_user ${MIGRATOR}
   psql_drop_user ${APP}
 )}
+
+psql_reinit() {
+  psql_clean $1 && psql_init $1
+}
 
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_psql() {
@@ -118,6 +138,7 @@ cmd_family_psql_batch() {
   local methods=()
   methods+=(psql_init)
   methods+=(psql_clean)
+  methods+=(psql_reinit)
   echo "${methods[@]}"
 }
 

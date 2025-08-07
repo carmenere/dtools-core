@@ -19,5 +19,3 @@ OPTS=
 BINARY="${BINS_DIR}/${APP}"
 PKILL_PATTERN="${BINARY}"
 LOG_FILE="${DT_LOGS}/${APP}.logs"
-
-dt_debug "apps" "APP=${APP}; BINS_DIR=${BINS_DIR}; "

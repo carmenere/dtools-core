@@ -10,7 +10,7 @@ function pg_install() {(
       postgresql-server-dev-${MAJOR} \
       libpq-dev" || return $?
   elif [ "$(os_kernel)" = "Darwin" ]; then
-    exec_cmd "brew install ${SERVICE}"
+    exec_cmd "brew install ${OS_SERVICE}"
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
@@ -30,7 +30,7 @@ pg_service() {
 
 pg_postgresql.conf() {
   if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${SERVICE}/postgresql.conf"
+    echo "$(brew_prefix)/var/${OS_SERVICE}/postgresql.conf"
   else
     echo "/etc/postgresql/${MAJOR}/main/postgresql.conf"
   fi
@@ -38,7 +38,7 @@ pg_postgresql.conf() {
 
 pg_pg_hba.conf() {
   if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${SERVICE}/pg_hba.conf"
+    echo "$(brew_prefix)/var/${OS_SERVICE}/pg_hba.conf"
   else
     echo "/etc/postgresql/${MAJOR}/main/pg_hba.conf"
   fi

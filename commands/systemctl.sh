@@ -1,21 +1,21 @@
 systemctl_start() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl start "${SERVICE}"
+  exec_cmd systemctl start "${OS_SERVICE}"
 )}
 
 systemctl_stop() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl stop "${SERVICE}"
+  exec_cmd systemctl stop "${OS_SERVICE}"
 )}
 
 systemctl_restart() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl restart "${SERVICE}"
+  exec_cmd systemctl restart "${OS_SERVICE}"
 )}
 
 systemctl_show() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl status "${SERVICE}"
+  exec_cmd systemctl status "${OS_SERVICE}"
 )}
 
 systemctl_show_all() { systemctl list-units --type service --all | cat; }

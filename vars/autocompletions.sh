@@ -18,9 +18,9 @@ autocomplete_add cmd_family_psql_batch \
 autocomplete_add cmd_family_m4_pg \
   "pg"
 autocomplete_add cmd_family_brew \
-  "pg"
+  "pg" "clickhouse"
 autocomplete_add cmd_family_systemctl \
-  "pg"
+  "pg" "clickhouse"
 autocomplete_add cmd_family_sqlx \
   "tetrix"
 autocomplete_add cmd_family_cargo_crates \

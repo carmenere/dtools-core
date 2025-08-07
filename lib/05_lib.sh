@@ -133,7 +133,6 @@ inline_envs() {
   result=()
   for var in ${ENVS[@]}; do
     val=${envs["${var}"]}
-    dt_debug ${fname} "var=${var}; val=${val}"
     val=$(ser_val "${val}")
     result+=("${var}=${val}")
   done

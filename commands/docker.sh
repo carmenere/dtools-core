@@ -110,45 +110,45 @@ docker_check() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && service_check )}
 docker_exec_i() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
   shift
-  exec_cmd "docker exec -i ${SERVICE} /bin/sh << EOF\n$@\nEOF"
+  exec_cmd "docker exec -i ${CONTAINER} /bin/sh << EOF\n$@\nEOF"
 )}
 docker_exec_it() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
   shift
-  exec_cmd "docker exec -ti ${SERVICE} /bin/sh -c \"$@\""
+  exec_cmd "docker exec -ti ${CONTAINER} /bin/sh -c \"$@\""
 )}
 docker_exec_sh() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
   shift
-  exec_cmd "docker exec -ti ${SERVICE} /bin/sh"
+  exec_cmd "docker exec -ti ${CONTAINER} /bin/sh"
 )}
-docker_logs() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker logs "${SERVICE}" )}
+docker_logs() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker logs "${CONTAINER}" )}
 docker_logs_save_to_logfile() {(
   set -eu; . "${DOCKER_SERVICES}/$1.sh"
-  exec_cmd docker logs "${SERVICE}" '>' "${DT_LOGS}/container-${SERVICE}.log" '2>&1'
+  exec_cmd docker logs "${CONTAINER}" '>' "${DT_LOGS}/container-${CONTAINER}.log" '2>&1'
 )}
-docker_rm() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker rm --force ${SERVICE} )}
-docker_start() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker start ${SERVICE} )}
-docker_status() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker ps -a --filter name="^${SERVICE}$" )}
-docker_stop() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker stop ${SERVICE} )}
-docker_ps() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd "docker ps -a --filter name="^${SERVICE}$"" )}
+docker_rm() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker rm --force ${CONTAINER} )}
+docker_start() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker start ${CONTAINER} )}
+docker_status() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker ps -a --filter name="^${CONTAINER}$" )}
+docker_stop() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd docker stop ${CONTAINER} )}
+docker_ps() {( set -eu; . "${DOCKER_SERVICES}/$1.sh" && exec_cmd "docker ps -a --filter name="^${CONTAINER}$"" )}
 docker_run() {(
   set -eu
   local id fname=docker_run
   . "${DOCKER_SERVICES}/$1.sh" || return $?
   docker_network_create ${BRIDGE} || return $?
-  id="$(exec_cmd "docker ps -aq --filter name="^${SERVICE}$" --filter status=running")" || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^${CONTAINER}$" --filter status=running")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}${SERVICE}${RESET} with id='${id}' is running, skip run."
+    dt_info ${fname} "Container ${BOLD}${CONTAINER}${RESET} with id='${id}' is running, skip run."
     return 0
   fi
-  id="$(exec_cmd "docker ps -aq --filter name="^${SERVICE}$" --filter status=exited --filter status=created")" || return $?
+  id="$(exec_cmd "docker ps -aq --filter name="^${CONTAINER}$" --filter status=exited --filter status=created")" || return $?
   if [ -n "${id}" ]; then
-    dt_info ${fname} "Container ${BOLD}${SERVICE}${RESET} with id='${id}' was created but is stopped now, so start it."
-    exec_cmd docker start ${SERVICE} || return $?
+    dt_info ${fname} "Container ${BOLD}${CONTAINER}${RESET} with id='${id}' was created but is stopped now, so start it."
+    exec_cmd docker start ${CONTAINER} || return $?
     return 0
   fi
-  exec_cmd docker run ${FLAGS} --name ${SERVICE} $(ser_run_envs) ${PUBLISH} ${RM} --restart ${RESTART} \
+  exec_cmd docker run ${FLAGS} --name ${CONTAINER} $(ser_run_envs) ${PUBLISH} ${RM} --restart ${RESTART} \
       --network ${BRIDGE} ${IMAGE} "${COMMAND}"
 )}
 
