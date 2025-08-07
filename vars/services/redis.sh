@@ -1,19 +1,19 @@
 MODE=docker
 MODE=host
 
-MAJOR=17
-MINOR=5
+MAJOR=7
+MINOR=2
+PATCH=4
 
-SERVICE="pg"
-OS_SERVICE=$(pg_service)
+SERVICE="redis"
+OS_SERVICE=$(redis_service)
 
-BIN_DIR=$(pg_bin_dir)
 HOST_BIND="localhost"
-PORT_BIND="5555"
+PORT_BIND="6379"
 HOST_CONN="${HOST_BIND}"
 PORT_CONN="${PORT_BIND}"
 
-CLIENT="${BIN_DIR}/psql"
+CLIENT=redis-cli
 
 EXEC="host_exec"
 TERMINAL="host_exec"

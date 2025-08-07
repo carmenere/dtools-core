@@ -1,21 +1,21 @@
-. <(set -eu; . ${DT_VARS}/services/pg.sh
+. <(set -eu; . ${DT_VARS}/services/rabbitmq.sh
   echo "MODE=${MODE}"
   echo "SERVICE=${SERVICE}"
   echo "port_app=${PORT_CONN}"
-  echo "port_client=${PORT_BIND}"
+  echo "port_client=${PORT_CONN_MGM}"
   echo "host=${HOST_CONN}"
   echo "EXEC=${EXEC}"
   echo "TERMINAL=${TERMINAL}"
-  echo "CLIENT=${CLIENT}"
+#  echo "CLIENT=${CLIENT}"
 )
 
 if [ "${MODE}" = "docker" ]; then
-  . <(set -eu; . ${DT_VARS}/docker_services/pg.sh
+  . <(set -eu; . ${DT_VARS}/docker_services/rabbitmq.sh
     echo "port_app=${PORT_CONN}"
-    echo "port_client=${PORT_BIND}"
+    echo "port_client=${PORT_CONN_MGM}"
     echo "host=${HOST_CONN}"
     echo "EXEC=${EXEC}"
     echo "TERMINAL=${TERMINAL}"
-    echo "CLIENT=${CLIENT}"
+#    echo "CLIENT=${CLIENT}"
   )
 fi

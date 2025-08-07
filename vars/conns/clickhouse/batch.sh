@@ -1,2 +1,2 @@
 ADMIN="admin"
-MIGRATOR="migrator"
+MIGRATOR="app"

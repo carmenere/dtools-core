@@ -1,6 +1,6 @@
-user="dt_admin"
+user="default"
 password="1234567890"
-database="default"
+database=0
 
 GRANT=
 REVOKE=

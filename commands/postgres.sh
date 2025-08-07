@@ -16,9 +16,9 @@ function pg_install() {(
   fi
 )}
 
-# For example, vars/conns/pg/admin.sh contains both ${port} and ${port_psql}, but ${port_psql} is for psql_XXX commands
-# The ${port} is for application
-pg_conn_url() { echo "postgres://${user}:${password}@${host}:${port}/${database}"; }
+# For example, vars/conns/pg/admin.sh contains both ${port_app} and ${port_client}, but ${port_client} is for psql_XXX commands
+# The ${port_app} is for application
+pg_conn_url() { echo "postgres://${user}:${password}@${host}:${port_app}/${database}"; }
 
 pg_service() {
   if [ "$(os_name)" = "macos" ]; then
@@ -67,19 +67,19 @@ pg_bin_dir() {
   echo "${bind_dir}"
 }
 
-pg_add_path() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  path="${PATH}"
-  echo "${path}" | grep -E -s "^$(bin_dir)" 1>/dev/null 2>&1
-  if [ $? != 0 ] && [ -n "$(bin_dir)" ]; then
-    # Cut all duplicates of $(bin_dir) from path
-    path="$(echo "${path}" | sed -E -e ":label; s|(.*):$(bin_dir)(.*)|\1\2|g; t label;")"
-    # Prepend $(bin_dir)
-    dt_debug ${fname} "$(bin_dir):${path}"
-  else
-    dt_debug ${fname} "${path}"
-  fi
-}
+#pg_add_path() {
+#  local fname=$(fname "${FUNCNAME[0]}" "$0")
+#  path="${PATH}"
+#  echo "${path}" | grep -E -s "^${BIN_DIR}" 1>/dev/null 2>&1
+#  if [ $? != 0 ] && [ -n "${BIN_DIR}" ]; then
+#    # Cut all duplicates of ${BIN_DIR} from path
+#    path="$(echo "${path}" | sed -E -e ":label; s|(.*):${BIN_DIR}(.*)|\1\2|g; t label;")"
+#    # Prepend ${BIN_DIR}
+#    dt_debug ${fname} "${BIN_DIR}:${path}"
+#  else
+#    dt_debug ${fname} "${path}"
+#  fi
+#}
 
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
