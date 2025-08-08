@@ -1,6 +1,6 @@
 function app_start() {(
-  local non_empty fname=$(fname "${FUNCNAME[0]}" "$0")
   set -eu
+  local non_empty fname=app_start
   . "${DT_VARS}/apps/$1.sh"
   non_empty=(APP BINARY LOG_FILE)
   for v in ${non_empty[@]}; do if [ -z $(eval echo "\$${v}") ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; return 99; fi; done
@@ -9,8 +9,8 @@ function app_start() {(
 )}
 
 function app_stop() {(
-  local non_empty fname=$(fname "${FUNCNAME[0]}" "$0")
   set -eu
+  local non_empty fname=app_stop
   . "${DT_VARS}/apps/$1.sh"
   non_empty=(APP PKILL_PATTERN)
   for v in ${non_empty[@]}; do if [ -z $(eval echo "\$${v}") ]; then dt_error ${fname} "Var ${BOLD}${v}${RESET} is empty"; return 99; fi; done

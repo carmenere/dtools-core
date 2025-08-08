@@ -1,4 +1,3 @@
-MODE=docker
 MODE=host
 
 MAJOR=17
@@ -17,3 +16,9 @@ CLIENT="${BIN_DIR}/psql"
 
 EXEC="host_exec"
 TERMINAL="host_exec"
+
+PREPARE=pg_prepare
+INSTALL=pg_install
+
+LOCALS=${DT_LOCAL_VARS}/services/${SERVICE}.sh
+source_locals ${LOCALS}

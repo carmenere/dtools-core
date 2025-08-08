@@ -32,7 +32,6 @@ cg_clippy_report() { if [ -n "${CLIPPY_REPORT}" ]; then echo ">${CLIPPY_REPORT}"
 #   ${CARGO_TARGET_DIR}/${BUILD_MODE}
 cg_bin_dir() {
   local bin_dir
-  dt_debug cg_bin_dir "CARGO_TARGET_DIR=${CARGO_TARGET_DIR}"
   if [ -n "${CARGO_TARGET_DIR}" ]; then
     bin_dir="${CARGO_TARGET_DIR}"
   else
@@ -41,7 +40,6 @@ cg_bin_dir() {
   if [ -n "${CARGO_BUILD_TARGET}" ]; then
     bin_dir="${bin_dir}/${CARGO_BUILD_TARGET}"
   fi
-  dt_debug cg_bin_dir "\${bin_dir}/\${BUILD_MODE}=${bin_dir}/${BUILD_MODE}"
   echo "${bin_dir}/${BUILD_MODE}"
 }
 

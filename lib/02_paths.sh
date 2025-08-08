@@ -4,7 +4,7 @@ dt_paths() {
   # Paths that depend on DTOOLS
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
-  export DT_LOCALS=${DTOOLS}/locals
+  export DT_LOCAL_VARS=${DTOOLS}/locals
   export DT_STANDS=${DTOOLS}/stands
   export DT_VARS=${DTOOLS}/core/vars
   # Paths that depend on DT_ARTEFACTS
@@ -19,7 +19,3 @@ dt_paths() {
   if [ ! -d "${DT_TOOLCHAIN}" ]; then mkdir -p ${DT_TOOLCHAIN}; fi
   if [ ! -d "${DT_M4_OUT}" ]; then mkdir -p ${DT_M4_OUT}; fi
 }
-
-#dt_defaults() {
-#  DT_STAND='n'
-#}

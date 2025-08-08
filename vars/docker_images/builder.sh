@@ -8,3 +8,6 @@ COMMAND="/bin/bash"
 FLAGS="-ti"
 RM="--rm"
 RESTART="no"
+
+LOCALS=${DT_LOCAL_VARS}/docker_images/builder.sh
+source_locals ${LOCALS}

@@ -27,3 +27,6 @@ add_publish "${PORT_CONN}:${PORT_BIND}/tcp"
   echo "add_run_env POSTGRES_DB \"${database}\""
   echo "add_run_env POSTGRES_PASSWORD \"${password}\""
 )
+
+LOCALS=${DT_LOCAL_VARS}/docker_images/${SERVICE}.sh
+source_locals ${LOCALS}

@@ -32,3 +32,5 @@ add_publish "${PORT_CONN_HTTP}:${PORT_BIND_HTTP}/tcp"
 
 add_run_env CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT 1
 
+LOCALS=${DT_LOCAL_VARS}/docker_images/${SERVICE}.sh
+source_locals ${LOCALS}

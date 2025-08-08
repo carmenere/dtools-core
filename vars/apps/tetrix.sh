@@ -6,8 +6,7 @@ ENVS=()
 )
 
 . <(. "${DT_VARS}/conns/pg/app.sh"
-  . "${ACCOUNT}"
-  echo "add_env TTX_PGPORT ${port}"
+  echo "add_env TTX_PGPORT ${port_app}"
   echo "add_env TTX_PGHOST ${host}"
   echo "add_env TTX_PGDATABASE ${database}"
   echo "add_env TTX_PGPASSWORD ${password}"
@@ -19,3 +18,6 @@ OPTS=
 BINARY="${BINS_DIR}/${APP}"
 PKILL_PATTERN="${BINARY}"
 LOG_FILE="${DT_LOGS}/${APP}.logs"
+
+LOCALS=${DT_LOCAL_VARS}/apps/${APP}.sh
+source_locals ${LOCALS}

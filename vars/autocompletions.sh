@@ -1,3 +1,7 @@
+
+autocomplete_add cmd_family_service \
+  "pg" "clickhouse" "redis" "rabbitmq"
+
 autocomplete_add cmd_family_pg_install \
   "pg"
 autocomplete_add cmd_family_clickhouse_install \
@@ -8,11 +12,11 @@ autocomplete_add cmd_family_redis_install \
   "redis"
 
 autocomplete_add cmd_family_docker_image \
-  "pg"
+  "pg" "clickhouse" "redis" "rabbitmq"
 autocomplete_add cmd_family_docker_network \
   "example"
 autocomplete_add cmd_family_docker_service \
-  "pg" "clickhouse" "redis"
+  "pg" "clickhouse" "redis" "rabbitmq"
 
 autocomplete_add cmd_family_psql \
   "admin" "migrator" "app"
@@ -25,9 +29,9 @@ autocomplete_add cmd_family_m4_pg \
   "pg"
 
 autocomplete_add cmd_family_brew \
-  "pg" "clickhouse"
+  "pg" "clickhouse" "redis" "rabbitmq"
 autocomplete_add cmd_family_systemctl \
-  "pg" "clickhouse"
+  "pg" "clickhouse" "redis" "rabbitmq"
 
 autocomplete_add cmd_family_sqlx \
   "tetrix"

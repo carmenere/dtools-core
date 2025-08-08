@@ -21,3 +21,6 @@ PORT_BIND=6379
 CLIENT=redis-cli
 
 add_publish "${PORT_CONN}:${PORT_BIND}/tcp"
+
+LOCALS=${DT_LOCAL_VARS}/docker_images/${SERVICE}.sh
+source_locals ${LOCALS}

@@ -1,4 +1,3 @@
-MODE=docker
 MODE=host
 
 MAJOR=7
@@ -17,3 +16,6 @@ CLIENT=redis-cli
 
 EXEC="host_exec"
 TERMINAL="host_exec"
+
+LOCALS=${DT_LOCAL_VARS}/services/${SERVICE}.sh
+source_locals ${LOCALS}

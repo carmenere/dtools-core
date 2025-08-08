@@ -1,4 +1,3 @@
-MODE=docker
 MODE=host
 
 MAJOR=3
@@ -20,3 +19,6 @@ EXCHANGES="ems"
 
 EXEC="host_exec"
 TERMINAL="host_exec"
+
+LOCALS=${DT_LOCAL_VARS}/services/${SERVICE}.sh
+source_locals ${LOCALS}

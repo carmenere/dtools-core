@@ -1,5 +1,5 @@
 _psql_sudo() {
-  if [ "$(service_mode)" = "docker" ]; then
+  if [ "${MODE}" = "docker" ]; then
     echo ""
     return 0
   fi

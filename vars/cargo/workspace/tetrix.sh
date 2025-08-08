@@ -6,3 +6,6 @@ MANIFEST_DIR="${DT_PROJECT}"
 
 add_env BUILD_VERSION "$(git_build_version)"
 add_env RUSTUP_TOOLCHAIN "${RUSTUP_TOOLCHAIN}"
+
+LOCALS=${DT_LOCAL_VARS}/cargo/workspace/tetrix.sh
+source_locals ${LOCALS}

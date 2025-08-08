@@ -10,7 +10,7 @@
   echo "CLIENT=${CLIENT}"
 )
 
-if [ "$(service_mode)" = "docker" ]; then
+if [ "${MODE}" = "docker" ]; then
   . <(set -eu; . ${DT_VARS}/docker_services/clickhouse.sh
     echo "port_app=${PORT_CONN_HTTP}"
     echo "port_client=${PORT_BIND}"

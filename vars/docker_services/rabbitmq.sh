@@ -24,3 +24,6 @@ HOST_BIND_MGM="localhost"
 PORT_BIND_MGM=15672
 
 add_publish "${PORT_CONN}:${PORT_BIND}/tcp"
+
+LOCALS=${DT_LOCAL_VARS}/docker_images/${SERVICE}.sh
+source_locals ${LOCALS}

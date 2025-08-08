@@ -2,9 +2,9 @@ function pg_install() {(
   local fname=pg_install
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list" && \
-    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -" && \
-    exec_cmd "${SUDO} apt-get update" && \
+    exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"
+    exec_cmd "${SUDO} wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | ${SUDO} apt-key add -"
+    exec_cmd "${SUDO} apt-get update"
     exec_cmd "${SUDO} apt-get -y install \
       postgresql-${MAJOR} \
       postgresql-server-dev-${MAJOR} \
@@ -13,6 +13,16 @@ function pg_install() {(
     exec_cmd "brew install ${OS_SERVICE}"
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
+  fi
+)}
+
+pg_post_install() {(
+  local fname=pg_post_install
+  if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
+    if ! pg_lsclusters | cut -d' ' -f 1 | grep -m 1 "${MAJOR}"; then
+      exec_cmd ${SUDO} pg_createcluster ${MAJOR} main
+      exec_cmd ${SUDO} pg_ctlcluster ${MAJOR} main start
+    fi
   fi
 )}
 
@@ -68,7 +78,7 @@ pg_bin_dir() {
 }
 
 #pg_add_path() {
-#  local fname=$(fname "${FUNCNAME[0]}" "$0")
+#  local fname=pg_add_path
 #  path="${PATH}"
 #  echo "${path}" | grep -E -s "^${BIN_DIR}" 1>/dev/null 2>&1
 #  if [ $? != 0 ] && [ -n "${BIN_DIR}" ]; then

@@ -95,34 +95,6 @@ get_func() {
   fi
 }
 
-function os_arch() {
-  echo $(uname -m)
-}
-
-function os_kernel() {
-  echo "$(uname -s)"
-}
-
-function os_name() {
-  if [ "$(os_kernel)" = "Linux" ] && [ -f "/etc/os-release" ]; then
-    echo $(. /etc/os-release && echo "${ID}")
-  elif [ "$(os_kernel)" = "Darwin" ]; then
-    echo "macos"
-  else
-    "$(os_kernel)"
-  fi
-}
-
-function os_codename() {
-  if [ "$(os_kernel)" = "Linux" ] && [ -f "/etc/os-release" ]; then
-    echo $(. /etc/os-release && echo "${VERSION_CODENAME}")
-  fi
-}
-
-function brew_prefix() {
-  echo $(brew --prefix)
-}
-
 add_env() {
   envs["$1"]="$2"
   ENVS+=("$1")
@@ -139,17 +111,18 @@ inline_envs() {
   echo "${result[@]}"
 }
 
-service_mode() {
-  local fname=mode
-  if [ "${MODE}" = "docker" ]; then
-    echo "docker"
-  elif [ "${MODE}" = "host" ]; then
-    echo "host"
-  else
-    dt_error ${fname} "Unknown mode: MODE=${MODE}"
-    return 99
-  fi
+source_locals() {
+  if [ -f "$1" ]; then . $1; fi
 }
+
+dump_vars() {(
+  VARS1="/tmp/dt_vars_before"
+  VARS2="/tmp/dt_vars_after"
+  declare -p | sort > "${VARS1}"
+  . $1
+  declare -p | sort > "${VARS2}"
+  diff --color "${VARS1}" "${VARS2}"
+)}
 
 function dt_sudo() {
   if [ "$(os_kernel)" = "Linux" ]; then
