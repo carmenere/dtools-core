@@ -1,5 +1,6 @@
 # RESTART = {no|always|unless-stopped}
 
+unset run_envs
 declare -A run_envs
 RUN_ENVS=()
 

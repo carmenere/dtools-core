@@ -97,18 +97,21 @@ m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_m4_pg() {
   local methods=()
-  methods+=(m4_postgresql.conf)
-  methods+=(m4_pg_hba.conf)
+
   echo "${methods[@]}"
 }
 
 autocomplete_reg_family "cmd_family_m4_pg"
 
 ##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_pg_install() {
+function cmd_family_pg_services() {
   local methods=()
   methods+=(pg_install)
+  methods+=($(cmd_family_pg_ctl))
+  methods+=(m4_postgresql.conf)
+  methods+=(m4_pg_hba.conf)
+  methods+=(postgis_install)
   echo "${methods[@]}"
 }
 
-autocomplete_reg_family "cmd_family_pg_install"
+autocomplete_reg_family "cmd_family_pg_services"

@@ -6,5 +6,5 @@ database=0
 
 AUX_CONN=${DT_VARS}/conns/redis/admin.sh
 
-LOCALS=${DT_LOCAL_VARS}/conns/clickhouse/app.sh
+LOCALS=${DT_LOCAL_VARS}/conns/redis/app.sh
 source_locals ${LOCALS}

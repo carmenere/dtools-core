@@ -24,21 +24,21 @@ _pg_local_connurl() {
 
 psql_conn() {(
   set -eu
-  . "${DT_VARS}/conns/pg/$1.sh"
+  . "${DT_VARS}/conns/$1/$2.sh"
   connurl=$(_pg_connurl)
   ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT}
 )}
 
 psql_local_conn() {(
   set -eu
-  . "${DT_VARS}/conns/pg/$1.sh"
+  . "${DT_VARS}/conns/$1/$2.sh"
   connurl=$(_pg_local_connurl)
   sudo=$(_psql_sudo)
   ${TERMINAL} ${SERVICE} ${sudo} ${connurl} ${CLIENT}
 )}
 
 m4_psql_query() {(
-  set -eu; . "${DT_VARS}/conns/pg/$2.sh"
+  set -eu; . "${DT_VARS}/conns/$2/$3.sh"
   _m4_psql_query $1
 )}
 
@@ -55,7 +55,7 @@ _m4_psql_query() {
 }
 
 _psql_aux_gexec() {
-  . "${DT_VARS}/conns/pg/$2.sh"
+  . "${DT_VARS}/conns/$2/$3.sh"
   local query=$(echo "$(_m4_psql_query $1)")
   local query=$(escape_dollar "$(escape_quote "${query}")")
   if [ -z "${AUX_CONN}" ]; then
@@ -68,9 +68,9 @@ _psql_aux_gexec() {
 }
 
 _psql_gexec_local() {
-  . "${DT_VARS}/conns/pg/$2.sh"
+  . "${DT_VARS}/conns/$2/$3.sh"
   local query=$(echo "$(_m4_psql_query $1)")
-  local query=$(escape_dollar "$(escape_quote "${query}")")
+  local query="$(escape_quote "${query}")"
   # admin has no AUX_CONN, and we connect to db behalf admin itself
   if [ -n "${AUX_CONN}" ]; then . "${AUX_CONN}"; fi
   connurl=$(_pg_local_connurl)
@@ -78,47 +78,47 @@ _psql_gexec_local() {
   ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | ${sudo} ${connurl} ${CLIENT}"
 }
 
-psql_alter_role_password() {( set -eu; _psql_gexec_local "alter_role_password.sql" $1 )}
-psql_drop_role_password() {( set -eu; _psql_aux_gexec "drop_role_password.sql" $1 )}
-psql_create_user() {( set -eu; _psql_aux_gexec "create_user.sql" $1 )}
-psql_drop_user() {( set -eu; _psql_aux_gexec "drop_user.sql" $1 )}
-psql_create_db() {( set -eu; _psql_aux_gexec "create_db.sql" $1 )}
-psql_drop_db() {( set -eu; _psql_aux_gexec "drop_db.sql" $1 )}
+psql_alter_role_password() {( set -eu; _psql_gexec_local "alter_role_password.sql" $1 $2 )}
+psql_drop_role_password() {( set -eu; _psql_aux_gexec "drop_role_password.sql" $1 $2 )}
+psql_create_user() {( set -eu; _psql_aux_gexec "create_user.sql" $1 $2 )}
+psql_drop_user() {( set -eu; _psql_aux_gexec "drop_user.sql" $1 $2 )}
+psql_create_db() {( set -eu; _psql_aux_gexec "create_db.sql" $1 $2 )}
+psql_drop_db() {( set -eu; _psql_aux_gexec "drop_db.sql" $1 $2 )}
 
 psql_grant_user() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  local query=$(echo "$(m4_psql_query "${GRANT}" $1)")
-  local query=$(escape_dollar "$(escape_quote "${query}")")
+  set -eu; . "${DT_VARS}/conns/$1/$2.sh"
+  local query=$(echo "$(m4_psql_query "${GRANT}" $1 $2)")
+  local query="$(escape_quote "${query}")"
   local _database=${database}
   . "${AUX_CONN}"
-  # during connection we must use db (${_database}) from actual account (conns/pg/$1.sh), not from AUX_CONN
+  # during connection we must use db (${_database}) from actual account (conns/$1/$2.sh), not from AUX_CONN
   local database=${_database}
   ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | $(_pg_connurl) ${CLIENT}"
 )}
 
 psql_revoke_user() {(
-  set -eu; . "${DT_VARS}/conns/pg/$1.sh"
-  _psql_aux_gexec "${REVOKE}" $1
+  set -eu; . "${DT_VARS}/conns/$1/$2.sh"
+  _psql_aux_gexec "${REVOKE}" $1 $2
 )}
 
 psql_init() {(
   set -eu; . "${DT_VARS}/conns/$1/batch.sh"
-  psql_create_db ${MIGRATOR}
-  psql_create_user ${MIGRATOR}
-  psql_grant_user ${MIGRATOR}
-  psql_create_user ${APP}
-  psql_grant_user ${APP}
+  psql_create_db $1 ${MIGRATOR}
+  psql_create_user $1 ${MIGRATOR}
+  psql_grant_user $1 ${MIGRATOR}
+  psql_create_user $1 ${APP}
+  psql_grant_user $1 ${APP}
 )}
 
 psql_clean() {(
   set -eu; . "${DT_VARS}/conns/$1/batch.sh"
-  psql_drop_db ${MIGRATOR}
-  psql_drop_user ${MIGRATOR}
-  psql_drop_user ${APP}
+  psql_drop_db $1 ${MIGRATOR}
+  psql_drop_user $1 ${MIGRATOR}
+  psql_drop_user $1 ${APP}
 )}
 
 psql_reinit() {
-  psql_clean $1 && psql_init $1
+  psql_clean $1 $2 && psql_init $1 $2
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
@@ -134,6 +134,7 @@ cmd_family_psql() {
   methods+=(psql_drop_user)
   methods+=(psql_grant_user)
   methods+=(psql_revoke_user)
+  methods+=($(cmd_family_dump_restore))
   echo "${methods[@]}"
 }
 
@@ -147,6 +148,24 @@ cmd_family_psql_batch() {
 
 autocomplete_reg_family "cmd_family_psql"
 autocomplete_reg_family "cmd_family_psql_batch"
+
+autocomplete_cmd_family_psql() {
+  local cur prev
+  local options
+  cur=${COMP_WORDS[COMP_CWORD]}
+  prev=${COMP_WORDS[COMP_CWORD-1]}
+  case ${COMP_CWORD} in
+    1)
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_pg_services]}" -- ${cur}))
+      ;;
+    2)
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_psql]}" -- ${cur}))
+      ;;
+    *)
+      COMPREPLY=()
+      ;;
+  esac
+}
 
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_m4_psql_query() {
@@ -167,6 +186,9 @@ autocomplete_cmd_family_m4_psql_query() {
       COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_m4_psql_query]}" -- ${cur}))
       ;;
     2)
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_pg_services]}" -- ${cur}))
+      ;;
+    3)
       COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_psql]}" -- ${cur}))
       ;;
     *)
