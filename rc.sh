@@ -3,7 +3,6 @@ export CORE_RC=$(realpath "${CORE_RC}") && \
 export CORE_RC_DIR="$(dirname "${CORE_RC}")" && \
 echo "CORE_RC=${CORE_RC}" && \
 . "${CORE_RC_DIR}/lib/rc.sh" && \
-
 dt_init "${CORE_RC_DIR}"
 
 err=$?

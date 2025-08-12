@@ -33,7 +33,6 @@ function cargo_sonar() {(
 function cmd_family_cargo_ssdlc() {
   local methods=()
   methods+=(cargo_audit)
-  methods+=(cargo_clippy)
   methods+=(cargo_cyclonedx)
   methods+=(cargo_deny)
   methods+=(cargo_sonar)

@@ -54,47 +54,6 @@ is_contained() {
   return 88
 }
 
-drop_vars_by_pref() {
-  local var pref=$1 fname=$(fname "${FUNCNAME[0]}" "$0")
-  err_if_empty ${fname} "pref" || return $?
-  dt_debug ${fname} "pref=${pref}"
-  env | awk -v pref="${pref}" -F'=' '{ if ($1 ~ pref) { printf "unset %s\n", $1; } }'
-}
-
-#dt_vars() {
-#  local var fname=$(fname "${FUNCNAME[0]}" "$0")
-#  DT_VARS=($(for var in ${DT_VARS[@]}; do echo "${var}"; done | sort))
-#  for var in ${DT_VARS[@]}; do val=$(escape_quote "$(eval echo "\$${var}")"); echo "${var}=$'${val}'"; done
-#}
-
-is_var_changed(){
-  local ecode var=$1 pvar new_val prev_val fname=$(fname "${FUNCNAME[0]}" "$0")
-  pvar="PREV_${var}"
-  err_if_empty ${fname} "var" && \
-  new_val="$(eval echo "\$${var}")" && \
-  prev_val="$(eval echo "\$${pvar}")" && \
-  err_if_empty ${fname} "new_val" && \
-  if ! declare -p ${pvar} >/dev/null 2>&1; then
-    ecode=0
-  elif [ "${prev_val}" != "${new_val}" ]; then
-    ecode=0
-  else
-    ecode=99
-  fi && \
-  eval "${pvar}=${new_val}" && \
-  return ${ecode}
-}
-
-get_func() {
-  local fname=$(fname "${FUNCNAME[0]}" "$0")
-  if ! declare -f "$1" >/dev/null 2>&1; then
-    dt_error "${fname}" "Function $1 doesn't exist"
-    return 99
-  else
-    echo "$1"
-  fi
-}
-
 add_env() {
   envs["$1"]="$2"
   ENVS+=("$1")
