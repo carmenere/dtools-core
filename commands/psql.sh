@@ -56,8 +56,10 @@ _m4_psql_query() {
 
 _psql_aux_gexec() {
   . "${DT_VARS}/conns/$2/$3.sh"
-  local query=$(echo "$(_m4_psql_query $1)")
-  local query=$(escape_dollar "$(escape_quote "${query}")")
+  local query=$(echo "$(escape_quote "$(_m4_psql_query $1)")")
+  if [ "${MODE}" = "docker" ]; then
+    query=$(escape_dollar "${query}")
+  fi
   if [ -z "${AUX_CONN}" ]; then
     dt_error "_psql_aux_gexec" "The variable ${BOLD}AUX_CONN${RESET} doesn't set for account $2"
     return 99

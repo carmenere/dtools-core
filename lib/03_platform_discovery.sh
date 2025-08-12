@@ -11,8 +11,6 @@ function os_name() {
     echo $(. /etc/os-release && echo "${ID}")
   elif [ "$(os_kernel)" = "Darwin" ]; then
     echo "macos"
-  else
-    "$(os_kernel)"
   fi
 }
 

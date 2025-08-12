@@ -1,4 +1,5 @@
 sleep_1() { exec_cmd "sleep 1"; }
+sleep_2() { exec_cmd "sleep 2"; }
 sleep_5() { exec_cmd "sleep 5"; }
 
 ser_val() {
