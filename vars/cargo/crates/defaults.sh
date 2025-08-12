@@ -1,0 +1,4 @@
+#CRATE_NAME=
+#CRATE_VERSION=
+
+FLAGS="--locked"

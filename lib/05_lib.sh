@@ -1,0 +1,93 @@
+sleep_1() { exec_cmd "sleep 1"; }
+sleep_2() { exec_cmd "sleep 2"; }
+sleep_5() { exec_cmd "sleep 5"; }
+
+ser_val() {
+  local val=$1
+  if echo "${val}" | grep "'" >/dev/null 2>&1; then
+    val="$(escape_quote "${val}")"
+    val="$'${val}'"
+  elif echo "${val}" | grep ' ' >/dev/null 2>&1; then
+    val="\"${val}\""
+  fi
+  echo "${val}"
+}
+
+inline_vals() {
+  local pref vals result val fname=$(fname "${FUNCNAME[0]}" "$0")
+  vals=($(echo "$1"))
+  [ -n "$2" ] && pref="$2 "
+  result=()
+  for val in ${vals[@]}; do
+    val=$(ser_val "${val}")
+    result+=("${pref}${val}")
+  done
+  echo "${result[@]}"
+}
+
+inline_vars() {
+  local pref result var val vars=($(echo "$1")) fname=$(fname "${FUNCNAME[0]}" "$0")
+  [ -n "$2" ] && pref="$2 "
+  result=()
+  for var in ${vars[@]}; do
+    val=$(${var})
+    dt_debug ${fname} "var=${var}; val=${val}"
+    if [ -z "${val}" ]; then continue; fi
+    val=$(ser_val "${val}")
+    result+=("${pref}${var}=${val}")
+  done
+  echo "${result[@]}"
+}
+
+escape_quote() { echo "$@" | sed -e "s/'/\\\\'/g"; }
+escape_dollar() { echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"; }
+
+is_contained() {
+  local item=$1 registry=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
+  err_if_empty ${fname} "item registry" || return $?
+  registry=($(echo $(eval echo \$${registry})))
+  for ritem in ${registry[@]};  do
+    if [ "${ritem}" = "${item}" ]; then
+      dt_debug ${fname} "HIT: ${BOLD}Item${RESET}=${item}"
+      return 0
+    fi
+  done
+  return 88
+}
+
+add_env() {
+  envs["$1"]="$2"
+  ENVS+=("$1")
+}
+
+inline_envs() {
+  local result var val fname=inline_envs
+  result=()
+  for var in ${ENVS[@]}; do
+    val=${envs["${var}"]}
+    val=$(ser_val "${val}")
+    result+=("${var}=${val}")
+  done
+  echo "${result[@]}"
+}
+
+source_locals() {
+  if [ -f "$1" ]; then . $1; fi
+}
+
+dump_vars() {(
+  VARS1="/tmp/dt_vars_before"
+  VARS2="/tmp/dt_vars_after"
+  declare -p | sort > "${VARS1}"
+  . $1
+  declare -p | sort > "${VARS2}"
+  diff --color "${VARS1}" "${VARS2}"
+)}
+
+function dt_sudo() {
+  if [ "$(os_kernel)" = "Linux" ]; then
+    echo "sudo"
+  fi
+}
+
+SUDO=$(dt_sudo)

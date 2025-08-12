@@ -1,0 +1,12 @@
+TMX_DEFAULT_CMD="$(which bash)"
+TMX_DEFAULT_TERM="xterm-256color"
+TMX_HISTORY_LIMIT=1000000
+TMX_TERM_SIZE="240x32"
+
+#TMX_DEFAULT_CMD="/bin/zsh"
+
+# tmux session name
+#TMX_SESSION=
+# WINDOW_NAME and START_CMD are different for each APP
+#TMX_WINDOW_NAME=
+#TMX_START_CMD=

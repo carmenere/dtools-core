@@ -1,0 +1,2 @@
+ADMIN="admin"
+MIGRATOR="app"
