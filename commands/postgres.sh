@@ -39,6 +39,14 @@ pg_service() {
   fi
 }
 
+pg_data_directory() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/var/${OS_SERVICE}/pg_hba.conf"
+  else
+    echo "/var/lib/postgresql/${MAJOR}/main"
+  fi
+}
+
 pg_postgresql.conf() {
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/var/${OS_SERVICE}/postgresql.conf"
@@ -90,7 +98,7 @@ pg_prepare() {(
 
   FILE=$(pg_pg_hba.conf)
   hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
-  m4_pg_hba.conf $1
+  m4_pg_hba.conf $1 || return $?
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
@@ -99,7 +107,7 @@ pg_prepare() {(
 
   FILE=$(pg_postgresql.conf)
   hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
-  m4_postgresql.conf $1
+  m4_postgresql.conf $1 || return $?
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
