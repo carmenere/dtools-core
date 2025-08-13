@@ -26,10 +26,10 @@ function redis_install() {(
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_redis_install() {
+function cmd_family_redis_services() {
   local methods=()
   methods+=(redis_install)
   echo "${methods[@]}"
 }
 
-autocomplete_reg_family "cmd_family_redis_install"
+autocomplete_reg_family "cmd_family_redis_services"

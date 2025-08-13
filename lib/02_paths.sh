@@ -5,8 +5,7 @@ dt_paths() {
   export DT_PROJECT=$(realpath "${DTOOLS}"/..)
   export DT_ARTEFACTS="${DTOOLS}/.artefacts"
   export DT_LOCAL_VARS=${DTOOLS}/locals
-  export DT_STANDS=${DTOOLS}/stands
-  export DT_VARS=${DTOOLS}/core/vars
+  export DT_VARS=${DTOOLS}/vars
   # Paths that depend on DT_ARTEFACTS
   export DT_LOGS="${DT_ARTEFACTS}/logs"
   export DT_REPORTS="${DT_ARTEFACTS}/reports"

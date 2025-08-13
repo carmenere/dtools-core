@@ -25,8 +25,12 @@ _pg_local_connurl() {
 psql_conn() {(
   set -eu
   . "${DT_VARS}/conns/$1/$2.sh"
-  connurl=$(_pg_connurl)
-  ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT}
+  shift 2
+  local connurl=$(_pg_connurl)
+  if [ -n "$*" ]; then
+    cmd="-c '$*'"
+  fi
+  ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT} ${cmd}
 )}
 
 psql_local_conn() {(
@@ -61,7 +65,7 @@ _psql_aux_gexec() {
     query=$(escape_dollar "${query}")
   fi
   if [ -z "${AUX_CONN}" ]; then
-    dt_error "_psql_aux_gexec" "The variable ${BOLD}AUX_CONN${RESET} doesn't set for account $2"
+    dt_error "_psql_aux_gexec" "The variable ${BOLD}AUX_CONN${RESET} doesn't set for account $3"
     return 99
   fi
   . "${AUX_CONN}"
@@ -71,9 +75,11 @@ _psql_aux_gexec() {
 
 _psql_gexec_local() {
   . "${DT_VARS}/conns/$2/$3.sh"
-  local query=$(echo "$(_m4_psql_query $1)")
-  local query="$(escape_quote "${query}")"
-  # admin has no AUX_CONN, and we connect to db behalf admin itself
+  local query=$(echo "$(escape_quote "$(_m4_psql_query $1)")")
+  if [ "${MODE}" = "docker" ]; then
+    query=$(escape_dollar "${query}")
+  fi
+  # If account has no AUX_CONN we connect to db behalf account itself (for local connections)
   if [ -n "${AUX_CONN}" ]; then . "${AUX_CONN}"; fi
   connurl=$(_pg_local_connurl)
   sudo=$(_psql_sudo)
@@ -103,8 +109,13 @@ psql_revoke_user() {(
   _psql_aux_gexec "${REVOKE}" $1 $2
 )}
 
+psql_check() {(
+  psql_conn $1 $2 $'select true;'
+)}
+
 psql_init() {(
   set -eu; . "${DT_VARS}/conns/$1/batch.sh"
+  service_check psql_check $1 ${ADMIN}
   psql_create_db $1 ${MIGRATOR}
   psql_create_user $1 ${MIGRATOR}
   psql_grant_user $1 ${MIGRATOR}
@@ -114,13 +125,14 @@ psql_init() {(
 
 psql_clean() {(
   set -eu; . "${DT_VARS}/conns/$1/batch.sh"
+  service_check psql_check $1 ${ADMIN}
   psql_drop_db $1 ${MIGRATOR}
   psql_drop_user $1 ${MIGRATOR}
   psql_drop_user $1 ${APP}
 )}
 
 psql_reinit() {
-  psql_clean $1 $2 && psql_init $1 $2
+  psql_clean $1 && psql_init $1
 }
 
 ##################################################### AUTOCOMPLETE #####################################################
@@ -137,6 +149,7 @@ cmd_family_psql() {
   methods+=(psql_grant_user)
   methods+=(psql_revoke_user)
   methods+=($(cmd_family_dump_restore))
+  methods+=(psql_check)
   echo "${methods[@]}"
 }
 

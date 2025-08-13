@@ -22,10 +22,10 @@ function rabbitmq_install() {(
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_rabbitmq_install() {
+function cmd_family_rabbitmq_services() {
   local methods=()
   methods+=(rabbitmq_install)
   echo "${methods[@]}"
 }
 
-autocomplete_reg_family "cmd_family_rabbitmq_install"
+autocomplete_reg_family "cmd_family_rabbitmq_services"

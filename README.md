@@ -17,18 +17,14 @@ cd dtools
 ```bash
 git submodule add git@github.com:carmenere/dtools.git core
 ```
-4. Create directories:
+4. Create directory `locals`:
 ```bash
 mkdir locals
-mkdir stands
-mkdir tools
 ```
 5. Add `**/locals/` to file `.gitignore`.
-6. Create `rc.sh` in each directory:
+6. Create `rc.sh` in `locals` directory:
 ```bash
 touch locals/rc.sh
-touch stands/rc.sh
-touch tools/rc.sh
 ```
 7. Add the following code to **each** `rc.sh` file you have just created:
 ```bash
@@ -41,23 +37,11 @@ function load() {
 
 load $0
 ```
-The placeholder `%DIRNAME%` corresponds to the appropriate directory:
-- `locals`
-- `stands`
-- `tools`
-8. If **dir** contains **subdirs**, you must put `rc.sh` file in **each** subdir and inside `load` function under `dt_rc_load` call `%subdir%/rc.sh` file:
-```bash
-function load() {
-  ... # omitted
-    
-  . "${self_dir}/%subdir%/rc.sh"
-}
-```
-where `%SUBDIR%` is a **placeholder for subdir**.<br>
-9. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
-<br>
-
-10. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
+8. Run `cp -r core/example/vars vars`. This creates copy of `core/example/vars` in your `dtools`. But you can adjust `dtools/vars` for your project later.
+9. If you want to **overwrite vars locally** (don't touch git repo) you must create **appropriate file** in `dtools/locals` and change appropriate vars there.
+10. All **variants for autocomplete** are configured in `autocompletions.sh` file.
+10. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
+11. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
 ```shell
 function reinit_dtools() {
 . ./dtools/core/rc.sh
@@ -74,18 +58,15 @@ project_root_dir
 ├── dtools/
 │   ├── .gitignore
 │   ├── core/   # This directory is a git submodule to 'https://github.com/carmenere/dtools' project.
-│   │   ├── lib.sh
+│   │   ├── lib
 │   │   ├── ...
 │   │   └── rc.sh
 │   ├── locals/   # Must be added to .gitignore (**/locals/). It is for overwriting project defaults in local devel environment.
 │   │   ├── ...
 │   │   └── rc.sh
-│   ├── stands/
-│   │   ├── ...
-│   │   └── rc.sh
-│   └── tools/
+│   └── vars/
 │       ├── ...
-│       └── rc.sh
+│       └── autocompletions.sh
 
 ├── ...
 ```

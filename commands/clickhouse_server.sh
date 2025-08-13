@@ -1,4 +1,4 @@
-clickhouse_install() {(
+ch_install() {(
   local fname=clickhouse_install
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
@@ -42,20 +42,35 @@ ch_user.xml() {
 
 m4_clickhouse_user.xml() {( set -eu; . "${DT_VARS}/m4/$1/user.xml.sh" && _m4 )}
 
+ch_prepare() {(
+  set -eu
+  local FILE hash_old hash_new fname=pg_prepare
+  local changed=0
+  . "${DT_VARS}/services/$1.sh"
+  if [ "${MODE}" != "host" ]; then
+    dt_info ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
+    return 0
+  fi
+
+  FILE=$(ch_user.xml)
+  hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  m4_clickhouse_user.xml $1
+  hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  if [ "${hash_old}" != "${hash_new}" ]; then
+    changed=1
+    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+  fi
+
+  if [ "${changed}" != 0 ]; then service_stop $1; fi
+)}
+
 ##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_m4_clickhouse() {
+function cmd_family_clickhouse_services() {
   local methods=()
+  methods+=(ch_install)
   methods+=(m4_clickhouse_user.xml)
+  methods+=(ch_prepare)
   echo "${methods[@]}"
 }
 
-autocomplete_reg_family "cmd_family_m4_clickhouse"
-
-##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_clickhouse_install() {
-  local methods=()
-  methods+=(clickhouse_install)
-  echo "${methods[@]}"
-}
-
-autocomplete_reg_family "cmd_family_clickhouse_install"
+autocomplete_reg_family "cmd_family_clickhouse_services"

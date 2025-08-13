@@ -77,6 +77,37 @@ pg_bin_dir() {
   echo "${bind_dir}"
 }
 
+pg_prepare() {(
+  set -eu
+  local FILE hash_old hash_new fname=pg_prepare
+  local changed=0
+  . "${DT_VARS}/services/$1.sh"
+  if [ "${MODE}" != "host" ]; then
+    dt_warning ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
+    return 0
+  fi
+
+  FILE=$(pg_pg_hba.conf)
+  hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  m4_pg_hba.conf $1
+  hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  if [ "${hash_old}" != "${hash_new}" ]; then
+    changed=1
+    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+  fi
+
+  FILE=$(pg_postgresql.conf)
+  hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  m4_postgresql.conf $1
+  hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
+  if [ "${hash_old}" != "${hash_new}" ]; then
+    changed=1
+    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+  fi
+
+  if [ "${changed}" != 0 ]; then service_stop $1; fi
+)}
+
 #pg_add_path() {
 #  local fname=pg_add_path
 #  path="${PATH}"
@@ -94,14 +125,6 @@ pg_bin_dir() {
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
-##################################################### AUTOCOMPLETE #####################################################
-function cmd_family_m4_pg() {
-  local methods=()
-
-  echo "${methods[@]}"
-}
-
-autocomplete_reg_family "cmd_family_m4_pg"
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_pg_services() {
@@ -111,6 +134,8 @@ function cmd_family_pg_services() {
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)
   methods+=(postgis_install)
+  methods+=(pg_prepare)
+  methods+=(pg_check)
   echo "${methods[@]}"
 }
 

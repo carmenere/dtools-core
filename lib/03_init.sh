@@ -5,6 +5,6 @@ function dt_init() {
   logging_init && \
   autocomplete_init && \
   . "${DT_CORE}/commands/rc.sh" && \
-  . "${DT_STANDS}/rc.sh" && \
+#  . "${DT_STANDS}/rc.sh" && \
   dt_autocomplete
 }
