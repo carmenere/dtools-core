@@ -16,6 +16,19 @@ _service_cmd() {(
   fi
 )}
 
+service_check() {(
+  set -eu;
+  local fname=service_check
+  local command=$1; shift
+  if [ -z "${command}" ]; then dt_error ${fname} "Command for checking service is empty"; return 99; fi
+  for i in $(seq 1 30); do
+    dt_info ${fname} "${BOLD}${CYAN}Waiting service runtime${RESET}: attempt ${BOLD}$i${RESET} ... ";
+    if ${command} $@; then dt_info ${fname} "${GREEN}${BOLD}Service is up now${RESET}"; return 0; fi
+    sleep 1
+  done
+  return 99
+)}
+
 service_start() { _service_cmd "$1" "docker_run" "brew_start" "systemctl_start"; }
 service_stop() { _service_cmd "$1" "docker_stop" "brew_stop" "systemctl_stop"; }
 service_restart() { service_stop $1 && service_start $1; }
@@ -30,6 +43,7 @@ cmd_family_service() {
   methods+=(service_restart)
   methods+=(service_show)
   methods+=(service_show_all)
+  methods+=(service_check)
   echo "${methods[@]}"
 }
 

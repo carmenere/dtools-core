@@ -1,7 +1,7 @@
 . ${DT_VARS}/docker_services/defaults.sh
 
 # Docker service and OS service must share the same SERVICE, because it is used in conns
-SERVICE="clickhouse"
+SERVICE=$(. ${DT_VARS}/services/clickhouse.sh && echo ${SERVICE})
 # By default, SERVICE is a name of container
 CONTAINER="${SERVICE}"
 
