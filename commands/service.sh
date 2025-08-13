@@ -7,7 +7,7 @@ _service_cmd() {(
     if [ "$(os_name)" = "macos" ]; then
       exec_cmd ${brew} "$1"
     elif [ "$(os_name)" = "ubuntu" ]; then
-      exec_cmd ${systemct} "$1"
+      exec_cmd ${systemctl} "$1"
     else
       dt_error "${fname}" "Unsupported os_name '$(os_name)'"
     fi

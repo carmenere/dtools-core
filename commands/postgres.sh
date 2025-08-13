@@ -18,6 +18,7 @@ function pg_install() {(
 
 pg_post_install() {(
   local fname=pg_post_install
+  set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     if ! pg_lsclusters | cut -d' ' -f 1 | grep -m 1 "${MAJOR}"; then
       exec_cmd ${SUDO} pg_createcluster ${MAJOR} main
