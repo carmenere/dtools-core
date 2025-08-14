@@ -24,7 +24,7 @@ _pg_local_connurl() {
 
 psql_conn() {(
   set -eu
-  local cmd
+  local cmd=
   . "${DT_VARS}/conns/$1/$2.sh"
   shift 2
   local connurl=$(_pg_connurl)

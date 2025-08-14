@@ -32,4 +32,6 @@ load() {
 
 load "$0" || return $?
 
-#if [ -f "${DTOOLS}/core/rc.sh" ]; then reinit_dtools() { . ${DTOOLS}/core/rc.sh; }; fi
+if [ -f "${DTOOLS}/core/rc.sh" ]; then
+  reinit_dtools() { . ${DTOOLS}/core/rc.sh; }
+fi

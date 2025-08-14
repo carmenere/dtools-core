@@ -90,7 +90,7 @@ pg_prepare() {(
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   FILE=$(pg_postgresql.conf)
@@ -99,7 +99,7 @@ pg_prepare() {(
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   if [ "${changed}" != 0 ]; then service_stop $1; fi

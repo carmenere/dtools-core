@@ -1,5 +1,7 @@
 . ${DT_VARS}/services/pg.sh
 
+SERVICE="pg_ctl"
+
 user=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${user})
 password=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${password})
 
@@ -18,3 +20,6 @@ PG_CTL_CONF="${DATADIR}/postgresql.conf"
 PG_CTL_LOG="${DATADIR}/pg_ctl.logs"
 POSTMASTER="${DATADIR}/postmaster.pid"
 PG_CONF="${DATADIR}/postgresql.conf"
+
+LOCALS=${DT_LOCAL_VARS}/services/${SERVICE}.sh
+source_locals ${LOCALS}

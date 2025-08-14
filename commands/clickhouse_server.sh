@@ -49,7 +49,7 @@ ch_prepare() {(
   local changed=0
   . "${DT_VARS}/services/$1.sh"
   if [ "${MODE}" != "host" ]; then
-    dt_info ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
+    dt_warning ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
     return 0
   fi
 
@@ -59,7 +59,7 @@ ch_prepare() {(
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   if [ "${changed}" != 0 ]; then service_stop $1; fi
