@@ -1,24 +1,24 @@
 systemctl_start() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl start "${OS_SERVICE}"
+  exec_cmd ${SUDO} systemctl start "${OS_SERVICE}"
 )}
 
 systemctl_stop() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl stop "${OS_SERVICE}"
+  exec_cmd ${SUDO} systemctl stop "${OS_SERVICE}"
 )}
 
 systemctl_restart() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl restart "${OS_SERVICE}"
+  exec_cmd ${SUDO} systemctl restart "${OS_SERVICE}"
 )}
 
 systemctl_show() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  exec_cmd systemctl status "${OS_SERVICE}"
+  exec_cmd ${SUDO} systemctl status "${OS_SERVICE}"
 )}
 
-systemctl_show_all() { systemctl list-units --type service --all | cat; }
+systemctl_show_all() { ${SUDO} systemctl list-units --type service --all | cat; }
 
 ################################################### Additional commands ##################################################
 ## Linux, systemd

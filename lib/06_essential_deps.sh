@@ -1,6 +1,7 @@
-function ctx_deps_ubuntu() {
+deps_ubuntu() {
   DEPS=()
   DEPS+=(coreutils)
+  DEPS+=(curl)
   DEPS+=(build-essential)
   DEPS+=(direnv)
   DEPS+=(git)
@@ -9,7 +10,7 @@ function ctx_deps_ubuntu() {
   DEPS+=(libbz2-dev)
   DEPS+=(libffi-dev)
   DEPS+=(libpq-dev)
-  DEPS+=(make)
+  DEPS+=(m4)
   DEPS+=(pkg-config)
   DEPS+=(protobuf-compiler)
   DEPS+=(python3-dev)
@@ -18,22 +19,23 @@ function ctx_deps_ubuntu() {
   DEPS+=(vim)
   DEPS+=(wget)
   DEPS+=(zlib1g-dev)
-  PACMAN="apt install -y"
+  PACMAN="sudo apt install -y"
 }
 
 # alpine: py3-pip py3-virtualenv python3-dev zlib-dev libffi-dev bzip2-dev
 
-function ctx_deps_macos() {
+deps_macos() {
   DEPS=()
-  DEPS+=(gnu-sed)
+  DEPS+=(gnu-sed m4)
   PACMAN="brew install"
 }
 
-function install_deps() {
+install_deps() {
+  declare -ga DEPS=()
   if [ "$(os_name)" = "ubuntu" ] || [ "$(os_name)" = "debian" ]; then
-    target ctx_deps_ubuntu || return $?
+    deps_ubuntu || return $?
   elif [ "$(os_name)" = "macos" ]; then
-    target ctx_deps_macos || return $?
+    deps_macos || return $?
   fi
 
   if [ -z "${DEPS}" ]; then return 0; fi

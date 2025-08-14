@@ -1,5 +1,5 @@
 ch_install() {(
-  local fname=clickhouse_install
+  local fname=ch_install
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
@@ -43,12 +43,13 @@ ch_user.xml() {
 m4_clickhouse_user.xml() {( set -eu; . "${DT_VARS}/m4/$1/user.xml.sh" && _m4 )}
 
 ch_prepare() {(
+  local fname=ch_prepare
   set -eu
-  local FILE hash_old hash_new fname=pg_prepare
+  local FILE hash_old hash_new
   local changed=0
   . "${DT_VARS}/services/$1.sh"
   if [ "${MODE}" != "host" ]; then
-    dt_info ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
+    dt_warning ${fname} "Service ${BOLD}$1${RESET}: MODE != host, skip prepare"
     return 0
   fi
 
@@ -58,7 +59,7 @@ ch_prepare() {(
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   if [ "${changed}" != 0 ]; then service_stop $1; fi

@@ -4,7 +4,7 @@ _rmq_sudo() {
   else
     local s="$(dt_sudo)"
     if [ -n "${s}" ]; then
-      "${s}"
+      echo "${s} "
     else
       echo ""
     fi
@@ -22,6 +22,7 @@ _rabbitmqctl() { echo "$(_rmq_sudo)rabbitmqctl"; }
 
 rabbitmq_conn() {(
   set -eu
+  local cmd=
   . "${DT_VARS}/conns/$1/$2.sh"
   shift 2
   local conn=$(_rabbitmqadmin_connurl)

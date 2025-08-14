@@ -48,7 +48,7 @@ dt_gen_autocomplete_to_commnads() {
 }
 
 dt_bind_autocomplete_to_commnads() {
-  local func commands cmd_family autocomplete fname=dt_bind_autocomplete_to_commnads
+  local func cmd commands cmd_family autocomplete fname=dt_bind_autocomplete_to_commnads
   cmd_family="$1" && \
   if [ -z "${cmd_family}" ]; then dt_error ${fname} "Command family was not provided"; return 99; fi && \
   if ! declare -f "${cmd_family}" >/dev/null 2>&1; then

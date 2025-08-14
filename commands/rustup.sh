@@ -64,13 +64,22 @@ rustup_toolchain_list() {(
   exec_cmd rustup toolchain list
 )}
 
-rustup_init() {(
-  set -eu; . "${DT_VARS}/rustup/$1.sh"
-  rustup_install $1 && \
-  . "${HOME}/.cargo/env" && \
-  rustup_nightly_install $1 && \
-  rustup_component_add $1
-)}
+rustup_init() {
+  (
+    set -eu; . "${DT_VARS}/rustup/$1.sh"
+    rustup_install $1
+  )
+  cargo_load_env || return $?
+  (
+    set -eu; . "${DT_VARS}/rustup/$1.sh"
+    rustup_nightly_install $1
+    rustup_component_add $1
+  )
+}
+
+cargo_load_env() {
+  . "${HOME}/.cargo/env"
+}
 
 function cmd_family_rustup() {
   local methods=()

@@ -18,6 +18,7 @@ function pg_install() {(
 
 pg_post_install() {(
   local fname=pg_post_install
+  set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     if ! pg_lsclusters | cut -d' ' -f 1 | grep -m 1 "${MAJOR}"; then
       exec_cmd ${SUDO} pg_createcluster ${MAJOR} main
@@ -38,21 +39,14 @@ pg_service() {
   fi
 }
 
-pg_postgresql.conf() {
+pg_data_directory() {(
+  set -eu
   if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${OS_SERVICE}/postgresql.conf"
+    echo "$(brew_prefix)/var/${OS_SERVICE}"
   else
-    echo "/etc/postgresql/${MAJOR}/main/postgresql.conf"
+    echo "/var/lib/postgresql/${MAJOR}/main"
   fi
-}
-
-pg_pg_hba.conf() {
-  if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${OS_SERVICE}/pg_hba.conf"
-  else
-    echo "/etc/postgresql/${MAJOR}/main/pg_hba.conf"
-  fi
-}
+)}
 
 pg_superuser() {
   if [ "$(os_name)" = "macos" ]; then
@@ -89,20 +83,20 @@ pg_prepare() {(
 
   FILE=$(pg_pg_hba.conf)
   hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
-  m4_pg_hba.conf $1
+  m4_pg_hba.conf $1 || return $?
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   FILE=$(pg_postgresql.conf)
   hash_old=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
-  m4_postgresql.conf $1
+  m4_postgresql.conf $1 || return $?
   hash_new=$(${SUDO} sha256sum "${FILE}" | cut -d' ' -f 1)
   if [ "${hash_old}" != "${hash_new}" ]; then
     changed=1
-    dt_info ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
+    dt_warning ${fname} "File ${FILE} was ${BOLD}changed${RESET}, service will be stopped"
   fi
 
   if [ "${changed}" != 0 ]; then service_stop $1; fi
@@ -121,6 +115,9 @@ pg_prepare() {(
 #    dt_debug ${fname} "${path}"
 #  fi
 #}
+
+pg_postgresql.conf() {( set -eu; echo "$(pg_data_directory)/postgresql.conf"; )}
+pg_pg_hba.conf() {( set -eu; echo "$(pg_data_directory)/pg_hba.conf"; )}
 
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}

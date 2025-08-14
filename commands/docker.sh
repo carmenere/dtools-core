@@ -35,7 +35,7 @@ ser_run_envs() {
   echo "${result[@]}"
 }
 
-docker_install() {
+install_docker() {
   SUDO=sudo
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt-get update"
@@ -55,10 +55,10 @@ docker_install() {
 }
 
 # post-install actions
-docker_post_install() {
+post_install_docker() {
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
-      ${SUDO} groupadd docker || true
-      ${SUDO} usermod -aG docker ${USER}
+      exec_cmd ${SUDO} groupadd docker || true
+      exec_cmd ${SUDO} usermod -aG docker ${USER}
   fi
 }
 

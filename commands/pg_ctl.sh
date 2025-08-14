@@ -1,11 +1,11 @@
 pg_ctl_initdb() {
   local fname=pg_ctl_initdb
-  if [ -f "${PG_CONF}" ]; then dt_info ${fname} "Postgres has already initialized, datadir='${DATADIR}'"; return 0; fi
-  [ -d ${DATADIR} ] || mkdir -p ${DATADIR}
-  chown -R ${OS_USER} ${DATADIR}
+  if [ -f "${PG_CONF}" ]; then dt_info ${fname} "Postgres has already initialized, datadir='${PG_DATADIR}'"; return 0; fi
+  [ -d ${PG_DATADIR} ] || mkdir -p ${PG_DATADIR}
+  chown -R ${OS_USER} ${PG_DATADIR}
   bash -c "echo ${password} > ${INITDB_PWFILE}"
 
-  exec_cmd "${BIN_DIR}/initdb --pgdata=${DATADIR} --username="${user}" --auth-local="${INITDB_AUTH_LOCAL}" --auth-host="${INITDB_AUTH_HOST}" --pwfile="${INITDB_PWFILE}""
+  exec_cmd "${BIN_DIR}/initdb --pgdata=${PG_DATADIR} --username="${user}" --auth-local="${INITDB_AUTH_LOCAL}" --auth-host="${INITDB_AUTH_HOST}" --pwfile="${INITDB_PWFILE}""
 
   rm "${INITDB_PWFILE}"
 }
@@ -13,20 +13,20 @@ pg_ctl_initdb() {
 pg_ctl_start() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
   pg_ctl_initdb
-  local cmd=$(echo "${BIN_DIR}/pg_ctl -D ${DATADIR} -l ${PG_CTL_LOG} -o \"-k ${DATADIR} -c logging_collector=${PG_CTL_LOGGING_COLLECTOR} -c config_file=${PG_CTL_CONF} -p ${PORT_BIND} -h ${HOST_BIND}\" start")
+  local cmd=$(echo "${BIN_DIR}/pg_ctl -D ${PG_DATADIR} -l ${PG_CTL_LOG} -o \"-k ${PG_DATADIR} -c logging_collector=${PG_CTL_LOGGING_COLLECTOR} -c config_file=${PG_CTL_CONF} -p ${PORT_BIND} -h ${HOST_BIND}\" start")
   exec_cmd "${cmd[@]}"
 )}
 
 pg_ctl_stop() {(
   set -eu; . "${DT_VARS}/services/$1.sh"
-  [ ! -f ${POSTMASTER} ] || ${BIN_DIR}/pg_ctl -D ${DATADIR} -o "-k ${DATADIR} -c config_file=${PG_CTL_CONF}" stop
+  [ ! -f ${POSTMASTER} ] || ${BIN_DIR}/pg_ctl -D ${PG_DATADIR} -o "-k ${PG_DATADIR} -c config_file=${PG_CTL_CONF}" stop
 )}
 
 pg_ctl_clean() {(
   local fname=pg_ctl_clean
   set -eu; . "${DT_VARS}/services/$1.sh"
   pg_ctl_stop $1 || return $?
-  [ ! -d ${DATADIR} ] || rm -Rf ${DATADIR}
+  [ ! -d ${PG_DATADIR} ] || rm -Rf ${PG_DATADIR}
 )}
 
 pg_ctl_conn() {(
