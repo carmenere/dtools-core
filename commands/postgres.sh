@@ -48,9 +48,6 @@ pg_data_directory() {(
   fi
 )}
 
-pg_postgresql.conf() {( set -eu; echo "${DATADIR}/postgresql.conf"; )}
-pg_pg_hba.conf() {( set -eu; echo "${DATADIR}/pg_hba.conf"; )}
-
 pg_superuser() {
   if [ "$(os_name)" = "macos" ]; then
     echo "${USER}"
@@ -118,6 +115,9 @@ pg_prepare() {(
 #    dt_debug ${fname} "${path}"
 #  fi
 #}
+
+pg_postgresql.conf() {( set -eu; echo "$(pg_data_directory)/postgresql.conf"; )}
+pg_pg_hba.conf() {( set -eu; echo "$(pg_data_directory)/pg_hba.conf"; )}
 
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
