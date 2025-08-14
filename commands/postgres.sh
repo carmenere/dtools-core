@@ -39,29 +39,17 @@ pg_service() {
   fi
 }
 
-pg_data_directory() {
+pg_data_directory() {(
+  set -eu
   if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${OS_SERVICE}/pg_hba.conf"
+    echo "$(brew_prefix)/var/${OS_SERVICE}"
   else
     echo "/var/lib/postgresql/${MAJOR}/main"
   fi
-}
+)}
 
-pg_postgresql.conf() {
-  if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${OS_SERVICE}/postgresql.conf"
-  else
-    echo "/etc/postgresql/${MAJOR}/main/postgresql.conf"
-  fi
-}
-
-pg_pg_hba.conf() {
-  if [ "$(os_name)" = "macos" ]; then
-    echo "$(brew_prefix)/var/${OS_SERVICE}/pg_hba.conf"
-  else
-    echo "/etc/postgresql/${MAJOR}/main/pg_hba.conf"
-  fi
-}
+pg_postgresql.conf() {( set -eu; echo "${DATADIR}/postgresql.conf"; )}
+pg_pg_hba.conf() {( set -eu; echo "${DATADIR}/pg_hba.conf"; )}
 
 pg_superuser() {
   if [ "$(os_name)" = "macos" ]; then

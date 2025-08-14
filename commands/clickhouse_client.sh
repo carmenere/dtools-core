@@ -9,6 +9,7 @@ _clickhouse_connurl() {
 
 clickhouse_conn() {(
   set -eu
+  local cmd
   . "${DT_VARS}/conns/$1/$2.sh"
   shift 2
   connurl="$(_clickhouse_connurl)"

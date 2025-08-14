@@ -27,6 +27,7 @@ _redis_exec() {
 
 redis_conn() {(
   set -eu
+  local cmd
   . "${DT_VARS}/conns/$1/$2.sh"
   shift 2
   connurl=$(_redis_connurl)
