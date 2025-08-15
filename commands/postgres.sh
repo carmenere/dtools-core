@@ -39,14 +39,29 @@ pg_service() {
   fi
 }
 
-pg_data_directory() {(
-  set -eu
+pg_data_directory() {
   if [ "$(os_name)" = "macos" ]; then
     echo "$(brew_prefix)/var/${OS_SERVICE}"
   else
     echo "/var/lib/postgresql/${MAJOR}/main"
   fi
-)}
+}
+
+pg_postgresql.conf() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/var/$(pg_service)/postgresql.conf"
+  else
+    echo "/etc/postgresql/${MAJOR}/main/postgresql.conf"
+  fi
+}
+
+pg_pg_hba.conf() {
+  if [ "$(os_name)" = "macos" ]; then
+    echo "$(brew_prefix)/var/$(pg_service)/pg_hba.conf"
+  else
+    echo "/etc/postgresql/${MAJOR}/main/pg_hba.conf"
+  fi
+}
 
 pg_superuser() {
   if [ "$(os_name)" = "macos" ]; then
@@ -115,9 +130,6 @@ pg_prepare() {(
 #    dt_debug ${fname} "${path}"
 #  fi
 #}
-
-pg_postgresql.conf() {( set -eu; echo "$(pg_data_directory)/postgresql.conf"; )}
-pg_pg_hba.conf() {( set -eu; echo "$(pg_data_directory)/pg_hba.conf"; )}
 
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}

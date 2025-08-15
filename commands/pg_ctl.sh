@@ -2,9 +2,7 @@ pg_ctl_initdb() {
   local fname=pg_ctl_initdb
   if [ -f "${PG_CONF}" ]; then dt_info ${fname} "Postgres has already initialized, datadir='${PG_DATADIR}'"; return 0; fi
   [ -d ${PG_DATADIR} ] || exec_cmd mkdir -p ${PG_DATADIR}
-  exec_cmd chown -R ${OS_USER} ${PG_DATADIR}
   exec_cmd "echo ${password} > ${INITDB_PWFILE}"
-
   exec_cmd "${BIN_DIR}/initdb --pgdata=${PG_DATADIR} --username="${user}" --auth-local="${INITDB_AUTH_LOCAL}" --auth-host="${INITDB_AUTH_HOST}" --pwfile="${INITDB_PWFILE}""
   exec_cmd rm "${INITDB_PWFILE}"
 }
