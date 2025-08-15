@@ -34,12 +34,19 @@ rustup_component_add() {(
   exec_cmd rustup component add "${RUSTUP_COMPONENTS[@]}"
 )}
 
-rustup_component_list() {(
-  set -eu; . "${DT_VARS}/rustup/$1.sh"
+rustup_component_list() {
   exec_cmd rustup component list
-)}
+}
 
-rustup_default() {(
+rustup_toolchain_list() {
+  exec_cmd rustup toolchain list
+}
+
+rustup_target_list() {
+  exec_cmd rustup target list
+}
+
+rustup_set_default() {(
   set -eu; . "${DT_VARS}/rustup/$1.sh"
   exec_cmd rustup default ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}
 )}
@@ -49,19 +56,9 @@ rustup_nightly_install() {(
   exec_cmd rustup toolchain install ${NIGHTLY_VERSION}-${RUSTUP_TARGET_TRIPLE}
 )}
 
-rustup_target_list() {(
-  set -eu; . "${DT_VARS}/rustup/$1.sh"
-  exec_cmd rustup target list
-)}
-
 rustup_toolchain_install() {(
   set -eu; . "${DT_VARS}/rustup/$1.sh"
   exec_cmd rustup toolchain install ${RUSTUP_TOOLCHAIN}-${RUSTUP_TARGET_TRIPLE}
-)}
-
-rustup_toolchain_list() {(
-  set -eu; . "${DT_VARS}/rustup/$1.sh"
-  exec_cmd rustup toolchain list
 )}
 
 rustup_init() {
@@ -84,7 +81,7 @@ cargo_load_env() {
 function cmd_family_rustup() {
   local methods=()
   methods+=(rustup_component_add)
-  methods+=(rustup_default)
+  methods+=(rustup_set_default)
   methods+=(rustup_init)
   methods+=(rustup_install)
   methods+=(rustup_nightly_install)

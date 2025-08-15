@@ -8,7 +8,7 @@ cargo_deps() {
 }
 
 install_services() {
-  pg_install pg
+  install_postgres pg
   psql_alter_role_password pg admin
 }
 

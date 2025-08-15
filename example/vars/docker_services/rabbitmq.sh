@@ -1,7 +1,7 @@
 . ${DT_VARS}/docker_services/defaults.sh
 
 # Docker service and OS service must share the same SERVICE, because it is used in conns
-SERVICE=$(. ${DT_VARS}/services/rabbitmq.sh && echo ${SERVICE})
+SERVICE=$(. ${DT_VARS}/services/rabbitmq_3.8.sh && echo ${SERVICE})
 # By default, SERVICE is a name of container
 CONTAINER="${SERVICE}"
 

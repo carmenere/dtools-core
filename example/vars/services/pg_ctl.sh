@@ -1,16 +1,15 @@
-. ${DT_VARS}/services/pg.sh
+. ${DT_VARS}/services/pg_17.sh
 
 SERVICE="pg_ctl"
 
-user=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${user})
-password=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${password})
+user=$(. ${DT_VARS}/conns/pg_ctl_17/_admin.sh && echo ${user})
+password=$(. ${DT_VARS}/conns/pg_ctl_17/_admin.sh && echo ${password})
 
 HOST_BIND="localhost"
 PORT_BIND=5444
 HOST_CONN="${HOST_BIND}"
 PORT_CONN="${PORT_BIND}"
 
-OS_USER="${user}"
 PG_DATADIR="${DT_ARTEFACTS}/pg_ctl/data"
 INITDB_AUTH_HOST="md5"
 INITDB_AUTH_LOCAL="peer"

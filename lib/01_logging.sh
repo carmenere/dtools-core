@@ -1,6 +1,6 @@
-# By default: DT_SEVERITY >= 4 for debug
+# By default: DT_SEVERITY >= 3
 logging_init() {
-  export DT_SEVERITY=4
+  export DT_SEVERITY=3
   logging_paths
   reset_err_cnt
 }

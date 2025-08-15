@@ -5,7 +5,7 @@ ENVS=()
   echo "BINS_DIR=\"${BINS_DIR}\""
 )
 
-. <(. "${DT_VARS}/conns/pg/app.sh"
+. <(. "${DT_VARS}/conns/pg_17/app.sh"
   echo "add_env TTX_PGPORT ${port_app}"
   echo "add_env TTX_PGHOST ${host}"
   echo "add_env TTX_PGDATABASE ${database}"

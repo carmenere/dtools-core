@@ -1,11 +1,11 @@
 . ${DT_VARS}/docker_services/defaults.sh
 
 # Docker service and OS service must share the same SERVICE, because it is used in conns
-SERVICE=$(. ${DT_VARS}/services/pg.sh && echo ${SERVICE})
+SERVICE=$(. ${DT_VARS}/services/pg_17.sh && echo ${SERVICE})
 # By default, SERVICE is a name of container
 CONTAINER="${SERVICE}"
 
-. <(set -ue; . ${DT_VARS}/docker_images/pg.sh
+. <(set -ue; . ${DT_VARS}/docker_images/pg_17.sh
   echo "IMAGE=${IMAGE}"
 )
 
@@ -22,7 +22,7 @@ CLIENT=psql
 
 add_publish "${PORT_CONN}:${PORT_BIND}/tcp"
 
-. <(set -ue; . ${DT_VARS}/conns/pg/_admin.sh
+. <(set -ue; . ${DT_VARS}/conns/pg_17/_admin.sh
   echo "add_run_env POSTGRES_USER "${user}""
   echo "add_run_env POSTGRES_DB \"${database}\""
   echo "add_run_env POSTGRES_PASSWORD \"${password}\""

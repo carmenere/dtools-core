@@ -1,4 +1,4 @@
-. <(set -eu; . ${DT_VARS}/services/pg.sh
+. <(set -eu; . ${DT_VARS}/services/pg_17.sh
   echo "MODE=${MODE}"
   echo "SERVICE=${SERVICE}"
   echo "port_app=${PORT_CONN}"
@@ -10,7 +10,7 @@
 )
 
 if [ "${MODE}" = "docker" ]; then
-  . <(set -eu; . ${DT_VARS}/docker_services/pg.sh
+  . <(set -eu; . ${DT_VARS}/docker_services/pg_17.sh
     echo "port_app=${PORT_CONN}"
     echo "port_client=${PORT_BIND}"
     echo "host=${HOST_CONN}"

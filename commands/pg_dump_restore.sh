@@ -1,5 +1,6 @@
 pg_dumpX() {(
   set -eu; . "${DT_VARS}/conns/$1/$2.sh"
+  local fname=pg_dumpX
   local DB=${database}
   PG_DUMP="${DT_LOGS}/db-${DB}.dump"
   [ -d $(dirname ${PG_DUMP}) ] || mkdir -p $(dirname ${PG_DUMP})
@@ -11,11 +12,12 @@ pg_dumpX() {(
   database=${DB}
   connurl=$(_pg_connurl)
   exec_cmd ${connurl} pg_dump --format custom --no-owner --no-privileges --file=${PG_DUMP}
-  echo PG_DUMP=${PG_DUMP}
+  dt_info ${fname} "${BOLD}Ok${RESET}"
 )}
 
 pg_restoreX() {(
   set -eu; . "${DT_VARS}/conns/$1/$2.sh"
+  local fname=pg_restoreX
   local DB=${database}
   PG_DUMP="${DT_LOGS}/db-${DB}.dump"
   if [ -z "${AUX_CONN}" ]; then
@@ -26,9 +28,8 @@ pg_restoreX() {(
   database=${DB}
   connurl=$(_pg_connurl)
   exec_cmd ${connurl} pg_restore --no-owner -d ${DB} --single-transaction "${PG_DUMP}"
-  echo "Ok"
+  dt_info ${fname} "${BOLD}Ok${RESET}"
 )}
-
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_dump_restore() {

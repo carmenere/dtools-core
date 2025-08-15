@@ -1,5 +1,5 @@
-. ${DT_VARS}/conns/pg_ctl/defaults.sh
-. ${DT_VARS}/conns/pg_ctl/_admin.sh
+. ${DT_VARS}/conns/pg_ctl_17/defaults.sh
+. ${DT_VARS}/conns/pg_ctl_17/_admin.sh
 
-LOCALS=${DT_LOCAL_VARS}/conns/pg_ctl/admin.sh
+LOCALS=${DT_LOCAL_VARS}/conns/pg_ctl_17/admin.sh
 source_locals ${LOCALS}

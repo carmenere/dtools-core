@@ -6,9 +6,9 @@ function redis_service() {
   fi
 }
 
-# ctx_host_redis && redis_install
-function redis_install() {(
-  local fname=redis_install
+# ctx_host_redis && install_redis
+function install_redis() {(
+  local fname=install_redis
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt install lsb-release curl gpg"
@@ -21,14 +21,14 @@ function redis_install() {(
     exec_cmd "brew install $(redis_service)"
 
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_redis_services() {
   local methods=()
-  methods+=(redis_install)
+  methods+=(install_redis)
   echo "${methods[@]}"
 }
 

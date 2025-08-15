@@ -1,10 +1,10 @@
 . <(
-  . ${DT_VARS}/services/clickhouse.sh
+  . ${DT_VARS}/services/clickhouse_23.sh
   echo "M4_OUT=$(ch_user.xml)"
 )
 
 . <(
-  . ${DT_VARS}/conns/clickhouse/admin.sh
+  . ${DT_VARS}/conns/clickhouse_23/admin.sh
   echo "M4_OUT=$(ch_user.xml)"
   echo "M4_PASSWORD=${password}"
   echo "M4_USER=${user}"

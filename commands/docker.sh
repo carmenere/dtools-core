@@ -36,6 +36,7 @@ ser_run_envs() {
 }
 
 install_docker() {
+  local fname=install_docker
   SUDO=sudo
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt-get update"
@@ -50,7 +51,7 @@ install_docker() {
     exec_cmd "${SUDO} apt-get update"
     exec_cmd "${SUDO} apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 }
 

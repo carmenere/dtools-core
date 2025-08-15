@@ -6,9 +6,9 @@ function rmq_service() {
   fi
 }
 
-# ctx_host_rabbitmq && rabbitmq_install
-function rabbitmq_install() {(
-  local fname=rabbitmq_install
+# ctx_host_rabbitmq && install_rabbitmq
+function install_rabbitmq() {(
+  local fname=install_rabbitmq
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
       exec_cmd "${SUDO} apt install gnupg erlang -y" && \
@@ -17,14 +17,14 @@ function rabbitmq_install() {(
   elif [ "$(os_kernel)" = "Darwin" ]; then
     exec_cmd "brew install $(rmq_service)"
   else
-    echo "Unsupported OS: '$(os_kernel)'"
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"
   fi
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_rabbitmq_services() {
   local methods=()
-  methods+=(rabbitmq_install)
+  methods+=(install_rabbitmq)
   echo "${methods[@]}"
 }
 
