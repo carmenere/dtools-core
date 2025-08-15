@@ -1,5 +1,5 @@
-ch_install() {(
-  local fname=ch_install
+install_clickhouse() {(
+  local fname=install_clickhouse
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "${SUDO} apt-get install -y apt-transport-https ca-certificates curl gnupg" || return $?
@@ -12,7 +12,7 @@ ch_install() {(
     exec_cmd "brew install '${OS_SERVICE}'"
 
   else
-    echo "Unsupported OS: '$(os_kernel)'"; return 99
+    dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
 )}
 
@@ -68,7 +68,7 @@ ch_prepare() {(
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_clickhouse_services() {
   local methods=()
-  methods+=(ch_install)
+  methods+=(install_clickhouse)
   methods+=(m4_clickhouse_user.xml)
   methods+=(ch_prepare)
   echo "${methods[@]}"

@@ -1,5 +1,5 @@
 . <(
-  . ${DT_VARS}/services/pg.sh
+  . ${DT_VARS}/services/pg_17.sh
   echo "M4_PORT=\"${PORT_BIND}\""
   echo "M4_OUT=$(pg_postgresql.conf)"
 )

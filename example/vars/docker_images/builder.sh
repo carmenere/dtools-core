@@ -4,7 +4,7 @@ DOCKERFILE="${DT_CORE}/dockerfiles/Dockerfile.rust"
 COMMAND="/bin/bash"
 CTX="${DT_PROJECT}"
 
-PG_MAJOR="$(. ${DT_VARS}/services/pg.sh && echo ${MAJOR})"
+PG_MAJOR="$(. ${DT_VARS}/services/pg_17.sh && echo ${MAJOR})"
 RUSTUP_TOOLCHAIN="$(. ${DT_VARS}/rustup/1.86.0.sh && echo ${RUSTUP_TOOLCHAIN})"
 
 IMAGE="builder:$(docker_default_tag "rust-${RUSTUP_TOOLCHAIN}-pg-${PG_MAJOR}")"

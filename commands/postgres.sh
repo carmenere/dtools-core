@@ -1,5 +1,5 @@
-function pg_install() {(
-  local fname=pg_install
+function install_postgres() {(
+  local fname=install_postgres
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd "echo 'deb http://apt.postgresql.org/pub/repos/apt $(os_codename)-pgdg main' | ${SUDO} tee /etc/apt/sources.list.d/pgdg.list"
@@ -27,7 +27,7 @@ pg_post_install() {(
   fi
 )}
 
-# For example, vars/conns/pg/admin.sh contains both ${port_app} and ${port_client}, but ${port_client} is for psql_XXX commands
+# For example, vars/conns/pg_17/admin.sh contains both ${port_app} and ${port_client}, but ${port_client} is for psql_XXX commands
 # The ${port_app} is for application
 pg_conn_url() { echo "postgres://${user}:${password}@${host}:${port_app}/${database}"; }
 
@@ -126,7 +126,7 @@ m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 ##################################################### AUTOCOMPLETE #####################################################
 function cmd_family_pg_services() {
   local methods=()
-  methods+=(pg_install)
+  methods+=(install_postgres)
   methods+=($(cmd_family_pg_ctl))
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)

@@ -1,4 +1,4 @@
-. ${DT_VARS}/services/pg.sh
+. ${DT_VARS}/services/pg_17.sh
 
 SERVICE="pg_ctl"
 

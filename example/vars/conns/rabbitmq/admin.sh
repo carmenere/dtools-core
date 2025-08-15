@@ -1,5 +1,5 @@
-. ${DT_VARS}/conns/rabbitmq/defaults.sh
-. ${DT_VARS}/conns/rabbitmq/_admin.sh
+. ${DT_VARS}/conns/rabbitmq_3.8/defaults.sh
+. ${DT_VARS}/conns/rabbitmq_3.8/_admin.sh
 
-LOCALS=${DT_LOCAL_VARS}/conns/rabbitmq/admin.sh
+LOCALS=${DT_LOCAL_VARS}/conns/rabbitmq_3.8/admin.sh
 source_locals ${LOCALS}

@@ -1,4 +1,4 @@
-. <(set -eu; . ${DT_VARS}/services/clickhouse.sh
+. <(set -eu; . ${DT_VARS}/services/clickhouse_23.sh
   echo "MODE=${MODE}"
   echo "SERVICE=${SERVICE}"
 
@@ -11,7 +11,7 @@
 )
 
 if [ "${MODE}" = "docker" ]; then
-  . <(set -eu; . ${DT_VARS}/docker_services/clickhouse.sh
+  . <(set -eu; . ${DT_VARS}/docker_services/clickhouse_23.sh
     echo "port_app=${PORT_CONN_HTTP}"
     echo "port_client=${PORT_BIND}"
     echo "host=${HOST_CONN}"

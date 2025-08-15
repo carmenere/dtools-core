@@ -1,11 +1,11 @@
 . ${DT_VARS}/docker_services/defaults.sh
 
 # Docker service and OS service must share the same SERVICE, because it is used in conns
-SERVICE=$(. ${DT_VARS}/services/redis.sh && echo ${SERVICE})
+SERVICE=$(. ${DT_VARS}/services/redis_7.2.sh && echo ${SERVICE})
 # By default, SERVICE is a name of container
 CONTAINER="${SERVICE}"
 
-. <(set -ue; . ${DT_VARS}/docker_images/redis.sh
+. <(set -ue; . ${DT_VARS}/docker_images/redis_7.2.sh
   echo "IMAGE=${IMAGE}"
 )
 
