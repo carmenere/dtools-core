@@ -172,7 +172,7 @@ autocomplete_cmd_family_psql() {
   prev=${COMP_WORDS[COMP_CWORD-1]}
   case ${COMP_CWORD} in
     1)
-      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_pg_services]}" -- ${cur}))
+      COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_psql_batch]}" -- ${cur}))
       ;;
     2)
       COMPREPLY=($(compgen -W "${DT_AUTOCOMPLETIONS[cmd_family_psql]}" -- ${cur}))

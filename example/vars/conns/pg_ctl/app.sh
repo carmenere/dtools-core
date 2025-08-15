@@ -1,4 +1,4 @@
-. ${DT_VARS}/conns/pg_ctl/migrator.sh
+. ${DT_VARS}/conns/pg_ctl_17/migrator.sh
 
 user="example_app"
 password="12345"
@@ -6,5 +6,5 @@ password="12345"
 GRANT="grant_user_app.sql"
 REVOKE="revoke_user_app.sql"
 
-LOCALS=${DT_LOCAL_VARS}/conns/pg_ctl/app.sh
+LOCALS=${DT_LOCAL_VARS}/conns/pg_ctl_17/app.sh
 source_locals ${LOCALS}

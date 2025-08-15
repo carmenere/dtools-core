@@ -16,8 +16,8 @@ function install_postgres() {(
   fi
 )}
 
-pg_post_install() {(
-  local fname=pg_post_install
+post_install_postgres() {(
+  local fname=post_install_postgres
   set -eu; . "${DT_VARS}/services/$1.sh"
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     if ! pg_lsclusters | cut -d' ' -f 1 | grep -m 1 "${MAJOR}"; then
@@ -127,7 +127,7 @@ m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 function cmd_family_pg_services() {
   local methods=()
   methods+=(install_postgres)
-  methods+=($(cmd_family_pg_ctl))
+  methods+=(post_install_postgres)
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)
   methods+=(postgis_install)

@@ -2,8 +2,8 @@
 
 SERVICE="pg_ctl"
 
-user=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${user})
-password=$(. ${DT_VARS}/conns/pg_ctl/_admin.sh && echo ${password})
+user=$(. ${DT_VARS}/conns/pg_ctl_17/_admin.sh && echo ${user})
+password=$(. ${DT_VARS}/conns/pg_ctl_17/_admin.sh && echo ${password})
 
 HOST_BIND="localhost"
 PORT_BIND=5444
