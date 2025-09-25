@@ -19,12 +19,15 @@ install_postgis() {(
     [ -f "postgis-${POSTGIS_VERSION}.tar.gz" ] || exec_cmd wget http://postgis.net/stuff/postgis-${POSTGIS_VERSION}.tar.gz
     exec_cmd tar -xvzf postgis-${POSTGIS_VERSION}.tar.gz -C postgis
     exec_cmd cd postgis/postgis-${POSTGIS_VERSION}
+    PG_LIBDIR=$(${PG_CONFIG} --pkglibdir | tr ' ' '\n')
+    # export LD_LIBRARY_PATH="${PG_LIBDIR}"
+    # export DYLD_LIBRARY_PATH="${PG_LIBDIR}"
     exec_cmd ./configure --with-projdir=/opt/homebrew/opt/proj --without-raster --without-protobuf \
                 --with-pgconfig="${PG_CONFIG}" \
                 "LDFLAGS=\"-L/opt/homebrew/Cellar/gettext/${LIBINTL_VERSION}/lib\"" \
                 "CFLAGS=\"-I/opt/homebrew/Cellar/gettext/${LIBINTL_VERSION}/include\""
-    make
-    make install
+    # exec_cmd make PGSQL_FE_CPPFLAGS="-I${PG_LIBDIR}" PGSQL_FE_LDFLAGS="-L${PG_LIBDIR}" -lpq
+    exec_cmd make install
   else
     dt_error ${fname} "Unsupported OS: '$(os_kernel)'"; return 99
   fi
