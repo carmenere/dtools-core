@@ -22,7 +22,7 @@ exec_cmd () {
     fi
   else
     if [ "${DT_ECHO}" = "y" ]; then
-      >&2 echo -e "${BOLD}[dtools][DT_ECHO][exec_cmd]${RESET}"
+      >&2 echo -e "${BOLD}[dtools][DT_ECHO][$(date +"%Y-%m-%d %H:%M:%S")][exec_cmd]${RESET}"
       >&2 echo -e "${DT_ECHO_COLOR}${cmd}${RESET}"
     fi
     eval "$(echo -e "${cmd}")" || return $?

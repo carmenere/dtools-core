@@ -2,7 +2,7 @@
 cg_inline_exclude() {
   local result exclude
   result=()
-  for exclude in ${EXCLUDE[@]}; do
+  for exclude in "${EXCLUDE[@]}"; do
     result+=(--exclude "${exclude}")
   done
   echo "${result[@]}"
@@ -11,16 +11,15 @@ cg_inline_exclude() {
 cg_inline_bins() {
   local result bin
   result=()
-  for bin in ${BINS[@]}; do
+  for bin in "${BINS[@]}"; do
     result+=(--bin "${bin}")
   done
   echo "${result[@]}"
 }
 
-cg_set_manifest() { if [ -n "${MANIFEST_DIR}" ] && [ -n "${MANIFEST}" ]; then echo "${MANIFEST_DIR}/${MANIFEST}"; fi; }
 cg_build_mode() { if [ "${PROFILE}" = "release" ]; then echo "release"; else echo "debug"; fi; }
 cg_features() { if [ -n "${FEATURES}" ]; then echo "--features '${FEATURES[@]}'"; fi; }
-cg_manifest() { if [ -n "${MANIFEST_PATH}" ]; then echo "--manifest-path ${MANIFEST_PATH}"; fi;}
+cg_manifest() { if [ -n "${MANIFEST_DIR}" ] && [ -n "${MANIFEST}" ]; then echo "--manifest-path ${MANIFEST_DIR}/${MANIFEST}"; fi; }
 cg_msg_format() { if [ -n "${MESSAGE_FORMAT}" ]; then echo "--message-format ${MESSAGE_FORMAT}"; fi; }
 cg_nightly() { if [ -n "${NIGHTLY_VERSION}" ]; then echo "+${NIGHTLY_VERSION}"; fi; }
 cg_profile() { if [ -n "${PROFILE}" ]; then echo "--profile ${PROFILE}"; fi; }
@@ -46,7 +45,7 @@ cg_bin_dir() {
 cg_package() {
   if [ "${BUILD_AS}" = "workspace" ]; then
     echo "--workspace $(cg_inline_exclude)"
-  else
+  elif [ "${BUILD_AS}" = "package" ]; then
     echo "--package ${PACKAGE}"
   fi
 }
@@ -61,59 +60,84 @@ cg_targets() {
 cargo_build() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo build $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest)
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo build $(cg_targets) $(cg_features) $(cg_profile)
 )}
 
 cargo_clean() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo clean $(cg_profile) $(cg_manifest)
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo clean $(cg_profile)
 )}
 
 cargo_clippy() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo clippy $(cg_targets) $(cg_features) $(cg_profile) $(cg_msg_format) $(cg_manifest) \
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo clippy $(cg_targets) $(cg_features) $(cg_profile) $(cg_msg_format) \
     -- $(cg_clippy_lints) $(cg_clippy_report)
 )}
 
 cargo_clippy_fix() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
   exec_cmd "$(inline_envs)" cargo clippy $(cg_targets) $(cg_features) $(cg_profile) --fix --allow-staged \
-    $(cg_msg_format) $(cg_manifest) -- $(cg_clippy_lints) $(cg_clippy_report)
+    $(cg_msg_format) -- $(cg_clippy_lints) $(cg_clippy_report)
 )}
 
 cargo_doc() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) \
     --no-deps --document-private-items
 )}
 
 cargo_doc_open() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest) \
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo doc $(cg_targets) $(cg_features) $(cg_profile) \
     --no-deps --document-private-items --open
 )}
 
 cargo_fmt() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest) -- --check
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt -- --check
 )}
 
 cargo_fmt_fix() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt $(cg_msg_format) $(cg_manifest)
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo $(cg_nightly) fmt
 )}
 
-cargo_test() {(
+cargo_test_unit() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
-  exec_cmd "$(inline_envs)" cargo test $(cg_targets) $(cg_features) $(cg_profile) $(cg_manifest)
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo test $(cg_targets) $(cg_features) $(cg_profile)
+)}
+
+cargo_test_integration() {(
+  set -eu
+  . "${DT_VARS}/cargo/$1/$2.sh"
+  exec_cmd cd "${MANIFEST_DIR}"
+  exec_cmd "$(inline_envs)" cargo test --test "'*'" $(cg_targets) $(cg_features) $(cg_profile)
+)}
+
+cargo_all() {(
+  set -eu
+  cargo_fmt $1 $2
+  cargo_clippy $1 $2
+  cargo_build $1 $2
+  cargo_test_unit $1 $2
+  cargo_doc $1 $2
 )}
 
 ################################################# CARGO SQLX PREPARE ###################################################
@@ -121,7 +145,11 @@ function cargo_sqlx_prepare() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd cd "${MANIFEST_DIR}"
-  exec_cmd "$(inline_envs)" cargo sqlx prepare
+  local w=
+  if [ "${BUILD_AS}" = "workspace" ]; then
+    w="--workspace"
+  fi
+  exec_cmd "$(inline_envs)" cargo sqlx prepare ${w}
 )}
 
 ############################################### CARGO INSTALL|UNINSTALL ################################################
@@ -142,6 +170,7 @@ cargo_cache_clean() { exec_cmd cargo cache -r all; }
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_cargo() {
   local methods=()
+  methods+=(cargo_all)
   methods+=(cargo_build)
   methods+=(cargo_clean)
   methods+=(cargo_clippy)
@@ -150,8 +179,9 @@ cmd_family_cargo() {
   methods+=(cargo_doc_open)
   methods+=(cargo_fmt)
   methods+=(cargo_fmt_fix)
-  methods+=(cargo_test)
+  methods+=(cargo_test_unit)
   methods+=(cargo_sqlx_prepare)
+  methods+=(cargo_test_integration)
   echo "${methods[@]}"
 }
 

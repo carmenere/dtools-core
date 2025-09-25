@@ -1,47 +1,84 @@
-#m4_json() {(
-#  set -eu;
-#  _m4_json $1
-#)}
-#_m4_json() {
-#  M4_TVARS=${DT_M4}/curl/foo/vars.m4
-#  M4_IN="${DT_M4}/curl/foo/$1"
-#  M4_OUT=
-#  declare -A envs
-#  ENVS=()
-#  _m4
-#}
+dt_curl_inline_headers() {
+  local result header
+  result=()
+  for header in "${HEADERS[@]}"; do
+    result+=("-H \"${header}\"")
+  done
+  echo "${result[@]}"
+}
 
-function curl_get() {(
-  set -eu
-  . ${DT_VARS}/curl/$1.sh
-  curl -v -X GET ${URL} | jq '.'
+function dt_curl() {(
+    set -eu
+    local fname=dt_curl
+    scenario=$1; shift
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --chunk-id=*)
+            local chunk_id="${1#*=}"; shift
+            ;;
+        --req=*)
+            local req="${1#*=}"; shift
+            ;;
+        --resp=*)
+            local resp="${1#*=}"; shift
+            ;;
+        --headers=*)
+            local headers="${1#*=}"; shift
+            ;;
+        --method=*)
+            local method="${1#*=}"; shift
+            ;;
+        --url=*)
+            local url="${1#*=}"; shift
+            ;;
+        --query=*)
+            local query="${1#*=}"; shift
+            ;;
+        --echo-resp=*)
+            local echo_resp="${1#*=}"; shift
+            ;;
+        --chunk-size=*)
+            chunk_size="${1#*=}"; shift
+            ;;
+        --chunks=*)
+            chunks="${1#*=}"; shift
+            ;;
+        *)
+            dt_error ${fname} "Unknown argument: $1"; shift
+            ;;
+      esac
+    done
+    set -eu
+    . "${DT_VARS}/curl/${scenario}.sh"
+    if [ -n "${chunk_size+set_or_not_null}" ]; then CHUNK_SIZE=${chunk_size}; fi
+    if [ -n "${chunk_id+set_or_not_null}" ]; then CHUNK_ID=${chunk_id}; else CHUNK_ID=1; fi
+    if [ -n "${headers+set_or_not_null}" ]; then HEADERS=${headers}; else HEADERS="$(dt_curl_inline_headers)"; fi
+    if [ -n "${method+set_or_not_null}" ]; then METHOD=${method}; else METHOD="GET"; fi
+    if [ -n "${req+set_or_not_null}" ]; then REQUEST=${req}; else REQUEST=; fi
+    if [ -n "${resp+set_or_not_null}" ]; then RESPONSE=${resp}; else RESPONSE=; fi
+    if [ -n "${url+set_or_not_null}" ]; then URL=${url}; fi
+    if [ -n "${QUERY+set_or_not_null}" ]; then QUERY="${QUERY[@]}"; else QUERY=; fi
+    if [ -n "${query+set_or_not_null}" ]; then QUERY=${query}; fi
+    if [ -n "${echo_resp+set_or_not_null}" ]; then CURL_ECHO_RESP=${echo_resp}; else CURL_ECHO_RESP="y"; fi
+    if [ -f "${REQUEST}" ]; then BODY="--data-binary '@${REQUEST}'"; else 
+        if [ ${METHOD} = "POST" ] || [ ${METHOD} = "PUT" ] || [ ${METHOD} = "PATCH" ] || [ ${METHOD} = "DELETE" ]; then
+            dt_warning ${fname} "File ${BOLD}${REQUEST}${RESET} doesn't exist"
+        fi
+        BODY=
+    fi
+    if [ -n "${RESPONSE}" ]; then RESPONSE="-o '${RESPONSE}'"; fi
+    mkdir -p ${DT_REPORTS}/dt_curl
+    exec_cmd curl --fail "${RESPONSE}" -v -w "$'\nStatus: %{http_code}; Total Time: %{time_total}s\n'" \
+      -X ${METHOD} ${HEADERS} ${URL}${QUERY} ${BODY} 2\>\&1 \| tee -a "${DT_REPORTS}/dt_curl/${scenario}.req.${METHOD}.log"
+    if [ "${CURL_ECHO_RESP}" = "y" ] && [ -f "${RESPONSE}" ]; then
+      exec_cmd jq "$'.'" "${RESPONSE}"
+    fi
 )}
-
-function curl_post() {
-  set -eu
-  . ${DT_VARS}/curl/$1.sh
-  curl -v -X POST ${URL} | jq '.'
-}
-
-function curl_put() {
-  set -eu
-  . ${DT_VARS}/curl/$1.sh
-  curl -v -X PUT ${URL} | jq '.'
-}
-
-function curl_delete() {
-  set -eu
-  . ${DT_VARS}/curl/$1.sh
-  curl -v -X DELETE ${URL} | jq '.'
-}
 
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_curl() {
   local methods=()
-  methods+=(curl_get)
-  methods+=(curl_post)
-  methods+=(curl_put)
-  methods+=(curl_delete)
+  methods+=(dt_curl)
   echo "${methods[@]}"
 }
 

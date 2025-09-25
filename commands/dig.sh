@@ -17,7 +17,7 @@ function load_domains() {
 
 function dig_async() {
   rm -f "${RESOLVED_DOMAINS}"
-  for domain in ${domains[@]}
+  for domain in "${domains[@]}"
   do
      dig +noall +answer "$domain" 1 >> "${RESOLVED_DOMAINS}" 2>&1 &
   done

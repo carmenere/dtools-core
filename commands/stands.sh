@@ -1,9 +1,8 @@
 stand() {(
   set -eu
   local fname=stand
-  . ${DT_VARS}/stands/$1.sh
+  . ${DTOOLS}/stands/$1.sh
   $2
-  return 99
 )}
 
 ##################################################### AUTOCOMPLETE #####################################################

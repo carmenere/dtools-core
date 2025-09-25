@@ -1,10 +1,5 @@
-function rustup_envs() {
-  local envs=(RUSTUP_TOOLCHAIN)
-  echo "${envs[@]}"
-}
-
 rust_arch() {
-  arch=$(uname -m)
+  local arch=$(uname -m)
   if [ "${arch}" = "arm64" ]; then
     arch="aarch64"
   fi

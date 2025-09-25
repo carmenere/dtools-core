@@ -117,20 +117,6 @@ pg_prepare() {(
   if [ "${changed}" != 0 ]; then service_stop $1; fi
 )}
 
-#pg_add_path() {
-#  local fname=pg_add_path
-#  path="${PATH}"
-#  echo "${path}" | grep -E -s "^${BIN_DIR}" 1>/dev/null 2>&1
-#  if [ $? != 0 ] && [ -n "${BIN_DIR}" ]; then
-#    # Cut all duplicates of ${BIN_DIR} from path
-#    path="$(echo "${path}" | sed -E -e ":label; s|(.*):${BIN_DIR}(.*)|\1\2|g; t label;")"
-#    # Prepend ${BIN_DIR}
-#    dt_debug ${fname} "${BIN_DIR}:${path}"
-#  else
-#    dt_debug ${fname} "${path}"
-#  fi
-#}
-
 m4_postgresql.conf() {( set -eu; . "${DT_VARS}/m4/$1/postgresql.conf.sh" && _m4 )}
 m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 
@@ -139,6 +125,7 @@ m4_pg_hba.conf() {( set -eu; . "${DT_VARS}/m4/$1/pg_hba.conf.sh" && _m4 )}
 function cmd_family_pg_services() {
   local methods=()
   methods+=(install_postgres)
+  methods+=(install_postgis)
   methods+=(post_install_postgres)
   methods+=(m4_postgresql.conf)
   methods+=(m4_pg_hba.conf)

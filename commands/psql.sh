@@ -71,7 +71,7 @@ _psql_aux_gexec() {
   fi
   . "${AUX_CONN}"
   connurl=$(_pg_connurl)
-  ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | ${connurl} ${CLIENT}"
+  ${EXEC} ${SERVICE} "echo $'${query}' '\gexec' | ${connurl} ${CLIENT}" -v ON_ERROR_STOP=on
 }
 
 _psql_gexec_local() {
@@ -110,6 +110,10 @@ psql_revoke_user() {(
   _psql_aux_gexec "${REVOKE}" $1 $2
 )}
 
+psql_pg_stat_statements() {(
+  psql_conn $1 $2 $'CREATE EXTENSION IF NOT EXISTS pg_stat_statements;'
+)}
+
 psql_check() {(
   psql_conn $1 $2 $'select true;'
 )}
@@ -120,6 +124,7 @@ psql_init() {(
   psql_create_db $1 ${MIGRATOR}
   psql_create_user $1 ${MIGRATOR}
   psql_grant_user $1 ${MIGRATOR}
+  psql_pg_stat_statements $1 ${MIGRATOR}
   psql_create_user $1 ${APP}
   psql_grant_user $1 ${APP}
 )}
@@ -132,9 +137,11 @@ psql_clean() {(
   psql_drop_user $1 ${APP}
 )}
 
-psql_reinit() {
-  psql_clean $1 && psql_init $1
-}
+psql_reinit() {(
+  set -eu;
+  psql_clean $1
+  psql_init $1
+)}
 
 ##################################################### AUTOCOMPLETE #####################################################
 cmd_family_psql() {
@@ -149,6 +156,7 @@ cmd_family_psql() {
   methods+=(psql_drop_user)
   methods+=(psql_grant_user)
   methods+=(psql_revoke_user)
+  methods+=(psql_pg_stat_statements)
   methods+=($(cmd_family_dump_restore))
   methods+=(psql_check)
   echo "${methods[@]}"

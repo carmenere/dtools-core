@@ -18,7 +18,7 @@ inline_vals() {
   vals=($(echo "$1"))
   [ -n "$2" ] && pref="$2 "
   result=()
-  for val in ${vals[@]}; do
+  for val in "${vals[@]}"; do
     val=$(ser_val "${val}")
     result+=("${pref}${val}")
   done
@@ -29,7 +29,7 @@ inline_vars() {
   local pref result var val vars=($(echo "$1")) fname=$(fname "${FUNCNAME[0]}" "$0")
   [ -n "$2" ] && pref="$2 "
   result=()
-  for var in ${vars[@]}; do
+  for var in "${vars[@]}"; do
     val=$(${var})
     dt_debug ${fname} "var=${var}; val=${val}"
     if [ -z "${val}" ]; then continue; fi
@@ -39,6 +39,8 @@ inline_vars() {
   echo "${result[@]}"
 }
 
+#escape_json_quote() { echo "'$@'" | sed -e 's/@/"/g'; }
+escape_json_quote() { echo "$@" | sed -e "s/'/\"/g"; }
 escape_quote() { echo "$@" | sed -e "s/'/\\\\'/g"; }
 escape_dollar() { echo "$@" | sed -e "s/\\$/\\\\$/g" | sed -e "s/'/\\\\'/g"; }
 
@@ -46,7 +48,7 @@ is_contained() {
   local item=$1 registry=$2 fname=$(fname "${FUNCNAME[0]}" "$0")
   err_if_empty ${fname} "item registry" || return $?
   registry=($(echo $(eval echo \$${registry})))
-  for ritem in ${registry[@]};  do
+  for ritem in "${registry[@]}";  do
     if [ "${ritem}" = "${item}" ]; then
       dt_debug ${fname} "HIT: ${BOLD}Item${RESET}=${item}"
       return 0
@@ -60,10 +62,31 @@ add_env() {
   ENVS+=("$1")
 }
 
+gen_prefixes() {
+  local MAX_PREFIXES FIRST_OCTET_MAX FIRST_OCTET_MIN k j i prefixes counter
+  if [ -n "${1+set_or_not_null}" ]; then FIRST_OCTET_MIN=${1}; fi
+  if [ -n "${2+set_or_not_null}" ]; then FIRST_OCTET_MAX=${2}; fi
+  if [ -n "${3+set_or_not_null}" ]; then MAX_PREFIXES=${3}; fi
+  counter=1 prefixes=()
+  # Loop through the third octet
+  for k in $(seq ${FIRST_OCTET_MIN} ${FIRST_OCTET_MAX}); do
+    for j in $(seq 0 255); do
+      for i in $(seq 0 255); do
+        prefixes+=("${k}.${j}.${i}.0/24")
+        counter=$((${counter}+1))
+        if [ "${counter}" -gt "${MAX_PREFIXES}" ]; then break; fi
+      done
+      if [ "${counter}" -gt "${MAX_PREFIXES}" ]; then break; fi
+    done
+    if [ "${counter}" -gt "${MAX_PREFIXES}" ]; then break; fi
+  done
+  echo ${prefixes}
+}
+
 inline_envs() {
   local result var val fname=inline_envs
   result=()
-  for var in ${ENVS[@]}; do
+  for var in "${ENVS[@]}"; do
     val=${envs["${var}"]}
     val=$(ser_val "${val}")
     result+=("${var}=${val}")
@@ -88,6 +111,13 @@ function dt_sudo() {
   if [ "$(os_kernel)" = "Linux" ]; then
     echo "sudo"
   fi
+}
+
+dt_mkdir() {
+  if [ ! -d "$*" ]; then
+    exec_cmd mkdir -p "$*"
+  fi
+  echo "$*"
 }
 
 SUDO=$(dt_sudo)

@@ -16,9 +16,9 @@ dt_rc_load() {
   dt_log ${fname} "Loading ${BOLD}$description${RESET} ... "
   for file in $(ls "${dir}"/*.sh | sort); do
     if [ "$(basename "${file}")" != "rc.sh"  ] && [ "$(basename "${file}")" != "03_tables.sh"  ]; then
-      dt_log ${fname} "Sourcing "$(dirname "${file}")/${BOLD}$(basename "${file}")${RESET}" ..."
+#      dt_log ${fname} "Sourcing "$(dirname "${file}")/${BOLD}$(basename "${file}")${RESET}" ..."
+      DT_CURRENT_FILE_BEING_LOAD="${file}"
       . "${file}" || return 55
-      dt_log ${fname} "done.";
     fi
   done
 }
@@ -33,5 +33,5 @@ load() {
 load "$0" || return $?
 
 if [ -f "${DTOOLS}/core/rc.sh" ]; then
-  reinit_dtools() { . ${DTOOLS}/core/rc.sh; }
+  dtools_reinit() { . ${DTOOLS}/core/rc.sh; }
 fi
