@@ -14,7 +14,7 @@ add_publish() { if [ -z "${PUBLISH}" ]; then PUBLISH="--publish"; fi; PUBLISH="$
 ser_build_args() {
   local result var val fname=ser_build_args
   result=()
-  for var in ${BUILD_ARGS[@]}; do
+  for var in "${BUILD_ARGS[@]}"; do
     val=${build_args["${var}"]}
     dt_debug ${fname} "var=${var}; val=${val}"
     val=$(ser_val "${val}")
@@ -26,7 +26,7 @@ ser_build_args() {
 ser_run_envs() {
   local result var val fname=ser_run_envs
   result=()
-  for var in ${RUN_ENVS[@]}; do
+  for var in "${RUN_ENVS[@]}"; do
     val=${run_envs["${var}"]}
     dt_debug ${fname} "var=${var}; val=${val}"
     val=$(ser_val "${val}")
@@ -70,8 +70,10 @@ docker_arm64v8() {
 }
 
 docker_default_tag() {
-  local tag=v0.0.1
+  local tag=$(git_build_version)
+  set +u
   if [ -n "$1" ]; then tag=$1; fi
+  set -u
   if [ "$(uname -m)" = "arm64" ]; then
     echo "${tag}-arm64"
   else

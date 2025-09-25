@@ -10,6 +10,7 @@ deps_ubuntu() {
   DEPS+=(libbz2-dev)
   DEPS+=(libffi-dev)
   DEPS+=(libpq-dev)
+  DEPS+=(make)
   DEPS+=(m4)
   DEPS+=(pkg-config)
   DEPS+=(protobuf-compiler)
@@ -40,7 +41,7 @@ install_deps() {
 
   if [ -z "${DEPS}" ]; then return 0; fi
 
-  for dep in ${DEPS[@]}; do
+  for dep in "${DEPS[@]}"; do
     exec_cmd "${PACMAN} ${dep}"
   done
 }

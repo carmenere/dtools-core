@@ -25,7 +25,7 @@ function tmux_select_window() {(
 
 function tmux_new_window() {(
   set -eu; . "${DT_VARS}/tmux/$1.sh"
-  exec_cmd "tmux new-window -t ${TMX_SESSION} -n ${TMX_WINDOW_NAME}"
+  exec_cmd "tmux new-window -a -t ${TMX_SESSION} -n ${TMX_WINDOW_NAME}"
 )}
 
 function tmux_start() {(
@@ -40,7 +40,7 @@ function tmux_stop() {(
   set -eu; . "${DT_VARS}/tmux/$1.sh"
   local fname=tmux_stop
   if tmux has-session -t ${TMX_SESSION}; then
-    exec_cmd "tmux kill-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}"
+    exec_cmd "tmux kill-window -t ${TMX_SESSION}:${TMX_WINDOW_NAME}" || true
     dt_info ${fname} "stopped"
   else
     dt_info ${fname} "Window ${TMX_SESSION}:${TMX_WINDOW_NAME} was not opened."
@@ -48,9 +48,16 @@ function tmux_stop() {(
 )}
 
 function tmux_connect() {(
-  set -eu; . "${DT_VARS}/tmux/$1.sh"
-  local fname=tmux_connect
-  exec_cmd "tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}""
+  local settings fname=tmux_connect
+  if [ -n "$1" ]; then settings=$1; fi
+  set -eu;
+  if [ -n "${settings}" ]; then
+    . "${DT_VARS}/tmux/${settings}.sh"
+    exec_cmd tmux a -t "${TMX_SESSION}:${TMX_WINDOW_NAME}"
+  else
+    . "${DT_VARS}/tmux/defaults.sh"
+    exec_cmd tmux a -t ${TMX_SESSION}
+  fi
 )}
 
 function tmux_kill() { exec_cmd "tmux kill-server || true"; }

@@ -59,15 +59,17 @@ dt_bind_autocomplete_to_commnads() {
   dt_gen_autocomplete_to_commnads ${autocomplete} ${cmd_family} && \
   dt_debug ${fname} "Binding autocomplete function ${BOLD}${autocomplete}${RESET} to command family ${BOLD}${cmd_family}${RESET}"
   commands=($(echo "$(${cmd_family})")) && \
-  for cmd in ${commands[@]}; do
-    exec_cmd complete -F "${autocomplete}" "${cmd}" || return $?
+  for cmd in "${commands[@]}"; do
+    complete -F "${autocomplete}" "${cmd}" || return $?
   done && \
   dt_debug ${fname} "done"
 }
 
 dt_autocomplete() {
-  . ${DT_VARS}/autocompletions.sh && \
-  for f in ${DT_AUTOCOMPLETE[@]}; do
+  . ${DTOOLS}/autocompletions.sh && \
+  dt_info dt_autocomplete "Binding autocomplete functions ..."
+  for f in "${DT_AUTOCOMPLETE[@]}"; do
     dt_bind_autocomplete_to_commnads "${f}" || return $?
   done
+  dt_info dt_autocomplete "done."
 }

@@ -1,5 +1,6 @@
 _m4() {
   set -eu
+  if ! declare -p M4_ECHO >/dev/null 2>&1; then M4_ECHO='y'; fi
   if [ -n "${M4_OUT}" ]; then
     exec_cmd ""$(inline_envs)" m4 ${M4_TVARS} ${M4_IN} > /tmp/.m4_tmp"
     err=$?
@@ -9,6 +10,10 @@ _m4() {
     fi
     exec_cmd ${SUDO} cp -f /tmp/.m4_tmp ${M4_OUT}
   else
-    exec_cmd ""$(inline_envs)" m4 ${M4_TVARS} ${M4_IN}"
+    if [ "${M4_ECHO}" = "y" ]; then
+      exec_cmd ""$(inline_envs)" m4 ${M4_TVARS} ${M4_IN}"
+    else
+      eval ""$(inline_envs)" m4 ${M4_TVARS} ${M4_IN}"
+    fi
   fi
 }

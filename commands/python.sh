@@ -1,6 +1,6 @@
 openssl_dir() {
   if [ "$(os_name)" != "macos" ]; then
-    echo "${DL}/.openssl-${OPENSSL_VER}"
+    echo "${DT_DL}/.openssl-${OPENSSL_VER}"
   else
     echo "$(brew --prefix openssl@${OPENSSL_VER_MACOS})"
   fi
@@ -15,7 +15,7 @@ openssl_build_opts() {
   local OPTS=()
   OPTS+=($(configure_openssl_dir))
   OPTS+=($(configure_openssl_prefix))
-  echo "${OPTS}"
+  echo "${OPTS[@]}"
 }
 
 configure_py_prefix() { if [ -n "${PY_PREFIX}" ]; then echo "--prefix='${PY_PREFIX}'"; fi; }
@@ -29,7 +29,7 @@ py_build_opts() {
   OPTS+=($(configure_py_with_optimizations))
   OPTS+=($(configure_py_with_openssl_dir))
   OPTS+=($(configure_py_with_openssl_rpath))
-  echo "${OPTS}"
+  echo "${OPTS[@]}"
 }
 
 pip_upgrade() { if [ -n "${PIP_UPGRADE}" ]; then echo "--upgrade ${PIP_UPGRADE}"; fi; }
@@ -39,40 +39,42 @@ pip_opts() {
   local OPTS=()
   OPTS+=($(pip_upgrade))
   OPTS+=($(pip_prefer_binary))
-  echo "${OPTS}"
+  echo "${OPTS[@]}"
 }
 
 build_openssl() {
   local fname=build_openssl
-  if [ -f "${OPENSSL_DIR}/bin/openssl" ]; then dt_warning ${fname} "File ${BOLD}${OPENSSL_DIR}/bin/openssl${RESET} exists, skip build"; return 0; fi
-  if [ ! -d "${DL}" ]; then exec_cmd mkdir -p "${DL}" || return $?; fi
-  if [ ! -f "${DL}/openssl-${OPENSSL_VER}.tar.gz" ]; then exec_cmd wget "${SSL_DOWNLOAD_URL}" --directory-prefix="${DL}" || return $?; fi
-  if [ ! -d "${OPENSSL_DIR}" ]; then exec_cmd tar -zxf "${DL}/openssl-${OPENSSL_VER}.tar.gz" -C "${DL}" || return $?; fi
-  exec_cmd cd ${DL}/openssl-${OPENSSL_VER}
+  if [ -f "${OPENSSL_DIR}/bin/openssl" ]; then
+    dt_warning ${fname} "File ${BOLD}${OPENSSL_DIR}/bin/openssl${RESET} exists, skip build"
+    return 0
+  fi
+  if [ ! -d "${DT_DL}" ]; then exec_cmd mkdir -p "${DT_DL}" || return $?; fi
+  if [ ! -f "${DT_DL}/openssl-${OPENSSL_VER}.tar.gz" ]; then exec_cmd wget "${SSL_DOWNLOAD_URL}" --directory-prefix="${DT_DL}" || return $?; fi
+  if [ ! -d "${OPENSSL_DIR}" ]; then exec_cmd tar -zxf "${DT_DL}/openssl-${OPENSSL_VER}.tar.gz" -C "${DT_DL}" || return $?; fi
+  exec_cmd cd ${DT_DL}/openssl-${OPENSSL_VER}
   exec_cmd ./config $(openssl_build_opts)
-    make
-    make install
+    exec_cmd make
+    exec_cmd make install
 }
 
 download_py_tar() {
   local fname=download_py_tar
-  if [ -f "${DL}/${TAR}" ]; then dt_info ${fname} "File ${BOLD}${DL}/${TAR}${RESET} exists, skip download"; return 0; fi
-  if [ ! -d "${DL}" ]; then exec_cmd mkdir -p ${DL}; fi
-  exec_cmd cd ${DL}
+  if [ -f "${DT_DL}/${TAR}" ]; then dt_info ${fname} "File ${BOLD}${DT_DL}/${TAR}${RESET} exists, skip download"; return 0; fi
+  if [ ! -d "${DT_DL}" ]; then exec_cmd mkdir -p ${DT_DL}; fi
+  exec_cmd cd ${DT_DL}
   exec_cmd wget ${PY_DOWNLOAD_URL}
 }
 
 build_python() {
   local fname=build_python
-  local BUILD_OPTS=()
   if [ -f "${PYTHON}" ]; then dt_warning ${fname} "File ${BOLD}${PYTHON}${RESET} exists, skip build"; return 0; fi
   download_py_tar
-  if [ ! -d "${SRC}" ]; then exec_cmd tar -xf "${DL}/${TAR}" -C "${DL}" || return $?; fi
+  if [ ! -d "${SRC}" ]; then exec_cmd tar -xf "${DT_DL}/${TAR}" -C "${DT_DL}" || return $?; fi
   if [ ! -d "${PY_PREFIX}" ]; then exec_cmd mkdir -p "${PY_PREFIX}" || return $?; fi
   exec_cmd cd ${SRC}
   exec_cmd ./configure $(py_build_opts)
-    make -j $(nproc)
-    sudo make altinstall
+    exec_cmd make -j $(nproc)
+    exec_cmd sudo make altinstall
   cd -
 }
 
@@ -98,7 +100,7 @@ python_clean() {(
 venv_init() {(
   set -eu; . "${DT_VARS}/python/$1.sh"
   python_build $1
-  if [ -f "${VPYTHON}" ]; then exec_cmd return 0; fi
+  if [ -f "${VPYTHON}" ]; then return 0; fi
   if [ ! -d "${VENV_DIR}" ]; then exec_cmd mkdir -p "${VENV_DIR}" || return $?; fi
   exec_cmd "${PYTHON}" -m venv --prompt='${VENV_PROMT}' "${VENV_DIR}"
 )}
@@ -109,11 +111,18 @@ venv_clean() {(
 )}
 
 pip_init() {(
+  local fname=pip_init
   set -eu; . "${DT_VARS}/python/$1.sh"
+  venv_init $1
+  SITE_PACKAGES="$(${VPYTHON} -m pip show pip | grep Location | cut -d':' -f 2 | awk '{$1=$1};1')"
+  if [ -f "${SITE_PACKAGES}/.requirements" ]; then
+    dt_warning ${fname} "File ${BOLD}${SITE_PACKAGES}/.requirements${RESET} exists, skip 'pip install'"
+    return 0
+  fi
   echo "REQUIREMENTS=${REQUIREMENTS}"
   if [ -n "${REQUIREMENTS}" ]; then
-    venv_init $1
     exec_cmd ${PIP} install -r ${REQUIREMENTS} $(pip_opts)
+    exec_cmd touch ${SITE_PACKAGES}/.requirements
   fi
 )}
 
@@ -125,12 +134,11 @@ pip_clean() {(
 py_paths() {
   PY_PREFIX="${DT_TOOLCHAIN}/py/${PYTHON_VER}"
   TAR="Python-${PYTHON_VER}.tgz"
-  SRC="${DL}/Python-${PYTHON_VER}"
-  EXE="${DL}/Python-${PYTHON_VER}/.py-${PYTHON_VER}"
+  SRC="${DT_DL}/Python-${PYTHON_VER}"
+  EXE="${DT_DL}/Python-${PYTHON_VER}/.py-${PYTHON_VER}"
     # depends on TAR
   PY_DOWNLOAD_URL="https://www.python.org/ftp/python/${PYTHON_VER}/${TAR}"
   SSL_DOWNLOAD_URL="https://www.openssl.org/source/openssl-${OPENSSL_VER}.tar.gz"
-  VENV_DIR="${DT_TOOLCHAIN}/venv/${PYTHON_VER}"
     # depends on VENV_DIR
   VPYTHON="${VENV_DIR}/bin/python"
     # depends on VPYTHON

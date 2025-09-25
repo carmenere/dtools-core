@@ -68,10 +68,10 @@ rabbitmq_flush() {(
   fi
   . "${AUX_CONN}"
   conn="$(_rabbitmqadmin_connurl)"
-  for queue in ${queues[@]}; do
+  for queue in "${queues[@]}"; do
     ${EXEC} ${SERVICE} "rabbitmqadmin ${conn} delete queue name='${queue}' || true"
   done
-  for exchange in ${exchanges[@]}; do
+  for exchange in "${exchanges[@]}"; do
     ${EXEC} ${SERVICE} "rabbitmqadmin ${conn} delete exchange name='${exchange}' || true"
   done
 )}
