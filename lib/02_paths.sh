@@ -18,14 +18,8 @@ dt_paths() {
   export DT_VARS=${DTOOLS}/vars
   export DT_VARS=${DTOOLS}/vars
 
-
-  if [ "${DT_PROFILE}" = "ci" ]; then
-    export DT_LOGS="/tmp/so/logs"
-    export DT_REPORTS="/tmp/so/reports"
-  else
-    export DT_LOGS="${DT_ARTEFACTS}/logs"
-    export DT_REPORTS="${DT_ARTEFACTS}/reports"
-  fi
+  export DT_LOGS="${DT_ARTEFACTS}/logs"
+  export DT_REPORTS="${DT_ARTEFACTS}/reports"
 
   export DT_TOOLCHAIN=${DT_ARTEFACTS}/toolchain
   export DT_M4_OUT=${DT_ARTEFACTS}/m4
