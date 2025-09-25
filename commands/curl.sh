@@ -43,6 +43,9 @@ function dt_curl() {(
         --chunks=*)
             chunks="${1#*=}"; shift
             ;;
+        --tee=*)
+            tee="${1#*=}"; shift
+            ;;
         *)
             dt_error ${fname} "Unknown argument: $1"; shift
             ;;
@@ -51,6 +54,7 @@ function dt_curl() {(
     set -eu
     . "${DT_VARS}/curl/${scenario}.sh"
     if [ -n "${chunk_size+set_or_not_null}" ]; then CHUNK_SIZE=${chunk_size}; fi
+    if [ -n "${tee+set_or_not_null}" ] && [ "${tee}" = "y" ]; then LOG=${DT_REPORTS}/dt_curl/${scenario}.req.${METHOD}.log; else LOG=; fi
     if [ -n "${chunk_id+set_or_not_null}" ]; then CHUNK_ID=${chunk_id}; else CHUNK_ID=1; fi
     if [ -n "${headers+set_or_not_null}" ]; then HEADERS=${headers}; else HEADERS="$(dt_curl_inline_headers)"; fi
     if [ -n "${method+set_or_not_null}" ]; then METHOD=${method}; else METHOD="GET"; fi
@@ -68,8 +72,14 @@ function dt_curl() {(
     fi
     if [ -n "${RESPONSE}" ]; then RESPONSE="-o '${RESPONSE}'"; fi
     mkdir -p ${DT_REPORTS}/dt_curl
-    exec_cmd curl --fail "${RESPONSE}" -v -w "$'\nStatus: %{http_code}; Total Time: %{time_total}s\n'" \
-      -X ${METHOD} ${HEADERS} ${URL}${QUERY} ${BODY} 2\>\&1 \| tee -a "${DT_REPORTS}/dt_curl/${scenario}.req.${METHOD}.log"
+    if [ -n "${LOG}" ]; then
+        exec_cmd curl --fail "${RESPONSE}" -v -w "$'%{stderr}\nStatus: %{http_code}\nTotal Time: %{time_total}s\n'" \
+            -X ${METHOD} ${HEADERS} ${URL}${QUERY} ${BODY} 2\>\&1 \| tee -a "${LOG}"
+    else
+        exec_cmd curl --fail "${RESPONSE}" -v -w "$'%{stderr}\nStatus: %{http_code}\nTotal Time: %{time_total}s\n\n'" \
+            -X ${METHOD} ${HEADERS} ${URL}${QUERY} ${BODY} | jq '.'
+    fi
+
     if [ "${CURL_ECHO_RESP}" = "y" ] && [ -f "${RESPONSE}" ]; then
       exec_cmd jq "$'.'" "${RESPONSE}"
     fi
