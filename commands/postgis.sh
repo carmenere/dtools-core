@@ -2,7 +2,6 @@ install_postgis() {(
   set -eu
   local fname=postgis_install
   . "${DT_VARS}/services/$1.sh"
-  LIBINTL_VERSION="0.26"
 
   if [ "$(os_name)" = "debian" ] || [ "$(os_name)" = "ubuntu" ]; then
     exec_cmd ${SUDO} apt install postgresql-${MAJOR}-postgis-3
