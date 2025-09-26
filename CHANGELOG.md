@@ -30,3 +30,7 @@ Hierarchy of vars and shell auto completion for commands.
 - **Sourcing of vars** in commands.
 - Using `set -eu` in commands.
 - Using **subshells** `foo() { ( ... ) }` in commands for **isolation**.
+
+## [0.0.3] - 2025-09-29
+
+Various fixes and minor improvements.
