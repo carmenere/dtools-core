@@ -2,7 +2,7 @@
 # BUILD_AS = { package | workspace}, by default "package"
 
 # rustup vars
-. <(. ${DT_VARS}/rustup/1.86.0.sh
+. <(. ${DT_VARS}/rustup/1.90.0.sh
   echo "RUSTUP_TOOLCHAIN=${RUSTUP_TOOLCHAIN}"
   echo "NIGHTLY_VERSION=${NIGHTLY_VERSION}"
 )
