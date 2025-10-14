@@ -1,5 +1,5 @@
 cargo_deps() {
-  rustup_init 1.86.0
+  rustup_init 1.90.0
   cargo_install cargo_audit
   cargo_install cargo_cyclonedx
   cargo_install cargo_deny

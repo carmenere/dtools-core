@@ -51,4 +51,4 @@ COPY . ${DT_PROJECT}
 WORKDIR ${DT_PROJECT}
 SHELL ["/bin/bash", "-c"]
 
-RUN . dtools/core/rc.sh && rustup_init 1.86.0
+RUN . dtools/core/rc.sh && rustup_init 1.90.0
