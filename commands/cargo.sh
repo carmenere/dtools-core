@@ -121,7 +121,7 @@ cargo_test_unit() {(
   set -eu
   . "${DT_VARS}/cargo/$1/$2.sh"
   exec_cmd cd "${MANIFEST_DIR}"
-  exec_cmd "$(inline_envs)" cargo test $(cg_targets) $(cg_features) $(cg_profile)
+  exec_cmd "$(inline_envs)" cargo test --lib $(cg_targets) $(cg_features) $(cg_profile)
 )}
 
 cargo_test_integration() {(
