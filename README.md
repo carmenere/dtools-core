@@ -40,14 +40,16 @@ load $0
 8. Run `cp -r core/example/vars vars`. This creates copy of `core/example/vars` in your `dtools`. But you can adjust `dtools/vars` for your project later.
 9. If you want to **overwrite vars locally** (don't touch git repo) you must create **appropriate file** in `dtools/locals` and change appropriate vars there.
 10. All **variants for autocomplete** are configured in `autocompletions.sh` file.
-10. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
-11. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
+11. *This step is optional*: describe your own **stand** in `dtools/stands`.
+12. Go back to `project_root_dir` and run `. ./dtools/core/rc.sh`.
+13. Add following function `reinit_dtools` to **startup files** of shell, e.g. `~/.zshrc`, `~/.bashrc`:
 ```shell
 function reinit_dtools() {
 . ./dtools/core/rc.sh
 }
 ```
 And now you can run `reinit_dtools` in the directory where `dtools` is.<br>
+
 
 <br>
 
@@ -64,10 +66,12 @@ project_root_dir
 │   ├── locals/   # Must be added to .gitignore (**/locals/). It is for overwriting project defaults in local devel environment.
 │   │   ├── ...
 │   │   └── rc.sh
+│   ├── stands/
+│   │   ├── foo.sh
+│   │   ├── ...
 │   └── vars/
 │       ├── ...
 │       └── autocompletions.sh
-
 ├── ...
 ```
 
