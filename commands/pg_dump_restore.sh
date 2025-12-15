@@ -11,7 +11,7 @@ pg_dumpX() {(
   . "${AUX_CONN}"
   database=${DB}
   connurl=$(_pg_connurl)
-  exec_cmd ${connurl} pg_dump --format custom --no-owner --no-privileges --file=${PG_DUMP}
+  exec_cmd ${connurl} ${BIN_DIR}/pg_dump --format custom --no-owner --no-privileges --file=${PG_DUMP}
   dt_info ${fname} "${BOLD}Ok${RESET}"
 )}
 
@@ -27,7 +27,7 @@ pg_restoreX() {(
   . "${AUX_CONN}"
   database=${DB}
   connurl=$(_pg_connurl)
-  exec_cmd ${connurl} pg_restore --no-owner -d ${DB} --single-transaction "${PG_DUMP}"
+  exec_cmd ${connurl} ${BIN_DIR}/pg_restore --no-owner -d ${DB} --single-transaction "${PG_DUMP}"
   dt_info ${fname} "${BOLD}Ok${RESET}"
 )}
 
