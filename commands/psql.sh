@@ -24,14 +24,15 @@ _pg_local_connurl() {
 
 psql_conn() {(
   set -eu
-  local cmd=
   . "${DT_VARS}/conns/$1/$2.sh"
   shift 2
   local connurl=$(_pg_connurl)
   if [ -n "$*" ]; then
-    cmd="-c '$*'"
+    local opt=$1; shift
+    ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT} -v ON_ERROR_STOP=on ${opt} "'$*'"
+  else
+    ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT}
   fi
-  ${TERMINAL} ${SERVICE} ${connurl} ${CLIENT} ${cmd}
 )}
 
 psql_local_conn() {(
@@ -111,11 +112,11 @@ psql_revoke_user() {(
 )}
 
 psql_pg_stat_statements() {(
-  psql_conn $1 $2 $'CREATE EXTENSION IF NOT EXISTS pg_stat_statements;'
+  psql_conn $1 $2 -c $'CREATE EXTENSION IF NOT EXISTS pg_stat_statements;'
 )}
 
 psql_check() {(
-  psql_conn $1 $2 $'select true;'
+  psql_conn $1 $2 -c $'select true;'
 )}
 
 psql_init() {(
